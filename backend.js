@@ -8,10 +8,11 @@
     const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 
     // every visitor gets an account: a guest (anonymous) one unless they signed in by email
+    let signInProblem = '';
     let { data: { session } } = await sb.auth.getSession();
     if (!session) {
       const r = await sb.auth.signInAnonymously();
-      if (r.error) console.warn('anonymous sign-in failed', r.error.message);
+      if (r.error) { console.warn('anonymous sign-in failed', r.error.message); signInProblem = r.error.message; }
       session = r.data && r.data.session;
     }
     const authUser = session && session.user;
@@ -87,6 +88,7 @@
     };
     const account = {
       isGuest: !!(authUser && authUser.is_anonymous),
+      signInProblem,
       email: authUser && authUser.email || '',
       uid,
       // keep this hamster and attach an email so it can be used on other devices

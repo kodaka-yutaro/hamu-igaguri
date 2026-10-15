@@ -995,7 +995,12 @@ $('db-state').textContent = '公式コースを表示中';
   }
   updatePubBtn();
   $('db-state').textContent = '読み込み中…';
-  const fail = () => { $('db-state').textContent = '読み込めませんでした'; };
+  const fail = (e) => {
+    const m = String((e && e.message) || '');
+    $('db-state').textContent = /docs|relation|schema cache|does not exist/i.test(m) ? 'データベースの準備（SQLの実行）がまだのようです' : '読み込めませんでした';
+    console.warn('load failed', m);
+  };
+  if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
     social.courses = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, official: false}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
