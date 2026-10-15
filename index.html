@@ -1222,15 +1222,29 @@ function renderAccount(){
   const run = (fn, ok, attach) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); sentTo = v; attaching = !!attach; note.textContent = ok; codeRow.hidden = false; codeIn.focus(); } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
   const idLine = el('div', {class: 'row'}, el('span', {class: 'muted', text: 'ユーザーID: '}), el('code', {text: a.uid, style: 'font-size:12px;overflow-wrap:anywhere'}),
     el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(a.uid).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}));
+  // moving this hamster to another browser or the home-screen app without email
+  const moveBox = el('div', {class: 'col', style: 'gap:6px;border-top:1.5px solid var(--line);padding-top:10px'});
+  const codeOut = el('div', {class: 'row', hidden: 'hidden'});
+  const moveIn = el('input', {type: 'text', placeholder: '引き継ぎコード', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', style: 'flex:1 1 160px'}); moveIn.className = 'txt';
+  moveBox.append(el('b', {text: 'ほかの端末・ホーム画面アプリに引っ越す'}),
+    el('p', {class: 'muted', style: 'margin:0', text: '引っ越し元で「引き継ぎコードを出す」を押し、出たコードを引っ越し先のこの欄に入れます。iPhoneのホーム画面アプリはSafariとログインが別なので、Safariでログインしてからこれでアプリに移せます。'}),
+    el('div', {class: 'row'}, el('button', {class: 'btn sm', text: '引き継ぎコードを出す', onclick: async () => {
+      try { const c = await a.transferCode(); codeOut.replaceChildren(el('code', {text: c, style: 'font-size:15px;overflow-wrap:anywhere'}), el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(c).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}),
+        el('span', {class: 'muted', text: 'だれにも教えないでください。コードを出したので、この端末は次に開くとログアウトしています。'})); codeOut.hidden = false; } catch { toast('コードを出せませんでした'); } }})),
+    codeOut,
+    el('div', {class: 'row'}, moveIn, el('button', {class: 'btn primary sm', text: 'このコードで引っ越す', onclick: async () => {
+      const v = moveIn.value.trim(); if (v.length < 8) return toast('引き継ぎコードを入れてください');
+      if (a.isGuest && !confirm('いまこの端末で遊んでいるゲストのハムからは離れます。よろしいですか？')) return;
+      try { await a.useTransferCode(v); } catch { toast('コードが違うか、もう使われています。引っ越し元でもう一度出してください'); } }})));
   if (a.isGuest){
     box.replaceChildren(
       el('b', {text: 'ゲストとして遊んでいます'}),
       el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
       el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールに書かれたコードを下に入れてください。', true)}),
         el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールに書かれたコードを下に入れてください。')})),
-      note, codeRow, idLine);
+      note, codeRow, idLine, moveBox);
   } else {
-    box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine);
+    box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine, moveBox);
   }
 }
 

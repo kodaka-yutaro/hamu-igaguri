@@ -98,6 +98,17 @@
       // finish either of the above with the code from the email, without leaving this app
       // (a home-screen app on iPhone keeps its own login, so opening the email link in Safari doesn't sign it in)
       async verifyCode(email, token, attaching) { const r = await sb.auth.verifyOtp({ email, token, type: attaching ? 'email_change' : 'email' }); if (r.error) throw r.error; location.reload(); },
+      // move this login to another browser (e.g. Safari → the home-screen app, which keeps its own storage).
+      // The code is the session's refresh token: using it elsewhere ends the session here.
+      // Once the code is shown this browser lets go of the session (no refresh, nothing saved), otherwise its next
+      // refresh would reuse the token and the server would revoke the session on the new device too.
+      async transferCode() {
+        const { data } = await sb.auth.getSession(); if (!data.session) throw new Error('ログインしていません');
+        sb.auth.stopAutoRefresh();
+        for (const k of Object.keys(localStorage)) if (/^sb-.*-auth-token/.test(k)) localStorage.removeItem(k);
+        return data.session.refresh_token;
+      },
+      async useTransferCode(code) { const r = await sb.auth.refreshSession({ refresh_token: code.trim() }); if (r.error || !r.data.session) throw r.error || new Error('invalid'); location.reload(); },
       async signOut() { await sb.auth.signOut(); location.reload(); },
     };
     return { db: { doc, collection }, user, account };
