@@ -111,6 +111,9 @@ input[type=range]{width:100%}
 .msg .big{font-family:var(--display);font-size:clamp(26px,6vw,44px);text-shadow:0 3px 0 #0006}
 .msg .gain{font-weight:800;background:#f0c050;color:#2b2620;border-radius:8px;padding:2px 10px}
 .msg .btns{pointer-events:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.banner{position:absolute;left:50%;top:22%;transform:translateX(-50%);background:#f0c050;color:#2b2620;font-weight:800;font-size:15px;border-radius:12px;padding:8px 16px;box-shadow:0 4px 0 #0004;pointer-events:none;white-space:nowrap;animation:pop .35s ease-out}
+.banner.big{font-family:var(--display);font-weight:400;font-size:22px}
+@keyframes pop{from{transform:translateX(-50%) scale(.6);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 .hud{position:absolute;left:10px;top:8px;color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 0 #0008;font-variant-numeric:tabular-nums}
 .sheet-bg{position:fixed;inset:0;background:rgba(12,14,10,.55);z-index:20;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .sheet{background:var(--bg);border-radius:16px;max-width:640px;margin:24px auto;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative}
@@ -296,6 +299,7 @@ input[type=range]{width:100%}
     <div class="stage tall" id="pl-stage">
       <canvas id="pl-canvas" width="640" height="1024"></canvas>
       <div class="hud" id="pl-hud"></div>
+      <div class="banner" id="pl-banner" hidden></div>
       <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div></div>
     </div>
   </div>
@@ -323,15 +327,44 @@ const TITLES = [
 const titleFor = n => TITLES.filter(t => n >= t.n).pop() || null;
 
 /* ---------- hamster look ---------- */
+// tableware lying in the endless course: pick one up to unlock it as a hat or accessory
+const ITEMS = [
+  { d: 200,  ch: '1', part: 'hat', key: 'pan',       name: 'フライパン' },
+  { d: 300,  ch: '2', part: 'acc', key: 'hashi',     name: 'おはし' },
+  { d: 500,  ch: '3', part: 'hat', key: 'chawan',    name: 'おちゃわん' },
+  { d: 750,  ch: '4', part: 'acc', key: 'fork',      name: 'フォーク' },
+  { d: 1000, ch: '5', part: 'hat', key: 'nabe',      name: 'おなべ' },
+  { d: 2000, ch: '6', part: 'hat', key: 'goldplate', name: '金のお皿' },
+];
+const itemByCh = Object.fromEntries(ITEMS.map(i => [i.ch, i]));
+const itemByKey = Object.fromEntries(ITEMS.map(i => [i.key, i]));
+// draws one tableware item relative to the hamster's head (head top is around y = -11, face looks left)
+function paintGear(ctx, key){
+  if (key === 'pan'){ ctx.fillStyle = '#8a5a3c'; ctx.save(); ctx.translate(11, -14); ctx.rotate(-0.25); ctx.fillRect(0, -1.8, 14, 3.6); ctx.restore(); ctx.fillStyle = '#3a3a40'; ctx.beginPath(); ctx.ellipse(1, -11, 12.5, 7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5b5b63'; ctx.fillRect(-11.5, -12, 25, 2.6); ctx.fillStyle = '#ffffff55'; ctx.beginPath(); ctx.ellipse(-3, -15, 4, 1.6, -0.3, 0, 7); ctx.fill(); }
+  if (key === 'chawan'){ ctx.fillStyle = '#f7f2ea'; ctx.strokeStyle = '#a89c88'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(1, -11, 11.5, 9, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#2f6fd0'; ctx.fillRect(-10, -15, 22, 2.2); ctx.beginPath(); ctx.arc(-3, -9.5 - 7, 1.1, 0, 7); ctx.arc(5, -16.5, 1.1, 0, 7); ctx.fill(); ctx.fillStyle = '#e6ddd0'; ctx.fillRect(-4, -22, 10, 2.5); }
+  if (key === 'nabe'){ ctx.fillStyle = '#b9bcc4'; ctx.fillRect(-11, -21, 24, 11); ctx.fillStyle = '#8e929b'; ctx.fillRect(-14, -18, 4, 3); ctx.fillRect(12, -18, 4, 3); ctx.fillStyle = '#d4d7de'; ctx.fillRect(-12, -23, 26, 3); ctx.fillStyle = '#2b2620'; ctx.fillRect(-1, -27, 4, 4); ctx.fillStyle = '#ffffff66'; ctx.fillRect(-8, -19, 3, 7); }
+  if (key === 'goldplate'){ ctx.save(); ctx.translate(1, -15); ctx.rotate(-0.12); ctx.fillStyle = '#c99a1e'; ctx.beginPath(); ctx.ellipse(0, 0, 15, 5, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#f0c94a'; ctx.beginPath(); ctx.ellipse(0, -0.8, 10.5, 3.2, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.ellipse(-5, -1.6, 3, 1, 0, 0, 7); ctx.fill(); ctx.restore(); }
+  if (key === 'hashi'){ ctx.strokeStyle = '#7a4a26'; ctx.lineWidth = 1.8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(6, -4); ctx.lineTo(20, -22); ctx.moveTo(9, -3); ctx.lineTo(23, -19); ctx.stroke(); ctx.strokeStyle = '#d9412b'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(17, -18); ctx.lineTo(20, -22); ctx.moveTo(20, -15); ctx.lineTo(23, -19); ctx.stroke(); }
+  if (key === 'fork'){ ctx.strokeStyle = '#c4c8d0'; ctx.lineCap = 'round'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 10); ctx.lineTo(-19, -6); ctx.stroke(); ctx.lineWidth = 1.3; ctx.beginPath(); for (const dx of [-3, -0.5, 2]){ ctx.moveTo(-19 + dx * .6, -6); ctx.lineTo(-21 + dx, -14); } ctx.moveTo(-21, -6); ctx.lineTo(-17, -7); ctx.stroke(); }
+}
+function drawItem(ctx, cx, cy, item, t){
+  const bob = Math.sin(t * 4) * 2;
+  ctx.save(); ctx.translate(cx, cy + bob);
+  ctx.fillStyle = 'rgba(255,240,170,.55)'; ctx.beginPath(); ctx.arc(0, 0, 14 + Math.sin(t * 6), 0, 7); ctx.fill();
+  ctx.strokeStyle = '#f0c050'; ctx.lineWidth = 2; ctx.stroke();
+  const off = { pan: [-1, 13], chawan: [-1, 15], nabe: [-1, 18], goldplate: [-1, 15], hashi: [-14, 12], fork: [16, 2] }[item.key] || [0, 0];
+  ctx.scale(.8, .8); ctx.translate(off[0], off[1]); paintGear(ctx, item.key); ctx.restore();
+}
+
 const PARTS = {
   body:   { label: '体の色', swatch: true, opts: [['#f0b56a','ゴールデン'],['#f4efe6','ホワイト'],['#a9a9b3','グレー'],['#8a5a3c','チョコ'],['#f2a7b8','ピンク'],['#9fd8c0','ミント'],['#9cc3ef','そら'],['#4a4040','ブラック']] },
   belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
-  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{endless: 200}]] },
+  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}]] },
   outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき']] },
   color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
-  acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう']] },
+  acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう'],['hashi','おはし',{item: 'hashi'}],['fork','フォーク',{item: 'fork'}]] },
 };
 const DEFAULT_LOOK = { body:'#f0b56a', belly:'#fff4e2', eyes:'dot', cheek:'pink', hat:'none', outfit:'none', color:'#d9412b', acc:'none' };
 const cleanLook = l => { const o = {...DEFAULT_LOOK}; if (l && typeof l === 'object') for (const k in PARTS) if (PARTS[k].opts.some(x => x[0] === l[k])) o[k] = l[k]; return o; };
@@ -373,6 +406,7 @@ function paintHam(ctx, look, dead){
   if (L.acc === 'ribbon'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(10, -9); ctx.lineTo(4, -15); ctx.lineTo(4, -4); ctx.closePath(); ctx.moveTo(10, -9); ctx.lineTo(16, -15); ctx.lineTo(16, -4); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(10, -9, 2, 0, 7); ctx.fill(); }
   if (L.acc === 'seed'){ ctx.save(); ctx.translate(-15, 8); ctx.rotate(-0.5); ctx.fillStyle = '#2b2620'; ctx.beginPath(); ctx.ellipse(0, 0, 3, 5.5, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#f2ead8'; ctx.fillRect(-0.6, -4, 1.2, 8); ctx.restore(); }
   if (L.acc === 'bandage'){ ctx.save(); ctx.translate(3, -5); ctx.rotate(-0.5); ctx.fillStyle = '#f2c79a'; ctx.fillRect(-5, -2, 10, 4); ctx.fillStyle = '#e0a874'; ctx.fillRect(-1.5, -2, 3, 4); ctx.restore(); }
+  if (itemByKey[L.acc]) paintGear(ctx, L.acc);
   // hats
   if (L.hat === 'acorn'){ ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(1, -11, 11, 6, 0, Math.PI, 0); ctx.lineTo(12, -10); ctx.lineTo(-10, -10); ctx.fill(); ctx.fillRect(0, -20, 2, 4); }
   if (L.hat === 'crown'){ ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.moveTo(-7, -11); ctx.lineTo(-8, -21); ctx.lineTo(-3, -16); ctx.lineTo(1, -23); ctx.lineTo(5, -16); ctx.lineTo(10, -21); ctx.lineTo(9, -11); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.arc(1, -14, 1.6, 0, 7); ctx.fill(); }
@@ -380,7 +414,7 @@ function paintHam(ctx, look, dead){
   if (L.hat === 'knit'){ ctx.fillStyle = C; ctx.beginPath(); ctx.arc(1, -10, 10.5, Math.PI, 0); ctx.fill(); ctx.fillStyle = shade(C, -0.2); ctx.fillRect(-9.5, -12, 21, 4); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(1, -21, 3.2, 0, 7); ctx.fill(); }
   if (L.hat === 'band'){ ctx.fillStyle = C; ctx.fillRect(-12, -10, 24, 3.5); ctx.beginPath(); ctx.moveTo(11, -9); ctx.lineTo(19, -13); ctx.lineTo(19, -8); ctx.closePath(); ctx.moveTo(11, -8); ctx.lineTo(18, -4); ctx.lineTo(15, -2); ctx.closePath(); ctx.fill(); }
   if (L.hat === 'silk'){ ctx.fillStyle = '#2b2620'; ctx.fillRect(-9, -12, 21, 3); ctx.fillRect(-5, -25, 13, 13); ctx.fillStyle = C; ctx.fillRect(-5, -16, 13, 3); }
-  if (L.hat === 'pan'){ ctx.fillStyle = '#8a5a3c'; ctx.save(); ctx.translate(11, -14); ctx.rotate(-0.25); ctx.fillRect(0, -1.8, 14, 3.6); ctx.restore(); ctx.fillStyle = '#3a3a40'; ctx.beginPath(); ctx.ellipse(1, -11, 12.5, 7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5b5b63'; ctx.fillRect(-11.5, -12, 25, 2.6); ctx.fillStyle = '#ffffff55'; ctx.beginPath(); ctx.ellipse(-3, -15, 4, 1.6, -0.3, 0, 7); ctx.fill(); }
+  if (itemByKey[L.hat]) paintGear(ctx, L.hat);
   if (L.hat === 'flower'){ ctx.fillStyle = C; for (let i = 0; i < 5; i++){ const a = i/5*Math.PI*2; ctx.beginPath(); ctx.arc(6 + Math.cos(a)*3.6, -14 + Math.sin(a)*3.6, 2.8, 0, 7); ctx.fill(); } ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.arc(6, -14, 2.2, 0, 7); ctx.fill(); }
 }
 function drawHam(ctx, x, y, vy, dead, t, look){
@@ -470,6 +504,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
+    else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
   }
 }
@@ -495,9 +530,12 @@ function endlessCourse(seed, startAt = 0){
     if (acorn) c[Math.floor((top + bot - 1) / 2)] = 'A';
     put(c);
   }
+  let nextItem = 0;
   function open(n, k){
     for (let i = 0; i < n; i++){
       const c = empty();
+      const it = ITEMS[nextItem];
+      if (it && rows[0].length - 2 + startAt >= it.d){ c[Math.max(1, Math.min(ROWS - 2, Math.round(gap)))] = it.ch; nextItem++; put(c); continue; }
       if (k > .2 && i === Math.floor(n / 2) && rnd() < .35 * k){ const y = ri(2, ROWS - 3); c[y] = '*'; if (k > .7 && rnd() < .5) c[y + (gap > y ? -1 : 1)] = '*'; }
       put(c);
     }
@@ -553,6 +591,7 @@ function sfx(name){
     if (name === 'start'){ note('triangle', 0, .08, 523, 523); note('triangle', .08, .08, 659, 659); note('triangle', .16, .14, 784, 784); }
     if (name === 'acorn'){ note('sine', 0, .07, 988, 988, .8); note('sine', .07, .16, 1319, 1319, .8); }
     if (name === 'die'){ note('sawtooth', 0, .35, 440, 90, .5); note('square', .02, .2, 200, 60, .3); }
+    if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
     if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
   } catch {}
 }
@@ -599,6 +638,7 @@ function makeGame(canvas, rows, hooks){
         const c = rows[y][x];
         if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; sfx('acorn'); }
+        if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
@@ -681,7 +721,7 @@ function openPlayer(course, mode){
   if (game) game.stop();
   if (mode === 'endless'){
     const best = myEndless();
-    game = makeGame($('pl-canvas'), null, { onState, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
+    game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
   game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
@@ -706,6 +746,19 @@ function showMsg(big, sub, btns, gain){
   const b = $('pl-btns'); b.replaceChildren();
   for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(e); }}));
   $('pl-msg').hidden = false;
+}
+const myItems = () => { const m = me(); const o = {...(store.get('hi-items') || {}), ...((m && m.items) || {})}; if (myEndless() >= 200) o.pan = true; return o; }; // early pan owners got it by distance
+function gotItem(item){
+  const had = !!myItems()[item.key];
+  banner(had ? `${item.name}（もう持っています）` : `${item.name}をゲット！`, !had);
+  if (had) return;
+  store.set('hi-items', {...(store.get('hi-items') || {}), [item.key]: true});
+  if (social.db && social.uid && social.canWrite) patchMe({items: {[item.key]: true}});
+}
+let bannerTimer = 0;
+function banner(text, big){
+  const b = $('pl-banner'); b.textContent = text; b.classList.toggle('big', !!big); b.hidden = false;
+  clearTimeout(bannerTimer); bannerTimer = setTimeout(() => { b.hidden = true; }, 2600);
 }
 const myEndless = () => { const m = me(); return Math.max(+(m && m.endless) || 0, +store.get('hi-endless') || 0); };
 function recordEndless(n){
@@ -747,8 +800,7 @@ function onState(s, info){
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
-    const pan = prev < 200 && n >= 200;
-    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], pan ? '200マス突破！ぼうし「フライパン」をゲット！' : n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
     if (n > prev) recordEndless(n);
     return;
   }
@@ -1182,9 +1234,9 @@ function buildParts(){
   for (const [key, part] of Object.entries(PARTS)){
     const opts = el('div', {class: 'opts', role: 'group', 'aria-label': part.label});
     for (const [val, label, need] of part.opts){
-      const locked = need && need.endless && myEndless() < need.endless && draftLook[key] !== val;
-      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : '') + (locked ? ' locked' : ''), 'aria-pressed': String(draftLook[key] === val), title: locked ? `エンドレスで${need.endless}マス進むともらえます` : label, 'aria-label': label, text: part.swatch ? '' : (locked ? '🔒' + label : label),
-        onclick: () => { if (locked) return toast(`フライパンはエンドレスで${need.endless}マス進むともらえます`); draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
+      const locked = need && need.item && !myItems()[need.item] && draftLook[key] !== val;
+      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : '') + (locked ? ' locked' : ''), 'aria-pressed': String(draftLook[key] === val), title: locked ? `エンドレスの${itemByKey[need.item].d}マスあたりで拾えます` : label, 'aria-label': label, text: part.swatch ? '' : (locked ? '🔒' + label : label),
+        onclick: () => { if (locked) return toast(`${label}はエンドレスの${itemByKey[need.item].d}マスあたりに落ちています`); draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
       if (part.swatch) b.style.background = val;
       opts.append(b);
     }
