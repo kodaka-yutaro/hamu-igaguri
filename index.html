@@ -1210,16 +1210,25 @@ function renderAccount(){
   const input = el('input', {type: 'email', id: 'acct-email', placeholder: 'メールアドレス', style: 'flex:1 1 200px', autocomplete: 'email'});
   input.className = 'txt';
   const note = el('span', {class: 'muted'});
-  const run = (fn, ok) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); note.textContent = ok; } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
+  // after sending, ask for the code in the email; the link in it works too, but only in the browser it opens in
+  const codeIn = el('input', {type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', placeholder: 'メールのコード', maxlength: 10, style: 'flex:1 1 140px;letter-spacing:.15em'});
+  codeIn.className = 'txt';
+  const codeRow = el('div', {class: 'row', hidden: 'hidden'});
+  let sentTo = '', attaching = false;
+  codeRow.append(codeIn, el('button', {class: 'btn primary sm', text: 'コードで確定', onclick: async () => {
+    const t = codeIn.value.replace(/\D/g, ''); if (t.length < 6) return toast('メールに書かれた数字のコードを入れてください');
+    try { note.textContent = '確認しています…'; await a.verifyCode(sentTo, t, attaching); } catch (e) { note.textContent = 'コードが違うか、期限が切れています。もう一度送ってください。'; }
+  }}));
+  const run = (fn, ok, attach) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); sentTo = v; attaching = !!attach; note.textContent = ok; codeRow.hidden = false; codeIn.focus(); } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
   const idLine = el('div', {class: 'row'}, el('span', {class: 'muted', text: 'ユーザーID: '}), el('code', {text: a.uid, style: 'font-size:12px;overflow-wrap:anywhere'}),
     el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(a.uid).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}));
   if (a.isGuest){
     box.replaceChildren(
       el('b', {text: 'ゲストとして遊んでいます'}),
       el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
-      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メール内のリンクを開くと登録完了です。')}),
-        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。')})),
-      note, idLine);
+      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールに書かれたコードを下に入れてください。', true)}),
+        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールに書かれたコードを下に入れてください。')})),
+      note, codeRow, idLine);
   } else {
     box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine);
   }
