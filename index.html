@@ -75,6 +75,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .card.click{cursor:pointer}
+.opt.locked{opacity:.55}
 .card.endless{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
 .rank{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:8px;cursor:pointer}
 .rank:hover{background:var(--soft)} .rank.me{background:color-mix(in srgb,var(--gold) 22%,transparent)}
@@ -147,9 +148,13 @@ input[type=range]{width:100%}
 .opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
 .opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
 .like{font:inherit;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);border-radius:99px;padding:3px 12px 3px 9px;cursor:pointer}
-.like .heart{width:14px;height:13px;background:var(--muted);clip-path:path('M7 13 L1.2 6.8 A3.4 3.4 0 0 1 7 2.4 A3.4 3.4 0 0 1 12.8 6.8 Z')}
-.like.on{border-color:#d9412b;color:#d9412b}
-.like.on .heart{background:#d9412b}
+.like .nut{position:relative;width:14px;height:15px;flex:none}
+.like .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
+.like .nut::after{content:"";position:absolute;left:0;top:1px;width:14px;height:6px;border-radius:7px 7px 3px 3px;background:var(--muted);box-shadow:5px -2px 0 -2px var(--muted)}
+.like.on{border-color:#a8622a;color:#a8622a}
+.like.on .nut::before{background:#c98a45}
+.like.on .nut::after{background:#6e4a24;box-shadow:5px -2px 0 -2px #6e4a24}
+.like.sm{font-size:12px;padding:1px 9px 1px 7px}
 .like:disabled{opacity:.5;cursor:default}
 .search{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .search input{flex:1 1 220px}
@@ -323,14 +328,14 @@ const PARTS = {
   belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
-  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花']] },
+  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{endless: 200}]] },
   outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき']] },
   color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
   acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう']] },
 };
 const DEFAULT_LOOK = { body:'#f0b56a', belly:'#fff4e2', eyes:'dot', cheek:'pink', hat:'none', outfit:'none', color:'#d9412b', acc:'none' };
 const cleanLook = l => { const o = {...DEFAULT_LOOK}; if (l && typeof l === 'object') for (const k in PARTS) if (PARTS[k].opts.some(x => x[0] === l[k])) o[k] = l[k]; return o; };
-const randomLook = () => { const o = {}; for (const k in PARTS){ const a = PARTS[k].opts; o[k] = a[Math.floor(Math.random()*a.length)][0]; } return o; };
+const randomLook = () => { const o = {}; for (const k in PARTS){ const a = PARTS[k].opts.filter(x => !x[2]); o[k] = a[Math.floor(Math.random()*a.length)][0]; } return o; };
 function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const m = c => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f))); return `rgb(${m(r)},${m(g)},${m(b)})`; }
 
 // draws the hamster centered at (0,0), facing left, body ~30x24
@@ -375,6 +380,7 @@ function paintHam(ctx, look, dead){
   if (L.hat === 'knit'){ ctx.fillStyle = C; ctx.beginPath(); ctx.arc(1, -10, 10.5, Math.PI, 0); ctx.fill(); ctx.fillStyle = shade(C, -0.2); ctx.fillRect(-9.5, -12, 21, 4); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(1, -21, 3.2, 0, 7); ctx.fill(); }
   if (L.hat === 'band'){ ctx.fillStyle = C; ctx.fillRect(-12, -10, 24, 3.5); ctx.beginPath(); ctx.moveTo(11, -9); ctx.lineTo(19, -13); ctx.lineTo(19, -8); ctx.closePath(); ctx.moveTo(11, -8); ctx.lineTo(18, -4); ctx.lineTo(15, -2); ctx.closePath(); ctx.fill(); }
   if (L.hat === 'silk'){ ctx.fillStyle = '#2b2620'; ctx.fillRect(-9, -12, 21, 3); ctx.fillRect(-5, -25, 13, 13); ctx.fillStyle = C; ctx.fillRect(-5, -16, 13, 3); }
+  if (L.hat === 'pan'){ ctx.fillStyle = '#8a5a3c'; ctx.save(); ctx.translate(11, -14); ctx.rotate(-0.25); ctx.fillRect(0, -1.8, 14, 3.6); ctx.restore(); ctx.fillStyle = '#3a3a40'; ctx.beginPath(); ctx.ellipse(1, -11, 12.5, 7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5b5b63'; ctx.fillRect(-11.5, -12, 25, 2.6); ctx.fillStyle = '#ffffff55'; ctx.beginPath(); ctx.ellipse(-3, -15, 4, 1.6, -0.3, 0, 7); ctx.fill(); }
   if (L.hat === 'flower'){ ctx.fillStyle = C; for (let i = 0; i < 5; i++){ const a = i/5*Math.PI*2; ctx.beginPath(); ctx.arc(6 + Math.cos(a)*3.6, -14 + Math.sin(a)*3.6, 2.8, 0, 7); ctx.fill(); } ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.arc(6, -14, 2.2, 0, 7); ctx.fill(); }
 }
 function drawHam(ctx, x, y, vy, dead, t, look){
@@ -412,6 +418,9 @@ const BUILTIN = [
   { id:'b1', title:'はじめてのイガグリ', official:true, createdAt:3, rows: build(40, [['burr',8,13],['gap',13,3],['burr',22,12],['burr',22,13],['acorn',27,11],['wall',31,2],['burr',35,8],['burr',18,6],['burr',29,5]]) },
   { id:'b2', title:'くりひろいの谷', official:true, createdAt:2, rows: build(80, [['gap',9,4],['burr',11,10],['plat',23,5,11],['gap',21,9],['burr',25,10],['acorn',22,9],['burr',34,13],['burr',34,12],['wall',43,3],['burr',43,7],['acorn',49,10],['gap',50,5],['burr',52,9],['burr',63,13],['burr',66,11],['burr',69,13],['burr',15,4],['burr',38,5],['burr',58,4],['burr',73,6]]) },
   { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',11,6,4],['acorn',16,8],['pipe',21,9,4],['pipe',31,4,4],['acorn',36,6],['pipe',41,8,4],['pipe',51,5,4],['acorn',56,7],['pipe',61,9,4],['pipe',70,6,4]], false, 7, 8) },
+  { id:'b4', title:'どんぐりの森', official:true, createdAt:0.3, rows: build(80, [['burr',9,13],['wall',15,2],['burr',15,10],['gap',20,4],['burr',22,8],['plat',27,6,10],['burr',29,9],['burr',31,13],['acorn',30,8],['wall',38,3],['burr',41,13],['burr',42,13],['gap',46,5],['plat',47,3,11],['burr',48,7],['burr',55,12],['burr',55,13],['wall',60,2],['burr',63,6],['acorn',64,10],['gap',66,6],['burr',68,10],['burr',73,13]]) },
+  { id:'b5', title:'イガグリトンネル', official:true, createdAt:0.2, rows: build(120, [['pipe',12,6,5],['pipe',18,8,5],['acorn',21,10],['pipe',24,5,5],['pipe',30,9,5],['pipe',36,7,5],['acorn',39,9],['pipe',42,4,5],['pipe',48,6,5],['pipe',54,9,5],['acorn',57,11],['pipe',60,10,4],['pipe',65,7,4],['pipe',70,5,4],['acorn',73,7],['pipe',75,3,4],['pipe',80,6,4],['pipe',85,8,4],['acorn',88,10],['pipe',90,7,4],['pipe',95,5,4],['pipe',100,9,4],['acorn',103,11],['pipe',105,6,4],['pipe',110,4,4]], false, 7, 8) },
+  { id:'b6', title:'ハムの大冒険', official:true, createdAt:0.1, rows: build(150, [['burr',10,13],['gap',15,5],['burr',17,10],['wall',25,2],['burr',28,13],['plat',33,5,10],['gap',32,8],['burr',35,9],['acorn',36,8],['burr',44,12],['burr',44,13],['wall',50,3],['burr',50,9],['gap',55,12],['pipe',58,6,5],['pipe',63,8,5],['acorn',65,10],['burr',72,13],['burr',76,11],['wall',80,2],['gap',85,4],['burr',87,9],['burr',92,13],['burr',93,13],['plat',98,4,10],['gap',97,6],['acorn',99,9],['wall',106,3],['burr',110,12],['burr',110,13],['gap',114,14],['pipe',117,5,5],['pipe',122,9,5],['acorn',124,11],['burr',131,13],['wall',136,2],['burr',140,9],['burr',143,13]]) },
 ];
 
 /* ---------- course drawing ---------- */
@@ -466,42 +475,59 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
 }
 
 /* ---------- endless mode: a course that keeps generating ahead of the hamster ---------- */
-// Pillars of burrs with one gap each, getting closer together and narrower as you go.
+// Pillars of burrs with one gap each. It tightens over the first 300 tiles, then mixes in
+// harder stretches: winding tunnels, 3-row gaps and burr walls in the open.
 // Acorns sit in a gap often enough that a careful player never runs out of life.
-function endlessCourse(seed){
+function endlessCourse(seed, startAt = 0){
   let s = seed >>> 0 || 1;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rows = Array.from({length: ROWS}, () => '');
   const put = col => { for (let y = 0; y < ROWS; y++) rows[y] += col[y]; };
   const empty = () => Array(ROWS).fill('.');
-  // a safe run-up with the start
+  const len = () => rows[0].length + startAt;
   for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c); }
-  let gap = 7, sinceAcorn = 0;
+  let gap = 7, sinceAcorn = 6;
+  const clampGap = size => { gap = Math.max(1 + size / 2, Math.min(ROWS - 2 - size / 2, gap)); };
+  function pillar(size, acorn){
+    const top = Math.round(gap - size / 2), bot = top + size, c = empty();
+    for (let y = 0; y < ROWS; y++) if (y < top || y >= bot) c[y] = '*';
+    if (acorn) c[Math.floor((top + bot - 1) / 2)] = 'A';
+    put(c);
+  }
+  function open(n, k){
+    for (let i = 0; i < n; i++){
+      const c = empty();
+      if (k > .2 && i === Math.floor(n / 2) && rnd() < .35 * k){ const y = ri(2, ROWS - 3); c[y] = '*'; if (k > .7 && rnd() < .5) c[y + (gap > y ? -1 : 1)] = '*'; }
+      put(c);
+    }
+  }
   function extend(toCol){
     while (rows[0].length < toCol){
-      const k = Math.min(1, rows[0].length / 900);            // 0 → 1 over the first 900 tiles
-      const space = Math.round(7 - 3 * k) + ri(0, 1);        // empty columns before the next pillar
-      const size = Math.max(4, Math.round(6 - 2 * k) + (rnd() < .3 ? 1 : 0)); // rows in the gap
-      const reach = Math.round(3 + 2 * k);
-      gap = Math.max(2 + size / 2, Math.min(ROWS - 3 - size / 2, gap + ri(-reach, reach)));
-      const top = Math.round(gap - size / 2), bot = top + size; // free rows: top .. bot-1
-      for (let i = 0; i < space; i++){
-        const c = empty();
-        // a lone burr floating in the open now and then, once things get going
-        if (k > .25 && i === Math.floor(space / 2) && rnd() < .25 * k){ c[ri(1, ROWS - 2)] = '*'; }
-        put(c);
+      const k = Math.min(1, len() / 300);                    // warm-up: 0 → 1 over the first 300 tiles
+      const h = Math.max(0, Math.min(1, (len() - 300) / 500)); // then 0 → 1 more over the next 500
+      const acornDue = sinceAcorn >= 12 - Math.round(2 * k * (1 - h));
+      const roll = rnd();
+      if (k >= 1 && roll < .22 + .1 * h){
+        // winding tunnel: the gap climbs a row every 2 columns or sinks a row every 3
+        const n = ri(5, 8 + Math.round(5 * h)), size = h > .5 && rnd() < .4 ? 4 : 5; let dir = rnd() < .5 ? -1 : 1, run = 0;
+        open(ri(3, 4), 0);
+        for (let i = 0; i < n; i++){
+          if (++run >= (dir < 0 ? 2 : 3)){ run = 0; gap += dir; clampGap(size); if (rnd() < .3) dir = -dir; }
+          pillar(size, acornDue && i === 1);
+        }
+        if (acornDue) sinceAcorn = 0; else sinceAcorn += n + 3;
+        continue;
       }
-      const thick = k > .5 && rnd() < .3 ? 2 : 1;
-      sinceAcorn += space + thick;
-      const acorn = sinceAcorn >= 16;
-      if (acorn) sinceAcorn = 0;
-      for (let j = 0; j < thick; j++){
-        const c = empty();
-        for (let y = 0; y < ROWS; y++) if (y < top || y >= bot) c[y] = '*';
-        if (acorn && j === 0) c[Math.floor((top + bot - 1) / 2)] = 'A';
-        put(c);
-      }
+      const space = Math.max(2, Math.round(6 - 3 * k - h)) + ri(0, 1);
+      let size = Math.round(5.5 - 1.5 * k) + (rnd() < .3 ? 1 : 0);
+      if (h > 0 && rnd() < .2 + .3 * h) size = 3;             // the really tight ones
+      const reach = Math.min(Math.round(3 + 2 * k + h), 2 * space);
+      gap += ri(-reach, reach); clampGap(size);
+      open(space, k);
+      const thick = k >= 1 && rnd() < .3 ? 2 : 1;
+      for (let j = 0; j < thick; j++) pillar(size, acornDue && j === 0);
+      if (acornDue) sinceAcorn = 0; else sinceAcorn += space + thick;
     }
   }
   extend(60);
@@ -673,8 +699,8 @@ function renderEndless(){
   const rank = endlessRanking(), mine = myEndless(), pos = rank.findIndex(r => r.uid === social.uid);
   box.replaceChildren(
     el('div', {class: 'row', style: 'justify-content:space-between'},
-      el('div', {}, el('h3', {text: 'エンドレス'}), el('span', {class: 'muted', text: '終わりのない自動コース。どこまで行ける？'})),
-      el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer({title: 'エンドレス'}, 'endless')})),
+      el('div', {}, el('h3', {text: '終わりのないイガグリ！？'}), el('span', {class: 'muted', text: 'どこまで行ける？'})),
+      el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer({title: '終わりのないイガグリ'}, 'endless')})),
     el('div', {class: 'muted'}, 'じぶんのベスト ', el('b', {style: 'color:var(--fg)', text: mine ? `${mine}マス` : 'まだなし'}), pos >= 0 ? `（${pos + 1}位）` : ''),
     rank.length ? el('div', {class: 'col', style: 'gap:4px'}, ...rank.slice(0, 3).map(rankRow)) : el('span', {class: 'muted', text: 'まだ記録がありません。一番乗りしよう！'}),
     rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : null);
@@ -696,7 +722,8 @@ function onState(s, info){
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
-    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    const pan = prev < 200 && n >= 200;
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], pan ? '200マス突破！ぼうし「フライパン」をゲット！' : n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
     if (n > prev) recordEndless(n);
     return;
   }
@@ -754,7 +781,7 @@ function commentBlock(target, placeholder){
   for (const c of list){
     const body = el('div', {class: 'body'}, el('div', {class: 'head'}, whoChip(c.uid, 20), el('span', {class: 'muted', text: ago(c.at)}),
       c.uid === social.uid ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '削除', onclick: () => patchMe({comments: {[c.id]: null}})}) : null),
-      el('p', {text: c.text}));
+      el('p', {text: c.text}), el('div', {}, likeButton(null, `cm:${c.uid}:${c.id}`, true)));
     wrap.append(el('div', {class: 'cmt'}, body));
   }
   return wrap;
@@ -826,10 +853,11 @@ function profileHeader(uid){
 function titleGrid(n, compact){
   return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
-function likeButton(c){
-  const on = likedByMe(c.id), can = social.db && social.canWrite;
-  return el('button', {class: 'like' + (on ? ' on' : ''), 'aria-pressed': String(on), disabled: can ? false : 'disabled', title: can ? 'いいね' : 'オンラインでいいねできます',
-    onclick: (e) => { e.stopPropagation(); toggleLike(c.id); }}, el('span', {class: 'heart', 'aria-hidden': 'true'}), el('span', {text: `いいね ${likeCount(c.id)}`}));
+// likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
+function likeButton(c, key = c.id, small){
+  const on = likedByMe(key), can = social.db && social.canWrite;
+  return el('button', {class: 'like' + (on ? ' on' : '') + (small ? ' sm' : ''), 'aria-pressed': String(on), disabled: can ? false : 'disabled', title: can ? 'いいね' : 'オンラインでいいねできます',
+    onclick: (e) => { e.stopPropagation(); toggleLike(key); }}, el('span', {class: 'nut', 'aria-hidden': 'true'}), el('span', {text: `${small ? '' : 'いいね '}${likeCount(key)}`}));
 }
 async function toggleLike(cid){
   if (!social.canWrite) return toast('このページは閲覧のみです');
@@ -1116,9 +1144,10 @@ function buildParts(){
   const box = $('mk-parts'); box.replaceChildren();
   for (const [key, part] of Object.entries(PARTS)){
     const opts = el('div', {class: 'opts', role: 'group', 'aria-label': part.label});
-    for (const [val, label] of part.opts){
-      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : ''), 'aria-pressed': String(draftLook[key] === val), title: label, 'aria-label': label, text: part.swatch ? '' : label,
-        onclick: () => { draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
+    for (const [val, label, need] of part.opts){
+      const locked = need && need.endless && myEndless() < need.endless && draftLook[key] !== val;
+      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : '') + (locked ? ' locked' : ''), 'aria-pressed': String(draftLook[key] === val), title: locked ? `エンドレスで${need.endless}マス進むともらえます` : label, 'aria-label': label, text: part.swatch ? '' : (locked ? '🔒' + label : label),
+        onclick: () => { if (locked) return toast(`フライパンはエンドレスで${need.endless}マス進むともらえます`); draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
       if (part.swatch) b.style.background = val;
       opts.append(b);
     }
