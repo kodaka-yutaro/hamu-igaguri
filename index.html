@@ -75,6 +75,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
 .card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .card.click{cursor:pointer}
+.card.endless{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
+.rank{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:8px;cursor:pointer}
+.rank:hover{background:var(--soft)} .rank.me{background:color-mix(in srgb,var(--gold) 22%,transparent)}
+.rank .pos{width:1.6em;text-align:right;font-weight:800;color:var(--muted)} .rank .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card.click:hover{border-color:var(--muted)}
 .thumb{width:100%;height:auto;border-radius:8px;image-rendering:pixelated;display:block}
 .card h3{margin:0;font-size:16px;font-weight:800;overflow-wrap:anywhere}
@@ -181,6 +185,7 @@ input[type=range]{width:100%}
   </nav>
 
   <section id="view-play" class="col" style="gap:14px">
+    <div class="card endless" id="endless"></div>
     <div class="row" style="justify-content:space-between">
       <div class="row" role="group" aria-label="並べ替え" style="gap:6px">
         <button class="chip" id="sort-new" aria-pressed="true">新着</button>
@@ -263,6 +268,7 @@ input[type=range]{width:100%}
     <div class="row" id="my-code" hidden><span class="muted">あなたのともだちコード</span><span class="code" id="my-code-v"></span><button class="btn sm" id="my-code-copy">コピー</button><span class="muted">友達に教えると「みんな」でさがしてもらえます</span></div>
     <h2>称号</h2>
     <p class="muted" id="ttl-note" style="margin:0"></p>
+    <p class="muted" id="my-endless" style="margin:0"></p>
     <div id="my-titles" class="titles"></div>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
@@ -454,23 +460,72 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
-    else if (c === 'A' && !(opts.taken && opts.taken.has(y*w + x))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
+    else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
   }
+}
+
+/* ---------- endless mode: a course that keeps generating ahead of the hamster ---------- */
+// Pillars of burrs with one gap each, getting closer together and narrower as you go.
+// Acorns sit in a gap often enough that a careful player never runs out of life.
+function endlessCourse(seed){
+  let s = seed >>> 0 || 1;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const rows = Array.from({length: ROWS}, () => '');
+  const put = col => { for (let y = 0; y < ROWS; y++) rows[y] += col[y]; };
+  const empty = () => Array(ROWS).fill('.');
+  // a safe run-up with the start
+  for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c); }
+  let gap = 7, sinceAcorn = 0;
+  function extend(toCol){
+    while (rows[0].length < toCol){
+      const k = Math.min(1, rows[0].length / 900);            // 0 → 1 over the first 900 tiles
+      const space = Math.round(7 - 3 * k) + ri(0, 1);        // empty columns before the next pillar
+      const size = Math.max(4, Math.round(6 - 2 * k) + (rnd() < .3 ? 1 : 0)); // rows in the gap
+      const reach = Math.round(3 + 2 * k);
+      gap = Math.max(2 + size / 2, Math.min(ROWS - 3 - size / 2, gap + ri(-reach, reach)));
+      const top = Math.round(gap - size / 2), bot = top + size; // free rows: top .. bot-1
+      for (let i = 0; i < space; i++){
+        const c = empty();
+        // a lone burr floating in the open now and then, once things get going
+        if (k > .25 && i === Math.floor(space / 2) && rnd() < .25 * k){ c[ri(1, ROWS - 2)] = '*'; }
+        put(c);
+      }
+      const thick = k > .5 && rnd() < .3 ? 2 : 1;
+      sinceAcorn += space + thick;
+      const acorn = sinceAcorn >= 16;
+      if (acorn) sinceAcorn = 0;
+      for (let j = 0; j < thick; j++){
+        const c = empty();
+        for (let y = 0; y < ROWS; y++) if (y < top || y >= bot) c[y] = '*';
+        if (acorn && j === 0) c[Math.floor((top + bot - 1) / 2)] = 'A';
+        put(c);
+      }
+    }
+  }
+  extend(60);
+  return { rows, extend };
 }
 
 /* ---------- game ---------- */
 function makeGame(canvas, rows, hooks){
   const ctx = canvas.getContext('2d');
-  const w = rows[0].length, W = w * T;
+  // endless: hooks.endless() hands out a fresh generated course on every (re)start
+  let gen = null;
+  if (hooks.endless){ gen = hooks.endless(); rows = gen.rows; }
+  let w = rows[0].length, W = w * T;
   const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22, LIFE_MAX = 15;
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
-  const S = find('S') || {x: w-3, y: 5};
+  let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
-  const goalX = G.x * T;
+  const goalX = gen ? Infinity : G.x * T;
+  const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
-  function reset(){ p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+  function reset(){
+    if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); hooks.onState && hooks.onState('run'); }
@@ -479,6 +534,7 @@ function makeGame(canvas, rows, hooks){
   function step(dt){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     p.x += p.vx * dt;
+    if (gen && p.x > (w - 30) * T){ gen.extend(w + 60); w = rows[0].length; W = w * T; }
     const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
     for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = tx * T - PW; break; }
     p.y += p.vy * dt;
@@ -492,14 +548,14 @@ function makeGame(canvas, rows, hooks){
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
         if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
-        if (c === 'A' && !taken.has(y*w + x) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(y*w + x); life = LIFE_MAX; }
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; }
       }
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
     if (cy > VIEW_H + T*1.5) return die('落ちた');
   }
-  function die(why){ state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why}); }
+  function die(why){ state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
   function win(){ state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
   function drawLife(f){
     const x = 58, y = 30, bw = 110, h = 10;
@@ -513,7 +569,7 @@ function makeGame(canvas, rows, hooks){
     drawCourse(ctx, rows, camX, t, {spin: true, taken});
     drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
     drawLife(life / LIFE_MAX);
-    if (hooks.hud) hooks.hud(Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
+    if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   function loop(now){
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
@@ -572,6 +628,11 @@ function openPlayer(course, mode){
   $('pl-title').textContent = course.title || '名前のないコース';
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
+  if (mode === 'endless'){
+    const best = myEndless();
+    game = makeGame($('pl-canvas'), null, { onState, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
+    return;
+  }
   game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
 }
 function closePlayer(){ if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
@@ -595,6 +656,30 @@ function showMsg(big, sub, btns, gain){
   for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(e); }}));
   $('pl-msg').hidden = false;
 }
+const myEndless = () => { const m = me(); return Math.max(+(m && m.endless) || 0, +store.get('hi-endless') || 0); };
+function recordEndless(n){
+  store.set('hi-endless', n);
+  if (social.db && social.uid && social.canWrite) patchMe({endless: n}).then(() => renderAll());
+  else renderEndless();
+}
+// best endless distance of everyone who has one, highest first
+const endlessRanking = () => [...social.people.entries()].filter(([, p]) => +p.endless > 0).map(([uid, p]) => ({uid, n: Math.floor(+p.endless)})).sort((a, b) => b.n - a.n);
+function rankRow(r, i){
+  return el('div', {class: 'rank click' + (r.uid === social.uid ? ' me' : ''), onclick: (e) => { e.stopPropagation(); openProfile(r.uid); }},
+    el('span', {class: 'pos', text: i + 1}), avatar(lookOf(r.uid), 28), el('span', {class: 'nm', text: nameOf(r.uid)}), el('b', {text: `${r.n}マス`}));
+}
+function renderEndless(){
+  const box = $('endless'); if (!box) return;
+  const rank = endlessRanking(), mine = myEndless(), pos = rank.findIndex(r => r.uid === social.uid);
+  box.replaceChildren(
+    el('div', {class: 'row', style: 'justify-content:space-between'},
+      el('div', {}, el('h3', {text: 'エンドレス'}), el('span', {class: 'muted', text: '終わりのない自動コース。どこまで行ける？'})),
+      el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer({title: 'エンドレス'}, 'endless')})),
+    el('div', {class: 'muted'}, 'じぶんのベスト ', el('b', {style: 'color:var(--fg)', text: mine ? `${mine}マス` : 'まだなし'}), pos >= 0 ? `（${pos + 1}位）` : ''),
+    rank.length ? el('div', {class: 'col', style: 'gap:4px'}, ...rank.slice(0, 3).map(rankRow)) : el('span', {class: 'muted', text: 'まだ記録がありません。一番乗りしよう！'}),
+    rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : null);
+}
+
 async function recordClear(course, sec){
   const before = clearCount(myClears());
   const prev = myClears()[course.id];
@@ -609,6 +694,12 @@ async function recordClear(course, sec){
 function onState(s, info){
   if (s === 'ready') showMsg('タップでスタート', 'スペース / ↑ / タップで跳ねる');
   if (s === 'run') $('pl-msg').hidden = true;
+  if (s === 'dead' && current && current.mode === 'endless'){
+    const prev = myEndless(), n = info.dist;
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    if (n > prev) recordEndless(n);
+    return;
+  }
   if (s === 'dead') showMsg('ミス！', `${info.why}・タップでもう一回`, []);
   if (s === 'clear'){
     lastClear = info;
@@ -688,6 +779,10 @@ function renderSheet(first){
   const box = $('sheet');
   const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
+  if (sheet.kind === 'rank'){
+    box.append(el('h2', {style: 'margin:0', text: 'エンドレス ランキング'}), el('div', {class: 'col', style: 'gap:4px'}, ...endlessRanking().slice(0, 100).map(rankRow)));
+    return;
+  }
   if (sheet.kind === 'course'){
     const c = courseById(sheet.id);
     if (!c){ box.append(el('p', {text: 'このコースは削除されました。'})); return; }
@@ -726,7 +821,7 @@ function profileHeader(uid){
       t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
-      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'))));
+      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null)));
 }
 function titleGrid(n, compact){
   return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
@@ -1057,6 +1152,8 @@ function renderMe(){
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
   $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
   $('my-titles').replaceChildren(...titleGrid(n).children);
+  const eb = myEndless(), ep = endlessRanking().findIndex(r => r.uid === social.uid);
+  $('my-endless').textContent = eb ? `エンドレスのベスト ${eb}マス` + (ep >= 0 ? `（ランキング${ep + 1}位）` : '') : 'エンドレスの記録はまだありません';
   const links = $('my-links');
   if (!social.uid){ links.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。'})); return; }
   const fo = following(social.uid), fr = followers(social.uid), friends = fo.filter(u => fr.includes(u));
@@ -1105,7 +1202,7 @@ function renderAll(){
     renderQueued = false;
     await resolveNames();
     renderHeader();
-    if (tab === 'play') renderList();
+    if (tab === 'play'){ renderEndless(); renderList(); }
     if (tab === 'people') renderPeople();
     if (tab === 'board') renderBoard();
     if (tab === 'me'){ syncForm(); renderMe(); }
