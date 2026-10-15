@@ -76,6 +76,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .card.click{cursor:pointer}
 .opt.locked{opacity:.55}
+.card.battle{border-color:#4a3d52;background:color-mix(in srgb,#4a3d52 8%,var(--panel))}
+.ctrl{align-self:stretch;display:flex;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
+.ctrl button{font:inherit;font-weight:800;font-size:17px;border:0;border-radius:14px;padding:14px 0;flex:1;background:#f3ead8;color:#2b2620;touch-action:none}
+.ctrl button:active{transform:translateY(2px);filter:brightness(.9)}
+.ctrl .fire{flex:1.6;background:#4a3d52;color:#fff} .ctrl .jump{flex:1.8;background:#b8561c;color:#fff}
 .card.endless{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
 .rank{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:8px;cursor:pointer}
 .rank:hover{background:var(--soft)} .rank.me{background:color-mix(in srgb,var(--gold) 22%,transparent)}
@@ -194,6 +199,7 @@ input[type=range]{width:100%}
 
   <section id="view-play" class="col" style="gap:14px">
     <div class="card endless" id="endless"></div>
+    <div class="card battle" id="battle-card"></div>
     <div class="row" style="justify-content:space-between">
       <div class="row" role="group" aria-label="並べ替え" style="gap:6px">
         <button class="chip" id="sort-new" aria-pressed="true">新着</button>
@@ -301,6 +307,10 @@ input[type=range]{width:100%}
       <div class="hud" id="pl-hud"></div>
       <div class="banner" id="pl-banner" hidden></div>
       <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div></div>
+    </div>
+    <div class="ctrl" id="pl-ctrl" hidden>
+      <button id="ct-back" aria-label="うしろにダッシュ">◀</button><button id="ct-fwd" aria-label="まえにダッシュ">▶</button>
+      <button id="ct-fire" class="fire">黒どんぐり</button><button id="ct-jump" class="jump">ジャンプ</button>
     </div>
   </div>
 </div>
@@ -488,6 +498,14 @@ function drawAcorn(ctx, cx, cy, t){
   ctx.fillRect(cx-1, cy-12, 2, 4);
 }
 // goal = a vertical line on the right edge of the G column, plus a flag where G was placed
+function drawBlackAcorn(ctx, cx, cy, t){
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2 + Math.sin(t * 20) * .15);
+  ctx.fillStyle = 'rgba(40,20,60,.25)'; ctx.fillRect(-3, 8, 6, 14);
+  ctx.fillStyle = '#2a2430'; ctx.beginPath(); ctx.ellipse(0, 2, 7, 9, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#4a3d52'; ctx.beginPath(); ctx.ellipse(0, -5, 8.5, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-1, -12, 2, 4);
+  ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.arc(-2.5, 2, 1.3, 0, 7); ctx.arc(2.5, 2, 1.3, 0, 7); ctx.fill();
+  ctx.restore();
+}
 function drawGoal(ctx, x, y){
   const lx = x + 2;
   ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
@@ -513,7 +531,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
 // Pillars of burrs with one gap each. It tightens over the first 300 tiles, then mixes in
 // harder stretches: winding tunnels, 3-row gaps and burr walls in the open.
 // Acorns sit in a gap often enough that a careful player never runs out of life.
-function endlessCourse(seed, startAt = 0){
+function endlessCourse(seed, startAt = 0, opts = {}){
   let s = seed >>> 0 || 1;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
@@ -535,7 +553,7 @@ function endlessCourse(seed, startAt = 0){
     for (let i = 0; i < n; i++){
       const c = empty();
       const it = ITEMS[nextItem];
-      if (it && rows[0].length - 2 + startAt >= it.d){ c[Math.max(1, Math.min(ROWS - 2, Math.round(gap)))] = it.ch; nextItem++; put(c); continue; }
+      if (it && !opts.noItems && rows[0].length - 2 + startAt >= it.d){ c[Math.max(1, Math.min(ROWS - 2, Math.round(gap)))] = it.ch; nextItem++; put(c); continue; }
       if (k > .2 && i === Math.floor(n / 2) && rnd() < .35 * k){ const y = ri(2, ROWS - 3); c[y] = '*'; if (k > .7 && rnd() < .5) c[y + (gap > y ? -1 : 1)] = '*'; }
       put(c);
     }
@@ -544,7 +562,7 @@ function endlessCourse(seed, startAt = 0){
     while (rows[0].length < toCol){
       const k = Math.min(1, len() / 300);                    // warm-up: 0 → 1 over the first 300 tiles
       const h = Math.max(0, Math.min(1, (len() - 300) / 500)); // then 0 → 1 more over the next 500
-      const acornDue = sinceAcorn >= 12 - Math.round(2 * k * (1 - h));
+      const acornDue = sinceAcorn >= Math.min(opts.acornGap || 99, 12 - Math.round(2 * k * (1 - h)));
       const roll = rnd();
       if (k >= 1 && roll < .22 + .1 * h){
         // winding tunnel: the gap climbs a row every 2 columns or sinks a row every 3
@@ -591,6 +609,9 @@ function sfx(name){
     if (name === 'start'){ note('triangle', 0, .08, 523, 523); note('triangle', .08, .08, 659, 659); note('triangle', .16, .14, 784, 784); }
     if (name === 'acorn'){ note('sine', 0, .07, 988, 988, .8); note('sine', .07, .16, 1319, 1319, .8); }
     if (name === 'die'){ note('sawtooth', 0, .35, 440, 90, .5); note('square', .02, .2, 200, 60, .3); }
+    if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
+    if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
+    if (name === 'hit'){ note('sawtooth', 0, .18, 160, 70, .7); note('square', 0, .08, 900, 400, .3); }
     if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
     if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
   } catch {}
@@ -606,6 +627,10 @@ function makeGame(canvas, rows, hooks){
   let w = rows[0].length, W = w * T;
   const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22, LIFE_MAX = 15;
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
+  // battle only: dashes forward/back, black acorns flying forward, the rival's hamster
+  const B = hooks.battle || null;
+  const DASH_V = 480, DASH_T = .16, DASH_CD = .6, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .45;
+  let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
@@ -614,15 +639,44 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; dashT = dashCd = shotCd = hurtT = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
     if (state === 'run'){ p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
+  function dash(dir){
+    if (!B || state !== 'run' || dashCd > 0) return;
+    dashDir = dir; dashT = DASH_T; dashCd = DASH_CD; sfx('dash');
+  }
+  function fire(){
+    if (!B || state !== 'run' || shotCd > 0) return;
+    shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
+    const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, mine: true, age: 0};
+    shots.push(s); B.onFire && B.onFire(s);
+    if (life <= 0){ life = 0; die('ライフ切れ'); }
+  }
+  // a black acorn the rival fired; lag (seconds) moves it to where it is by now
+  function addShot(x, y, id, lag = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y, mine: false, age: lag}); }
+  function dropShot(id){ shots = shots.filter(s => s.id !== id); }
+  function stepShots(dt){
+    const cx = p.x + PW/2, cy = p.y + PH/2;
+    for (const s of shots){ s.x += SHOT_V * dt; s.age += dt; }
+    for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < 20){
+      s.gone = true; life -= SHOT_DMG; hurtT = .5; sfx('hit'); B.onHit && B.onHit(s.id);
+      if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
+    }
+    shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
+  }
   function step(dt){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
+    if (B){
+      dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
+      if (dashT > 0){ dashT -= dt; p.vx = SPEED + dashDir * DASH_V; } else p.vx = SPEED;
+      stepShots(dt); if (state !== 'run') return;
+    }
     p.x += p.vx * dt;
+    if (B) p.x = Math.max(S.x*T + 5, p.x);
     if (gen && p.x > (w - 30) * T){ gen.extend(w + 60); w = rows[0].length; W = w * T; }
     const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
     for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = tx * T - PW; break; }
@@ -657,8 +711,20 @@ function makeGame(canvas, rows, hooks){
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
     drawCourse(ctx, rows, camX, t, {spin: true, taken});
-    drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (B){
+      const r = B.rival;
+      if (r && r.x != null){
+        ctx.save(); ctx.globalAlpha = .6; drawHam(ctx, r.x - camX, r.y, r.vy || 0, !!r.dead, t, r.look); ctx.restore();
+        ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(r.name || 'あいて', r.x - camX + 11, r.y - 6); ctx.textAlign = 'left';
+        // arrow at the screen edge when the rival is out of view
+        const rx = r.x - camX; if (rx < -10 || rx > VIEW_W - 10){ const ex = rx < 0 ? 10 : VIEW_W - 10, ey = Math.max(60, Math.min(VIEW_H - 20, r.y + 11)); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(ex + (rx < 0 ? -6 : 6), ey); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey - 7); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey + 7); ctx.fill(); }
+      }
+      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t);
+    }
+    if (!(hurtT > 0 && Math.floor(t * 20) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
     drawLife(life / LIFE_MAX);
+    if (B && B.rival && B.rival.life != null){ const f = B.rival.life / LIFE_MAX, x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   function loop(now){
@@ -667,8 +733,11 @@ function makeGame(canvas, rows, hooks){
     if (state === 'dead'){ p.vy += GRAV*dt*0.6; p.y += p.vy*dt*0.3; }
     draw(); raf = requestAnimationFrame(loop);
   }
+  // battle: both players start at the same moment without a jump
+  function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
   reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; } };
+  return { jump, reset, begin, dash, fire, addShot, dropShot, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
+    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
 /* ---------- social state ---------- */
@@ -719,6 +788,13 @@ function openPlayer(course, mode){
   $('pl-title').textContent = course.title || '名前のないコース';
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
+  if (mode === 'battle'){
+    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => endlessCourse(battle.seed, 0, {acornGap: 7, noItems: true}),
+      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), t: game.time}), onHit: id => battleSend('hit', {id})},
+      hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
+    $('pl-ctrl').hidden = false; fitPlayer();
+    return;
+  }
   if (mode === 'endless'){
     const best = myEndless();
     game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
@@ -726,13 +802,13 @@ function openPlayer(course, mode){
   }
   game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
 }
-function closePlayer(){ if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
 // fit the course to whatever part of the screen is visible right now (rotation, browser bars, leftover zoom)
 function fitPlayer(){
   if ($('overlay').hidden) return;
   const vv = window.visualViewport, vw = vv ? vv.width : innerWidth, vh = vv ? vv.height : innerHeight;
   const cs = getComputedStyle($('overlay')), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-  const barH = document.querySelector('.player .bar').offsetHeight + 10;
+  const barH = document.querySelector('.player .bar').offsetHeight + 10 + ($('pl-ctrl').hidden ? 0 : $('pl-ctrl').offsetHeight + 10);
   const w = Math.max(160, Math.min(520, vw - padX, (vh - padY - barH) * VIEW_W / VIEW_H));
   const st = $('pl-stage'); st.style.width = Math.floor(w) + 'px'; st.style.minWidth = '0';
 }
@@ -773,6 +849,7 @@ function rankRow(r, i){
     el('span', {class: 'pos', text: i + 1}), avatar(lookOf(r.uid), 28), el('span', {class: 'nm', text: nameOf(r.uid)}), el('b', {text: `${r.n}マス`}));
 }
 function renderEndless(){
+  renderBattleCard();
   const box = $('endless'); if (!box) return;
   const rank = endlessRanking(), mine = myEndless(), pos = rank.findIndex(r => r.uid === social.uid);
   box.replaceChildren(
@@ -823,16 +900,21 @@ function onState(s, info){
 function press(e){
   if (!game) return;
   if (e) e.preventDefault();
+  if (inBattle()){ if (game.state === 'run' && !battle.result) game.jump(); return; }
   if (game.state === 'dead'){ game.reset(); return; }
   if (game.state === 'clear') return;
   game.jump();
 }
 $('pl-stage').addEventListener('pointerdown', press);
+// battle buttons react on touch-down so they feel instant
+const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (game && inBattle() && !battle.result) fn(); });
+ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire()); ctl('ct-jump', () => game.jump());
 $('pl-close').onclick = closePlayer;
 $('pl-mute').onclick = () => setMute(!muted); setMute(muted);
 addEventListener('keydown', e => {
   if (!$('overlay').hidden){
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
+    if (inBattle() && game && !e.repeat){ if (e.code === 'ArrowLeft') game.dash(-1); if (e.code === 'ArrowRight') game.dash(1); if (e.code === 'KeyX' || e.code === 'KeyF') game.fire(); }
     if (e.code === 'Escape') closePlayer();
   } else if (!$('sheet-bg').hidden && e.code === 'Escape') closeSheet();
 });
@@ -895,6 +977,7 @@ function renderSheet(first){
   const box = $('sheet');
   const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
+  if (sheet.kind === 'battle'){ renderBattleLobby(box); return; }
   if (sheet.kind === 'rank'){
     box.append(el('h2', {style: 'margin:0', text: 'エンドレス ランキング'}), el('div', {class: 'col', style: 'gap:4px'}, ...endlessRanking().slice(0, 100).map(rankRow)));
     return;
@@ -937,7 +1020,7 @@ function profileHeader(uid){
       t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
-      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null)));
+      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
 function titleGrid(n, compact){
   return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
@@ -1360,6 +1443,144 @@ async function resolveNames(){
   try { const ps = await social.user.profiles(need); for (const id of need) social.names[id] = (ps[id] && ps[id].name) || ''; } catch {}
 }
 
+
+/* ---------- friend battle ---------- */
+// Two players in a room (4-letter code) race the same generated endless course at the same time.
+// Each phone runs its own hamster and broadcasts where it is; black acorns, hits and misses are messages too.
+const battle = { rt: null, ch: null, code: '', host: false, members: [], rivalInfo: null, round: 0, seed: 0, rival: null, myDead: null, rivalDead: null, result: '', reason: '', timer: 0 };
+const BATTLE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const battleCode = () => Array.from({length: 4}, () => BATTLE_CHARS[Math.floor(Math.random() * BATTLE_CHARS.length)]).join('');
+const inBattle = () => !!(current && current.mode === 'battle');
+function battleSend(event, payload = {}){ if (battle.ch) battle.ch.send({type: 'broadcast', event, payload: {round: battle.round, ...payload}}); }
+async function battleJoin(code, host){
+  if (!battle.rt || !social.uid) return toast('オンラインにつながっていないので対戦できません');
+  code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  if (code.length !== 4) return toast('4文字の部屋コードを入れてください');
+  await battleLeave();
+  Object.assign(battle, {code, host, members: [], rivalInfo: null, round: 0, rival: null, result: '', reason: ''});
+  const ch = battle.ch = battle.rt.join('hamu-battle-' + code, social.uid);
+  const live = payload => payload.round === battle.round && inBattle() && game;
+  ch.on('presence', {event: 'sync'}, () => {
+      battle.members = Object.values(ch.presenceState()).map(a => a[0]).filter(Boolean).sort((a, b) => a.at - b.at);
+      battlePresence();
+    })
+    .on('broadcast', {event: 'start'}, ({payload}) => battleStart(payload.seed, payload.round))
+    .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, dead: payload.dead, dist: payload.dist}); })
+    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t))); })
+    .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id); })
+    .on('broadcast', {event: 'dead'}, ({payload}) => { if (payload.round === battle.round){ battle.rivalDead = payload; battleDecide(); } })
+    .on('broadcast', {event: 'won'}, ({payload}) => { if (payload.round === battle.round && !battle.result){ battle.result = 'lose'; battleShowResult(); } })
+    .subscribe(async st => { if (st === 'SUBSCRIBED') await ch.track({uid: social.uid, name: nameOf(social.uid), look: myLook(), at: Date.now()}); });
+  openSheet('battle'); renderAll();
+}
+async function battleLeave(){
+  clearInterval(battle.timer);
+  const ch = battle.ch; battle.ch = null; battle.code = ''; battle.members = []; battle.rivalInfo = null;
+  if (ch){ try { await ch.untrack(); } catch {} try { await battle.rt.leave(ch); } catch {} }
+  renderAll();
+}
+function battlePresence(){
+  const ms = battle.members;
+  if (ms.length > 2 && ms.findIndex(m => m.uid === social.uid) >= 2){ toast('この部屋はもう2人そろっています'); battleLeave(); closeSheet(); return; }
+  const r = ms.find(m => m.uid !== social.uid) || null;
+  battle.rivalInfo = r;
+  // the one who made the room starts rounds; if they left, the one left takes over
+  const mine = ms.find(m => m.uid === social.uid);
+  if (mine) battle.host = !ms.some(m => m.uid !== social.uid && m.at < mine.at);
+  if (!r && inBattle() && !battle.result && game && game.state === 'run'){ battle.result = 'win'; battle.reason = '相手が部屋を出ました'; battleShowResult(); }
+  if (sheet && sheet.kind === 'battle') renderSheet();
+  renderBattleCard();
+}
+function battleBegin(){
+  if (!battle.host || !battle.rivalInfo) return;
+  const round = battle.round + 1, seed = Math.floor(Math.random() * 4294967295);
+  battleSend('start', {seed, round}); battleStart(seed, round);
+}
+function battleStart(seed, round){
+  if (round <= battle.round) return;
+  Object.assign(battle, {round, seed, myDead: null, rivalDead: null, result: '', reason: ''});
+  const r = battle.rivalInfo || {};
+  battle.rival = {name: r.name || 'あいて', look: cleanLook(r.look), x: null};
+  closeSheet(); openPlayer({title: 'フレンド対戦'}, 'battle');
+  let n = 3; showMsg('3', 'もうすぐスタート', []); sfx('jump');
+  const tick = setInterval(() => {
+    if (!inBattle() || battle.round !== round){ clearInterval(tick); return; }
+    if (--n > 0){ showMsg(String(n), 'もうすぐスタート', []); sfx('jump'); return; }
+    clearInterval(tick); $('pl-msg').hidden = true; game.begin();
+    clearInterval(battle.timer); battle.timer = setInterval(() => { if (inBattle() && game) battleSend('st', game.snap); }, 70);
+  }, 800);
+}
+function battleState(s, info){
+  if (s === 'run') $('pl-msg').hidden = true;
+  if (s !== 'dead' || battle.result) return;
+  battle.myDead = {t: game.time, dist: info.dist};
+  battleSend('st', game.snap); battleSend('dead', battle.myDead);
+  showMsg('ミス…', `${info.why}・相手の結果を待っています`, []);
+  battleDecide();
+}
+// whoever misses first loses; both phones reach the same answer from the two miss times
+function battleDecide(){
+  if (battle.result || !inBattle()) return;
+  const a = battle.myDead, b = battle.rivalDead;
+  if (b && !a){ battle.result = 'win'; battle.reason = '相手がミスしました'; battleSend('won'); }
+  else if (a && b){ battle.result = (a.t > b.t || (a.t === b.t && a.dist >= b.dist)) ? 'win' : 'lose'; }
+  else return;
+  battleShowResult();
+}
+function battleShowResult(){
+  if (!inBattle()) return;
+  clearInterval(battle.timer); if (game) game.stop();
+  const win = battle.result === 'win', mine = game ? game.snap.dist : 0, theirs = (battle.rival && battle.rival.dist) || 0;
+  sfx(win ? 'clear' : 'die');
+  const btns = [];
+  if (battle.host && battle.rivalInfo) btns.push(['もう一回', battleBegin, true]);
+  btns.push(['部屋にもどる', () => { closePlayer(); openSheet('battle'); }]);
+  showMsg(win ? 'かち！' : 'まけ…', `${battle.reason ? battle.reason + '・' : ''}あなた ${mine}マス・あいて ${theirs}マス` + (battle.host ? '' : '・ホストの「もう一回」を待っています'), btns, win ? `${battleWins() + 1}勝目！` : '');
+  if (win) recordBattleWin();
+}
+const battleWins = () => { const m = me(); return Math.max(+(m && m.battle && m.battle.wins) || 0, +store.get('hi-wins') || 0); };
+function recordBattleWin(){
+  const n = battleWins() + 1; store.set('hi-wins', n);
+  if (social.db && social.uid && social.canWrite) patchMe({battle: {wins: n}});
+}
+// leaving the race early counts as a miss so the friend isn't left waiting
+function battleQuit(){
+  clearInterval(battle.timer);
+  if (game && game.state === 'run' && !battle.result){ battle.myDead = {t: game.time, dist: game.snap.dist}; battleSend('dead', battle.myDead); battle.result = 'lose'; }
+}
+function renderBattleCard(){
+  const box = $('battle-card'); if (!box) return;
+  const head = el('div', {}, el('h3', {text: 'フレンド対戦'}), el('span', {class: 'muted', text: '友達と同じコースを同時に走って勝負！黒どんぐりで邪魔もできる'}));
+  if (battle.code){
+    box.replaceChildren(head, el('div', {class: 'row', style: 'justify-content:space-between'},
+      el('span', {}, '部屋 ', el('b', {class: 'code', text: battle.code}), battle.rivalInfo ? `・${battle.rivalInfo.name || 'あいて'} と対戦中` : '・相手を待っています'),
+      el('button', {class: 'btn primary sm', text: 'ひらく', onclick: () => openSheet('battle')})));
+    return;
+  }
+  const inp = el('input', {type: 'text', placeholder: '部屋コード', maxlength: 4, autocapitalize: 'characters', autocomplete: 'off', style: 'width:7em;text-transform:uppercase;letter-spacing:.15em'});
+  box.replaceChildren(head, el('div', {class: 'row'},
+    el('button', {class: 'btn primary', text: '部屋を作る', onclick: () => battleJoin(battleCode(), true)}),
+    inp, el('button', {class: 'btn', text: '入る', onclick: () => battleJoin(inp.value, false)})),
+    battleWins() ? el('span', {class: 'muted', text: `これまで ${battleWins()}勝`}) : null);
+}
+function renderBattleLobby(box){
+  const r = battle.rivalInfo, link = location.origin + location.pathname + '?battle=' + battle.code;
+  const who = (look, name, sub) => el('div', {class: 'col', style: 'align-items:center;gap:4px;flex:1'}, avatar(look, 72), el('b', {text: name, style: 'overflow-wrap:anywhere;text-align:center'}), el('span', {class: 'muted', text: sub}));
+  box.append(el('h2', {style: 'margin:0', text: 'フレンド対戦'}));
+  if (!battle.code){ box.append(el('p', {class: 'muted', text: '部屋から出ています。'})); return; }
+  box.append(
+    el('div', {class: 'row'}, el('span', {class: 'muted', text: '部屋コード'}), el('span', {class: 'code', style: 'font-size:28px;letter-spacing:.15em', text: battle.code}),
+      el('button', {class: 'btn sm', text: '招待リンクをコピー', onclick: () => navigator.clipboard.writeText(link).then(() => toast('コピーしました。LINEなどで友達に送ってね'), () => toast('コピーできませんでした'))})),
+    el('p', {class: 'muted', style: 'margin:0', text: '友達にコードかリンクを送って、同じ部屋に入ってもらいます。'}),
+    el('div', {class: 'row', style: 'align-items:center;gap:10px'}, who(myLook(), nameOf(social.uid), battle.host ? 'ホスト' : 'あなた'), el('b', {text: 'VS', style: 'font-family:var(--display);font-size:22px'}),
+      r ? who(cleanLook(r.look), r.name || 'あいて', battle.host ? '' : 'ホスト') : el('div', {class: 'col', style: 'align-items:center;flex:1'}, el('span', {class: 'muted', text: '相手を待っています…'}))),
+    battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
+      : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
+    el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
+      'タップでジャンプ。◀ ▶ で前後にすばやくダッシュ。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+    el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
+}
+
 /* ---------- boot ---------- */
 loadDraft(); renderHeader(); renderAll(); updatePubBtn();
 $('db-state').textContent = '公式コースを表示中';
@@ -1376,6 +1597,10 @@ $('db-state').textContent = '公式コースを表示中';
     const cw = await user.can('data.write');
     social.canWrite = cw !== false && !!social.uid;
   }
+  battle.rt = be.realtime || null;
+  // an invite link (?battle=CODE) drops you into that room
+  const invite = new URLSearchParams(location.search).get('battle');
+  if (invite && battle.rt) setTimeout(() => battleJoin(invite, false), 600);
   updatePubBtn();
   $('db-state').textContent = '読み込み中…';
   const fail = (e) => {
