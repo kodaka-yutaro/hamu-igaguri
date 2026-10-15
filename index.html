@@ -1229,12 +1229,14 @@ function renderAccount(){
   moveBox.append(el('b', {text: 'ほかの端末・ホーム画面アプリに引っ越す'}),
     el('p', {class: 'muted', style: 'margin:0', text: '引っ越し元で「引き継ぎコードを出す」を押し、出たコードを引っ越し先のこの欄に入れます。iPhoneのホーム画面アプリはSafariとログインが別なので、Safariでログインしてからこれでアプリに移せます。'}),
     el('div', {class: 'row'}, el('button', {class: 'btn sm', text: '引き継ぎコードを出す', onclick: async () => {
+      if (!a.transferCode) return toast('古い版が残っています。アプリを閉じて開き直してください');
       try { const c = await a.transferCode(); codeOut.replaceChildren(el('code', {text: c, style: 'font-size:15px;overflow-wrap:anywhere'}), el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(c).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}),
-        el('span', {class: 'muted', text: 'だれにも教えないでください。コードを出したので、この端末は次に開くとログアウトしています。'})); codeOut.hidden = false; } catch { toast('コードを出せませんでした'); } }})),
+        el('span', {class: 'muted', text: 'だれにも教えないでください。コードを出したので、この端末は次に開くとログアウトしています。'})); codeOut.hidden = false; } catch (e) { toast('コードを出せませんでした: ' + ((e && e.message) || e)); } }})),
     codeOut,
     el('div', {class: 'row'}, moveIn, el('button', {class: 'btn primary sm', text: 'このコードで引っ越す', onclick: async () => {
       const v = moveIn.value.trim(); if (v.length < 8) return toast('引き継ぎコードを入れてください');
       if (a.isGuest && !confirm('いまこの端末で遊んでいるゲストのハムからは離れます。よろしいですか？')) return;
+      if (!a.useTransferCode) return toast('古い版が残っています。アプリを閉じて開き直してください');
       try { await a.useTransferCode(v); } catch { toast('コードが違うか、もう使われています。引っ越し元でもう一度出してください'); } }})));
   if (a.isGuest){
     box.replaceChildren(
