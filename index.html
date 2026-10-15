@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="description" content="ハムとイガグリは、右へ走るハムスターをタップで跳ねさせてイガグリをかわす無料のブラウザゲーム。スマホでそのまま遊べて、コースを作って公開・いいね・コメント・フォローもできます。">
 <link rel="canonical" href="https://kodaka-yutaro.github.io/hamu-igaguri/">
 <meta name="theme-color" content="#b8561c">
@@ -87,18 +87,19 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .title-tag{font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap}
 .empty{border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
 .stage{background:#20304a;border-radius:14px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .stage canvas{display:block;width:100%;height:auto;max-width:100%}
 .stage.tall{width:min(100%, calc((100dvh - 150px) * 0.625));min-width:min(100%,280px);margin:0 auto}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .tool{font:inherit;font-weight:800;font-size:13px;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .tool[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
 .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
-input[type=text],input[type=email],select,textarea{font:inherit;background:var(--panel);color:var(--fg);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+input[type=text],input[type=email],select,textarea{font:inherit;font-size:16px;background:var(--panel);color:var(--fg);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
 textarea{width:100%;box-sizing:border-box;resize:vertical}
 input[type=range]{width:100%}
 .overlay{position:fixed;inset:0;background:rgba(12,14,10,.9);display:flex;align-items:center;justify-content:center;z-index:30;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.player{width:min(520px,100%);display:flex;flex-direction:column;gap:10px}
-.player .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#f3ead8}
+.player{width:min(520px,100%);align-items:center;display:flex;flex-direction:column;gap:10px}
+.player .bar{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;color:#f3ead8}
 .player .bar b{font-family:var(--display);font-weight:400;font-size:18px;overflow-wrap:anywhere}
 .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;background:rgba(20,24,40,.45);pointer-events:none;padding:8px}
 .msg .big{font-family:var(--display);font-size:clamp(26px,6vw,44px);text-shadow:0 3px 0 #0006}
@@ -179,7 +180,6 @@ input[type=range]{width:100%}
   </nav>
 
   <section id="view-play" class="col" style="gap:14px">
-    <div class="how">操作は<b>スペース・↑キー・画面タップ</b>の1つだけ。押すたびに同じ高さだけ跳ねます（空中でもOK）。跳ねるたびに<b>ライフ</b>が減り、15回で0になるとミス。<b>どんぐり</b>を取るとライフ全回復。<b>イガグリ</b>に当たる・画面の下に落ちるとミス。上は天井なので飛び出しません。<b>ゴールライン</b>を越えたらクリア。</div>
     <div class="row" style="justify-content:space-between">
       <div class="row" role="group" aria-label="並べ替え" style="gap:6px">
         <button class="chip" id="sort-new" aria-pressed="true">新着</button>
@@ -204,6 +204,10 @@ input[type=range]{width:100%}
       <button class="tool" data-t="S" aria-pressed="false"><span class="sw" style="background:#f0b56a;border-radius:50%"></span>スタート</button>
       <button class="tool" data-t="G" aria-pressed="false"><span class="sw" style="background:#d9412b"></span>ゴールライン</button>
       <button class="tool" data-t="." aria-pressed="false"><span class="sw" style="border:2px dashed var(--muted)"></span>けす</button>
+    </div>
+    <div class="row" style="justify-content:space-between;gap:6px">
+      <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
+      <div class="row" style="gap:6px"><button class="btn sm" id="ed-zout" aria-label="縮小">－</button><span class="muted" id="ed-zoom-v" style="min-width:3em;text-align:center">等倍</span><button class="btn sm" id="ed-zin" aria-label="拡大">＋</button><button class="btn sm" id="ed-zall">全体</button></div>
     </div>
     <div class="stage tall" id="ed-stage"><canvas id="ed-canvas" width="640" height="1024"></canvas></div>
     <input type="range" id="ed-scroll" min="0" max="0" value="0" aria-label="コースを左右にスクロール">
@@ -443,7 +447,7 @@ function drawGoal(ctx, x, y){
 }
 function drawCourse(ctx, rows, camX, t, opts = {}){
   const w = rows[0].length;
-  const x0 = Math.max(0, Math.floor(camX / T)), x1 = Math.min(w - 1, Math.ceil((camX + VIEW_W) / T));
+  const x0 = Math.max(0, Math.floor(camX / T)), x1 = Math.min(w - 1, Math.ceil((camX + (opts.viewW || VIEW_W)) / T));
   for (let y = 0; y < ROWS; y++) for (let x = x0; x <= x1; x++){
     const c = rows[y][x], px = x*T - camX, py = y*T;
     if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
@@ -565,11 +569,24 @@ let game = null, current = null, lastClear = {sec: 0, deaths: 0};
 function openPlayer(course, mode){
   current = {course, mode};
   $('pl-title').textContent = course.title || '名前のないコース';
-  $('overlay').hidden = false;
+  $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
   game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
 }
-function closePlayer(){ if (game) game.stop(); game = null; $('overlay').hidden = true; current = null; }
+function closePlayer(){ if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+// fit the course to whatever part of the screen is visible right now (rotation, browser bars, leftover zoom)
+function fitPlayer(){
+  if ($('overlay').hidden) return;
+  const vv = window.visualViewport, vw = vv ? vv.width : innerWidth, vh = vv ? vv.height : innerHeight;
+  const cs = getComputedStyle($('overlay')), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+  const barH = document.querySelector('.player .bar').offsetHeight + 10;
+  const w = Math.max(160, Math.min(520, vw - padX, (vh - padY - barH) * VIEW_W / VIEW_H));
+  const st = $('pl-stage'); st.style.width = Math.floor(w) + 'px'; st.style.minWidth = '0';
+}
+addEventListener('resize', fitPlayer);
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => e.preventDefault(), {passive: false}));
+if (window.visualViewport) visualViewport.addEventListener('resize', fitPlayer);
+addEventListener('orientationchange', () => setTimeout(fitPlayer, 250));
 function showMsg(big, sub, btns, gain){
   $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
   $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
@@ -736,7 +753,7 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, tool: '#', cam: 0, cleared: false };
+const editor = { rows: null, tool: '#', cam: 0, cleared: false, cols: 10 }; // cols: how many columns fit across the editor (10 = same as play)
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -751,17 +768,33 @@ function loadDraft(){
 }
 function saveDraft(){ store.set('hi-draft', {rows: editor.rows, title: $('ed-title').value}); }
 const edCtx = $('ed-canvas').getContext('2d');
+const MIN_COLS = 10;
+const maxCols = () => Math.max(MIN_COLS, Math.min(60, editor.rows[0].length));
+const viewW = () => editor.cols * T;
+function clampCam(){ editor.cam = Math.max(0, Math.min(editor.rows[0].length*T - viewW(), editor.cam)); }
 function drawEditor(){
-  const w = editor.rows[0].length;
+  const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW(), k = 640 / VW;
+  const h = Math.round(VIEW_H * k); if (cv.height !== h) cv.height = h;
+  clampCam();
+  edCtx.setTransform(k, 0, 0, k, 0, 0);
+  drawSky(edCtx, editor.cam, VW, VIEW_H);
+  edCtx.strokeStyle = `rgba(255,255,255,${(.25 * Math.min(1, 16 / editor.cols)).toFixed(3)})`; edCtx.lineWidth = PX / k * .6;
+  for (let x = 0; x <= w; x++){ const px = x*T - editor.cam; if (px < -1 || px > VW+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
+  for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T); edCtx.lineTo(VW, y*T); edCtx.stroke(); }
+  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook(), viewW: VW});
+  // when zoomed out, outline how much a player sees at once
+  if (editor.cols > MIN_COLS){ edCtx.strokeStyle = 'rgba(255,255,255,.75)'; edCtx.lineWidth = 2 * PX / k; edCtx.setLineDash([8 * PX / k, 6 * PX / k]); edCtx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2); edCtx.setLineDash([]); }
   edCtx.setTransform(PX, 0, 0, PX, 0, 0);
-  drawSky(edCtx, editor.cam, VIEW_W, VIEW_H);
-  edCtx.strokeStyle = 'rgba(255,255,255,.25)'; edCtx.lineWidth = 1;
-  for (let x = 0; x <= w; x++){ const px = x*T - editor.cam + .5; if (px < -1 || px > VIEW_W+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
-  for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T+.5); edCtx.lineTo(VIEW_W, y*T+.5); edCtx.stroke(); }
-  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook()});
   edCtx.fillStyle = 'rgba(255,255,255,.85)'; edCtx.font = 'bold 12px sans-serif';
-  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('ゴール側 →', VIEW_W - 8, 16); edCtx.textAlign = 'left';
-  const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VIEW_W); sc.value = editor.cam;
+  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('ゴール側 →', 320 - 8, 16); edCtx.textAlign = 'left';
+  const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VW); sc.value = editor.cam;
+  $('ed-zoom-v').textContent = editor.cols <= MIN_COLS ? '等倍' : Math.round(MIN_COLS / editor.cols * 100) + '%';
+  $('ed-zin').disabled = editor.cols <= MIN_COLS; $('ed-zout').disabled = editor.cols >= maxCols();
+}
+function setZoom(cols, anchorFrac = .5){
+  const ax = editor.cam + anchorFrac * viewW();
+  editor.cols = Math.max(MIN_COLS, Math.min(maxCols(), cols));
+  editor.cam = ax - anchorFrac * viewW(); drawEditor();
 }
 function setCell(x, y, c){
   const w = editor.rows[0].length;
@@ -773,14 +806,50 @@ function setCell(x, y, c){
 }
 function cellFrom(e){
   const rc = $('ed-canvas').getBoundingClientRect();
-  const lx = (e.clientX - rc.left) / rc.width * VIEW_W, ly = (e.clientY - rc.top) / rc.height * VIEW_H;
+  const lx = (e.clientX - rc.left) / rc.width * viewW(), ly = (e.clientY - rc.top) / rc.height * VIEW_H;
   return [Math.floor((lx + editor.cam) / T), Math.floor(ly / T)];
 }
-let painting = false;
-$('ed-canvas').addEventListener('pointerdown', e => { painting = true; $('ed-canvas').setPointerCapture(e.pointerId); const [x,y] = cellFrom(e); setCell(x, y, editor.tool); });
-$('ed-canvas').addEventListener('pointermove', e => { if (!painting || editor.tool === 'S' || editor.tool === 'G') return; const [x,y] = cellFrom(e); setCell(x, y, editor.tool); });
-$('ed-canvas').addEventListener('pointerup', () => { if (painting){ painting = false; saveDraft(); } });
-$('ed-canvas').addEventListener('wheel', e => { e.preventDefault(); const max = editor.rows[0].length*T - VIEW_W; editor.cam = Math.max(0, Math.min(max, editor.cam + (e.deltaX || e.deltaY))); drawEditor(); }, {passive: false});
+// one finger paints; two fingers drag to scroll and pinch to zoom
+let painting = false, before = null, pinch = null;
+const touches = new Map();
+const edCv = $('ed-canvas');
+const pinchState = () => { const [p, q] = [...touches.values()], rc = edCv.getBoundingClientRect(); return { d: Math.hypot(p.x - q.x, p.y - q.y) || 1, f: ((p.x + q.x) / 2 - rc.left) / rc.width }; };
+edCv.addEventListener('pointerdown', e => {
+  touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); try { edCv.setPointerCapture(e.pointerId); } catch {}
+  if (touches.size === 2){
+    // second finger: take back what the first finger just painted and switch to moving the view
+    if (painting && before){ editor.rows = before.rows; editor.cleared = before.cleared; updatePubBtn(); drawEditor(); }
+    painting = false; before = null;
+    const st = pinchState(); pinch = {...st, cols: editor.cols, world: editor.cam + st.f * viewW()}; return;
+  }
+  if (touches.size > 2) return;
+  painting = true; before = {rows: editor.rows.slice(), cleared: editor.cleared};
+  const [x,y] = cellFrom(e); setCell(x, y, editor.tool);
+});
+edCv.addEventListener('pointermove', e => {
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (pinch && touches.size === 2){
+    const st = pinchState();
+    editor.cols = Math.max(MIN_COLS, Math.min(maxCols(), pinch.cols * pinch.d / st.d));
+    editor.cam = pinch.world - st.f * viewW(); drawEditor(); return;
+  }
+  if (!painting || editor.tool === 'S' || editor.tool === 'G') return; const [x,y] = cellFrom(e); setCell(x, y, editor.tool);
+});
+const lift = e => {
+  touches.delete(e.pointerId);
+  if (painting){ painting = false; before = null; saveDraft(); }
+  if (touches.size < 2) pinch = null;
+};
+edCv.addEventListener('pointerup', lift); edCv.addEventListener('pointercancel', lift);
+edCv.addEventListener('wheel', e => {
+  e.preventDefault();
+  if (e.ctrlKey){ const rc = edCv.getBoundingClientRect(); setZoom(editor.cols * Math.exp(e.deltaY * .01), (e.clientX - rc.left) / rc.width); return; } // trackpad pinch
+  editor.cam += e.deltaX || e.deltaY; drawEditor();
+}, {passive: false});
+$('ed-zout').onclick = () => setZoom(editor.cols * 1.6);
+$('ed-zin').onclick = () => setZoom(editor.cols / 1.6);
+$('ed-zall').onclick = () => { editor.cols = maxCols(); editor.cam = 0; drawEditor(); };
 $('ed-scroll').addEventListener('input', e => { editor.cam = +e.target.value; drawEditor(); });
 document.querySelectorAll('.tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; document.querySelectorAll('.tool').forEach(o => o.setAttribute('aria-pressed', o === b)); });
 const SIZES = [40, 80, 150];
@@ -791,7 +860,7 @@ $('ed-width').addEventListener('change', e => {
   // keep both ends: add/remove empty columns just before the goal area on the right
   editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, ow - 4) + '.'.repeat(d) + r.slice(ow - 4) : r.slice(0, ow - 4 + d) + r.slice(ow - 4));
   if (!editor.rows.join('').includes('G')){ const r = editor.rows[7].split(''); r[nw-3] = 'G'; editor.rows[7] = r.join(''); }
-  editor.cam = Math.min(editor.cam, Math.max(0, nw*T - VIEW_W)); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
+  editor.cols = Math.min(editor.cols, maxCols()); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
 });
 $('ed-title').addEventListener('input', () => { saveDraft(); updatePubBtn(); });
 $('ed-new').onclick = () => { editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = 0; editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft(); };
