@@ -625,7 +625,8 @@ function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (
 const likedByMe = cid => !!(me() && me().likes && me().likes[cid] === true);
 function commentsFor(target){
   const out = [];
-  for (const [uid, p] of social.people) for (const [id, c] of Object.entries(p.comments || {})) if (c && c.target === target && typeof c.text === 'string') out.push({id, uid, text: c.text.slice(0, 2000), at: +c.at || 0});
+  const hidden = social.hidden || {};
+  for (const [uid, p] of social.people) for (const [id, c] of Object.entries(p.comments || {})) if (c && c.target === target && typeof c.text === 'string' && !hidden[uid + ':' + id]) out.push({id, uid, text: c.text.slice(0, 2000), at: +c.at || 0});
   return out.sort((a, b) => a.at - b.at);
 }
 
@@ -774,13 +775,24 @@ function whoChip(uid, px = 24){
     social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
     t ? el('span', {class: 'title-tag', text: t.name}) : null);
 }
+// the operator can't edit other people's documents, so removed comments are listed in meta/site.hidden
+async function hideComment(c, b){
+  if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = '本当に削除'; return; }
+  try {
+    const ref = social.db.doc('meta/site'), cur = await ref.get();
+    const key = c.uid + ':' + c.id;
+    if (cur.exists) await ref.update({hidden: {[key]: true}}); else await ref.set({ownerId: social.uid, hidden: {[key]: true}});
+    social.hidden = {...(social.hidden || {}), [key]: true}; toast('コメントを削除しました'); renderAll();
+  } catch { toast('削除できませんでした'); }
+}
 function commentBlock(target, placeholder){
   const wrap = el('div', {class: 'comments'});
   const list = commentsFor(target);
   if (!list.length) wrap.append(el('p', {class: 'muted', style: 'margin:0', text: 'まだコメントはありません。'}));
   for (const c of list){
     const body = el('div', {class: 'body'}, el('div', {class: 'head'}, whoChip(c.uid, 20), el('span', {class: 'muted', text: ago(c.at)}),
-      c.uid === social.uid ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '削除', onclick: () => patchMe({comments: {[c.id]: null}})}) : null),
+      c.uid === social.uid ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '削除', onclick: () => patchMe({comments: {[c.id]: null}})})
+        : social.isOwner ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '運営として削除', onclick: (e) => hideComment(c, e.currentTarget)}) : null),
       el('p', {text: c.text}), el('div', {}, likeButton(null, `cm:${c.uid}:${c.id}`, true)));
     wrap.append(el('div', {class: 'cmt'}, body));
   }
@@ -1286,8 +1298,9 @@ $('db-state').textContent = '公式コースを表示中';
   const site = db.doc('meta/site'); let claimed = false;
   site.onSnapshot(s => {
     social.ownerId = s.exists ? (s.data().ownerId || null) : null;
+    social.hidden = s.exists ? (s.data().hidden || {}) : {};
     // the operator registers themselves so everyone can see the 運営 badge
-    if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; site.set({ownerId: social.uid}).catch(() => {}); }
+    if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; (s.exists ? site.update({ownerId: social.uid}) : site.set({ownerId: social.uid})).catch(() => {}); }
     renderAll();
   }, () => {});
 })();
