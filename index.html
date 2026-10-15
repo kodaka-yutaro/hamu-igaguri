@@ -3,10 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="右へ走りつづけるハムスターをタップで跳ねさせてイガグリをかわすゲーム。コースを作って公開・いいね・コメントできます。">
-<meta property="og:title" content="ハムとイガグリ">
+<meta name="description" content="ハムとイガグリは、右へ走るハムスターをタップで跳ねさせてイガグリをかわす無料のブラウザゲーム。スマホでそのまま遊べて、コースを作って公開・いいね・コメント・フォローもできます。">
+<link rel="canonical" href="https://kodaka-yutaro.github.io/hamu-igaguri/">
+<meta name="theme-color" content="#b8561c">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ハムとイガグリ">
+<meta property="og:url" content="https://kodaka-yutaro.github.io/hamu-igaguri/">
+<meta property="og:title" content="ハムとイガグリ｜タップでよける無料ブラウザゲーム">
 <meta property="og:description" content="ハムスターを跳ねさせてイガグリをかわそう。コースを作ってみんなに公開できるよ。">
-<title>ハムとイガグリ</title>
+<meta property="og:image" content="https://kodaka-yutaro.github.io/hamu-igaguri/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ハムとイガグリ">
+<meta name="twitter:description" content="ハムスターを跳ねさせてイガグリをかわそう。コースを作ってみんなに公開できるよ。">
+<meta name="twitter:image" content="https://kodaka-yutaro.github.io/hamu-igaguri/og.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"ハムとイガグリ","url":"https://kodaka-yutaro.github.io/hamu-igaguri/","image":"https://kodaka-yutaro.github.io/hamu-igaguri/og.png","description":"右へ走るハムスターをタップで跳ねさせてイガグリをかわすブラウザゲーム。コースを作って公開・いいね・コメントができます。","genre":["アクション","カジュアル"],"gamePlatform":["Web browser","スマートフォン"],"applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}
+</script>
+<title>ハムとイガグリ｜タップでよける無料ブラウザゲーム・コース作成も</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
 <style>
@@ -90,6 +109,7 @@ input[type=range]{width:100%}
 .sheet{background:var(--bg);border-radius:16px;max-width:640px;margin:24px auto;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative}
 .sheet .x{position:absolute;right:12px;top:12px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:10px;font-weight:800;z-index:40;max-width:calc(100% - 32px)}
+.site-foot{margin-top:28px;padding-top:14px;border-top:1.5px solid var(--line);font-size:13px;color:var(--muted)}.site-foot h2{font-size:15px;color:var(--fg);margin:12px 0 4px}.site-foot p{margin:0 0 8px;line-height:1.7}.site-foot a{color:var(--accent)}
 .how{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px}
 .how b{color:var(--accent)}
 .comments{display:flex;flex-direction:column;gap:10px}
@@ -120,6 +140,14 @@ input[type=range]{width:100%}
 .opt[aria-pressed="true"]{border-color:var(--accent)}
 .opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
 .opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
+.like{font:inherit;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);border-radius:99px;padding:3px 12px 3px 9px;cursor:pointer}
+.like .heart{width:14px;height:13px;background:var(--muted);clip-path:path('M7 13 L1.2 6.8 A3.4 3.4 0 0 1 7 2.4 A3.4 3.4 0 0 1 12.8 6.8 Z')}
+.like.on{border-color:#d9412b;color:#d9412b}
+.like.on .heart{background:#d9412b}
+.like:disabled{opacity:.5;cursor:default}
+.search{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search input{flex:1 1 220px}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:700;letter-spacing:.06em}
 .people{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .person{display:flex;gap:10px;align-items:center}
 .person .info{min-width:0;display:flex;flex-direction:column}
@@ -191,6 +219,15 @@ input[type=range]{width:100%}
 
   <section id="view-people" class="col" hidden>
     <div class="row" style="justify-content:space-between"><h2>みんなのハム</h2><span class="muted">おたがいにフォローすると「ともだち」になります</span></div>
+    <div class="search">
+      <input type="text" id="pp-q" maxlength="20" placeholder="なまえ か ともだちコード（例: 56D8-693B）でさがす" aria-label="ハムをさがす">
+      <div class="row" role="group" aria-label="しぼりこみ" style="gap:6px">
+        <button class="chip" id="pf-all" aria-pressed="true">すべて</button>
+        <button class="chip" id="pf-friend" aria-pressed="false">ともだち</button>
+        <button class="chip" id="pf-following" aria-pressed="false">フォロー中</button>
+        <button class="chip" id="pf-follower" aria-pressed="false">フォロワー</button>
+      </div>
+    </div>
     <div id="people" class="people"></div>
   </section>
 
@@ -218,12 +255,21 @@ input[type=range]{width:100%}
     </div>
     <h2>アカウント</h2>
     <div id="account" class="post" style="gap:8px"></div>
+    <div class="row" id="my-code" hidden><span class="muted">あなたのともだちコード</span><span class="code" id="my-code-v"></span><button class="btn sm" id="my-code-copy">コピー</button><span class="muted">友達に教えると「みんな」でさがしてもらえます</span></div>
     <h2>称号</h2>
     <p class="muted" id="ttl-note" style="margin:0"></p>
     <div id="my-titles" class="titles"></div>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
   </section>
+
+  <footer class="site-foot">
+    <h2>ハムとイガグリってどんなゲーム？</h2>
+    <p>ハムスターが右へ走りつづけるので、タップ（パソコンはスペースか↑キー）で跳ねさせて、道にあるイガグリをよけながらゴールラインを目指します。跳ねるたびにライフが減るので、どんぐりを拾って回復しながら進むのがコツ。登録なしで、スマホのブラウザからそのまま無料で遊べます。</p>
+    <h2>コースを作ってみんなと遊ぶ</h2>
+    <p>「つくる」タブでショート・ミドル・ロングの3種類の長さからコースを作り、自分でクリアできたら公開できます。公開されたコースには、いいねやコメントがつけられます。気に入った作者をフォローして、お互いにフォローすると「ともだち」になります。ハムスターの色や帽子、衣装を着せ替えて自分だけのプロフィールも作れます。</p>
+    <p class="muted"><a href="about.html">遊び方とよくある質問</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ © ハムとイガグリ</p>
+  </footer>
 </div>
 
 <div class="sheet-bg" id="sheet-bg" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -480,6 +526,8 @@ const me = () => (social.uid && social.people.get(social.uid)) || null;
 const myLook = () => cleanLook((me() && me().look) || store.get('hi-look'));
 const myClears = () => { const m = me(); return (m && m.clears) || store.get('hi-clears') || {}; };
 const clearCount = clears => Object.values(clears || {}).filter(v => v != null && v !== false).length;
+// short code people can tell each other to find a friend (first 8 chars of the id)
+const codeOf = uid => String(uid || '').replace(/[^0-9a-z]/gi, '').slice(0, 8).toUpperCase().replace(/^(.{4})(.{4})$/, '$1-$2');
 function personOf(uid){ return social.people.get(uid) || null; }
 function nameOf(uid){ const p = personOf(uid); return (p && p.name) || social.names[uid] || 'ななしのハム'; }
 function lookOf(uid){ const p = personOf(uid); return cleanLook(p && p.look); }
@@ -526,7 +574,7 @@ function showMsg(big, sub, btns, gain){
   $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
   $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
   const b = $('pl-btns'); b.replaceChildren();
-  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(); }}));
+  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(e); }}));
   $('pl-msg').hidden = false;
 }
 async function recordClear(course, sec){
@@ -549,7 +597,11 @@ function onState(s, info){
     const c = current.course;
     const btns = [['もう一回', () => game.reset()]];
     if (current.mode === 'test'){ editor.cleared = true; updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return; }
-    if (!c.official) btns.push(['いいね・コメント', () => { closePlayer(); openCourse(c.id); }, true]);
+    if (social.db && social.canWrite){
+      const label = () => `${likedByMe(c.id) ? 'いいね済み' : 'いいね！'} ${likeCount(c.id)}`;
+      btns.push([label(), async (e) => { const b = e.currentTarget; await toggleLike(c.id); b.textContent = label(); }, true]);
+    }
+    btns.push(['コメントする', () => { closePlayer(); openCourse(c.id); }]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
     recordClear(c, info.sec).then(t => { if (t && current === cur) $('pl-gain').hidden = false, $('pl-gain').textContent = `称号「${t.name}」をゲット！`; renderMe(); });
@@ -576,7 +628,7 @@ let sheet = null;
 function openSheet(kind, id){ sheet = {kind, id}; $('sheet-bg').hidden = false; renderSheet(true); }
 function closeSheet(){ sheet = null; $('sheet-bg').hidden = true; $('sheet').replaceChildren(); }
 $('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) closeSheet(); });
-const openCourse = id => openSheet('course', id);
+const openCourse = (id, toComments) => { openSheet('course', id); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
 const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
 function whoChip(uid, px = 24){
   const t = titleFor(clearCount((personOf(uid) || {}).clears));
@@ -628,11 +680,11 @@ function renderSheet(first){
       thumb(c.rows),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
-        !c.official && social.db ? el('button', {class: 'btn' + (likedByMe(c.id) ? ' on' : ''), text: `${likedByMe(c.id) ? 'いいね済み' : 'いいね'} ${likeCount(c.id)}`, onclick: () => toggleLike(c.id)}) : null,
+        likeButton(c),
         el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
         c.author && c.author === social.uid ? deleteBtn(c) : null),
       el('p', {class: 'muted', style: 'margin:0', text: cleared != null ? `あなたのベスト: ${cleared}秒` : 'まだクリアしていません'}));
-    if (!c.official){ box.append(el('h2', {text: 'コメント'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id)); }
+    box.append(el('h2', {text: `コメント ${commentsFor('c:' + c.id).length}`, id: 'cm-head'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id));
   } else {
     const uid = sheet.id, p = personOf(uid);
     box.append(profileHeader(uid));
@@ -655,10 +707,16 @@ function profileHeader(uid){
       el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null, social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
       t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
+      el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
       el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'))));
 }
 function titleGrid(n, compact){
   return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+}
+function likeButton(c){
+  const on = likedByMe(c.id), can = social.db && social.canWrite;
+  return el('button', {class: 'like' + (on ? ' on' : ''), 'aria-pressed': String(on), disabled: can ? false : 'disabled', title: can ? 'いいね' : 'オンラインでいいねできます',
+    onclick: (e) => { e.stopPropagation(); toggleLike(c.id); }}, el('span', {class: 'heart', 'aria-hidden': 'true'}), el('span', {text: `いいね ${likeCount(c.id)}`}));
 }
 async function toggleLike(cid){
   if (!social.canWrite) return toast('このページは閲覧のみです');
@@ -791,7 +849,9 @@ function courseCard(c){
     thumb(c.rows),
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
-      el('span', {text: sizeName(c) + (c.official ? '' : `・いいね${likeCount(c.id)}・コメント${commentsFor('c:' + c.id).length}`)})));
+      el('span', {text: sizeName(c)})),
+    el('div', {class: 'row'}, likeButton(c),
+      el('button', {class: 'like', onclick: (e) => { e.stopPropagation(); openCourse(c.id, true); }}, el('span', {text: `コメント ${commentsFor('c:' + c.id).length}`}))));
   return card;
 }
 function renderList(){
@@ -813,12 +873,22 @@ function setSort(s){ social.sort = s; ['new','pop','follow','mine'].forEach(k =>
 ['new','pop','follow','mine'].forEach(k => $('sort-' + k).onclick = () => setSort(k));
 
 /* ---------- people ---------- */
+let peopleFilter = 'all';
+['all','friend','following','follower'].forEach(k => $('pf-' + k).onclick = () => { peopleFilter = k; ['all','friend','following','follower'].forEach(o => $('pf-' + o).setAttribute('aria-pressed', o === k)); renderPeople(); });
+$('pp-q').addEventListener('input', () => renderPeople());
 function renderPeople(){
   const box = $('people');
-  const ids = [...social.people.keys()];
+  let ids = [...social.people.keys()];
+  const total = ids.length;
+  if (social.uid && peopleFilter !== 'all'){
+    const fo = following(social.uid), fr = followers(social.uid);
+    ids = ids.filter(u => peopleFilter === 'following' ? fo.includes(u) : peopleFilter === 'follower' ? fr.includes(u) : fo.includes(u) && fr.includes(u));
+  }
+  const q = $('pp-q').value.trim().toLowerCase(), qc = q.replace(/[^0-9a-z]/g, '');
+  if (q) ids = ids.filter(u => nameOf(u).toLowerCase().includes(q) || (qc.length >= 4 && codeOf(u).replace('-', '').toLowerCase().startsWith(qc)));
   ids.sort((a, b) => (b === social.uid) - (a === social.uid) || (social.uid ? isFriend(social.uid, b) - isFriend(social.uid, a) : 0) || clearCount(personOf(b).clears) - clearCount(personOf(a).clears));
   box.replaceChildren();
-  if (!ids.length){ box.append(el('div', {class: 'empty', text: social.db ? 'まだだれもプロフィールを作っていません。マイページで最初のハムを作ろう。' : 'オンライン機能につながっていません。'})); return; }
+  if (!ids.length){ box.append(el('div', {class: 'empty', text: !social.db ? 'オンライン機能につながっていません。' : !total ? 'まだだれもプロフィールを作っていません。マイページで最初のハムを作ろう。' : q ? `「${$('pp-q').value.trim()}」に合うハムは見つかりませんでした。` : 'ここにはまだだれもいません。'})); return; }
   for (const uid of ids){
     const p = personOf(uid), t = titleFor(clearCount(p.clears));
     const on = social.uid && following(social.uid).includes(uid);
@@ -826,7 +896,8 @@ function renderPeople(){
       el('div', {class: 'person'}, avatar(lookOf(uid), 56), el('div', {class: 'info'},
         el('b', {text: nameOf(uid) + (uid === social.uid ? '（あなた）' : '')}),
         t ? el('span', {class: 'title-tag', text: t.name}) : el('span', {class: 'muted', text: '称号なし'}),
-        el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}))),
+        el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}),
+        el('span', {class: 'muted code', text: codeOf(uid)}))),
       el('div', {class: 'row'},
         uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null,
         social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
@@ -910,7 +981,9 @@ $('mk-save').onclick = async () => {
   } else { formDirty = false; $('mk-state').textContent = 'この端末に保存しました'; }
   renderHeader(); renderAll();
 };
+$('my-code-copy').onclick = () => navigator.clipboard.writeText(codeOf(social.uid)).then(() => toast('コピーしました'), () => toast('コピーできませんでした'));
 function renderMe(){
+  $('my-code').hidden = !social.uid; if (social.uid) $('my-code-v').textContent = codeOf(social.uid);
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
   $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
   $('my-titles').replaceChildren(...titleGrid(n).children);

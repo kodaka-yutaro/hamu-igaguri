@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kodaka-yutaro.github.io/hamu-igaguri/sitemap.xml

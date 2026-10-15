@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Collect site files
-        run: mkdir _site && cp index.html config.js backend.js _site/
+        run: mkdir _site && cp index.html config.js backend.js about.html privacy.html robots.txt sitemap.xml manifest.webmanifest og.png icon.png _site/
       - uses: actions/configure-pages@v5
         with:
           enablement: true
