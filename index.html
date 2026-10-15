@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="左へ走りつづけるハムスターをタップで跳ねさせてイガグリをかわすゲーム。コースを作って公開・いいね・コメントできます。">
+<meta property="og:title" content="ハムとイガグリ">
+<meta property="og:description" content="ハムスターを跳ねさせてイガグリをかわそう。コースを作ってみんなに公開できるよ。">
+<title>ハムとイガグリ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap">
+<style>
+/* Layout: one column app. Header → tabs (あそぶ/つくる/みんな/けいじばん/マイページ) → view. Sheets (course, profile) and the player float above. Game canvas is a fixed autumn world, page chrome follows theme. */
+:root{
+  --bg:#f3f6f1; --panel:#ffffff; --fg:#2b2620; --muted:#6f675c; --line:#ddd6c8;
+  --accent:#b8561c; --accent-fg:#ffffff; --leaf:#4f7d3a; --gold:#e6a92a; --soft:#f6efe3;
+  --display:"Dela Gothic One","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a1d18; --panel:#242821; --fg:#efe9df; --muted:#a59d90; --line:#3a3f35;
+  --accent:#e0803f; --accent-fg:#1a1d18; --leaf:#8fbf6f; --gold:#f0c050; --soft:#2d3129; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1a1d18; --panel:#242821; --fg:#efe9df; --muted:#a59d90; --line:#3a3f35;
+  --accent:#e0803f; --accent-fg:#1a1d18; --leaf:#8fbf6f; --gold:#f0c050; --soft:#2d3129; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-weight:500;line-height:1.6}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,44px);line-height:1.05;margin:0;letter-spacing:.02em}
+h1 .and{color:var(--accent)}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
+.tag{color:var(--muted);font-size:13px;margin:4px 0 0}
+.mebtn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--line);border-radius:99px;padding:3px 12px 3px 4px;font:inherit;font-weight:800;color:var(--fg);cursor:pointer}
+nav{display:flex;gap:2px;border-bottom:2px solid var(--line);overflow-x:auto}
+nav button{font:inherit;font-weight:800;background:none;border:0;color:var(--muted);padding:8px 12px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+nav button[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.card:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn{font:inherit;font-weight:800;border:2px solid var(--fg);background:var(--panel);color:var(--fg);border-radius:10px;padding:7px 14px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.on{background:var(--fg);color:var(--bg)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{padding:4px 10px;font-size:13px}
+.linkbtn{font:inherit;background:none;border:0;padding:0;color:inherit;font-weight:800;cursor:pointer;text-align:left}
+.linkbtn:hover{text-decoration:underline}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.col{display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--muted);font-size:13px}
+.chip{font:inherit;font-size:13px;font-weight:800;border:1.5px solid var(--line);background:none;color:var(--muted);border-radius:99px;padding:3px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--fg);color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card.click{cursor:pointer}
+.card.click:hover{border-color:var(--muted)}
+.thumb{width:100%;height:auto;border-radius:8px;image-rendering:pixelated;display:block}
+.card h3{margin:0;font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.who{display:flex;align-items:center;gap:6px;min-width:0}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{border-radius:50%;background:var(--soft);flex:none;display:block}
+.badge{font-size:11px;font-weight:800;background:var(--leaf);color:var(--bg);border-radius:6px;padding:1px 7px;white-space:nowrap}
+.badge.op{background:var(--accent);color:var(--accent-fg)}
+.badge.friend{background:var(--gold);color:#2b2620}
+.title-tag{font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap}
+.empty{border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+.stage{background:#20304a;border-radius:14px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage canvas{display:block;width:100%;height:auto;max-width:100%}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.tool{font:inherit;font-weight:800;font-size:13px;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.tool[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+input[type=text],input[type=email],select,textarea{font:inherit;background:var(--panel);color:var(--fg);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
+textarea{width:100%;box-sizing:border-box;resize:vertical}
+input[type=range]{width:100%}
+.overlay{position:fixed;inset:0;background:rgba(12,14,10,.9);display:flex;align-items:center;justify-content:center;z-index:30;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.player{width:min(980px,100%);display:flex;flex-direction:column;gap:10px}
+.player .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#f3ead8}
+.player .bar b{font-family:var(--display);font-weight:400;font-size:18px;overflow-wrap:anywhere}
+.msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;background:rgba(20,24,40,.45);pointer-events:none;padding:8px}
+.msg .big{font-family:var(--display);font-size:clamp(26px,6vw,44px);text-shadow:0 3px 0 #0006}
+.msg .gain{font-weight:800;background:#f0c050;color:#2b2620;border-radius:8px;padding:2px 10px}
+.msg .btns{pointer-events:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.hud{position:absolute;left:10px;top:8px;color:#fff;font-weight:800;font-size:13px;text-shadow:0 1px 0 #0008;font-variant-numeric:tabular-nums}
+.sheet-bg{position:fixed;inset:0;background:rgba(12,14,10,.55);z-index:20;overflow-y:auto;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--bg);border-radius:16px;max-width:640px;margin:24px auto;padding:18px;display:flex;flex-direction:column;gap:14px;position:relative}
+.sheet .x{position:absolute;right:12px;top:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:10px;font-weight:800;z-index:40;max-width:calc(100% - 32px)}
+.how{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-size:14px}
+.how b{color:var(--accent)}
+.comments{display:flex;flex-direction:column;gap:10px}
+.cmt{display:flex;gap:10px;align-items:flex-start}
+.cmt .body{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:6px 10px;min-width:0;flex:1}
+.cmt .body p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cmt .head{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12px}
+.post{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.post .text{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.post .replies{border-left:3px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:10px}
+.prof{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.prof .info{flex:1;min-width:200px;display:flex;flex-direction:column;gap:4px}
+.prof .name{font-family:var(--display);font-size:22px;overflow-wrap:anywhere}
+.stats{display:flex;gap:16px;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stats b{color:var(--fg);font-size:16px}
+.titles{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.ttl{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;background:var(--panel)}
+.ttl b{font-size:14px}
+.ttl.locked{opacity:.45}
+.ttl.got{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--panel))}
+.maker{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:560px){.maker{grid-template-columns:minmax(0,1fr)}}
+.maker .preview{background:var(--soft);border-radius:16px;width:100%;max-width:200px;aspect-ratio:1;display:block;margin:0 auto}
+.part{display:flex;flex-direction:column;gap:4px}
+.part > span{font-size:12px;font-weight:800;color:var(--muted)}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opt{font:inherit;font-size:12px;font-weight:800;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:9px;padding:3px 9px;cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--accent)}
+.opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
+.opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.person{display:flex;gap:10px;align-items:center}
+.person .info{min-width:0;display:flex;flex-direction:column}
+.person .info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="backend.js"></script>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>ハム<span class="and">と</span>イガグリ</h1>
+      <p class="tag">左へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
+    </div>
+    <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
+  </header>
+
+  <nav role="tablist">
+    <button id="tab-play" role="tab" aria-selected="true">あそぶ</button>
+    <button id="tab-make" role="tab" aria-selected="false">つくる</button>
+    <button id="tab-people" role="tab" aria-selected="false">みんな</button>
+    <button id="tab-board" role="tab" aria-selected="false">けいじばん</button>
+    <button id="tab-me" role="tab" aria-selected="false">マイページ</button>
+  </nav>
+
+  <section id="view-play" class="col" style="gap:14px">
+    <div class="how">操作は<b>スペース・↑キー・画面タップ</b>の1つだけ。押すたびに同じ高さだけ跳ねます（空中でもOK）。跳ねるたびに<b>ライフ</b>が減り、15回で0になるとミス。<b>どんぐり</b>を取るとライフ全回復。<b>イガグリ</b>に当たる・画面の下に落ちるとミス。上は天井なので飛び出しません。<b>ゴールライン</b>を越えたらクリア。</div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row" role="group" aria-label="並べ替え" style="gap:6px">
+        <button class="chip" id="sort-new" aria-pressed="true">新着</button>
+        <button class="chip" id="sort-pop" aria-pressed="false">人気</button>
+        <button class="chip" id="sort-follow" aria-pressed="false">フォロー中</button>
+        <button class="chip" id="sort-mine" aria-pressed="false">じぶんの</button>
+      </div>
+      <span class="muted" id="db-state"></span>
+    </div>
+    <div id="list" class="grid"></div>
+  </section>
+
+  <section id="view-make" class="col" hidden>
+    <div class="row">
+      <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" style="flex:1 1 220px">
+      <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
+    </div>
+    <div class="tools" role="group" aria-label="置くもの">
+      <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
+      <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
+      <button class="tool" data-t="A" aria-pressed="false"><span class="sw" style="background:#a86a2c;border-radius:50% 50% 45% 45%"></span>どんぐり</button>
+      <button class="tool" data-t="S" aria-pressed="false"><span class="sw" style="background:#f0b56a;border-radius:50%"></span>スタート</button>
+      <button class="tool" data-t="G" aria-pressed="false"><span class="sw" style="background:#d9412b"></span>ゴールライン</button>
+      <button class="tool" data-t="." aria-pressed="false"><span class="sw" style="border:2px dashed var(--muted)"></span>けす</button>
+    </div>
+    <div class="stage" id="ed-stage"><canvas id="ed-canvas" width="640" height="320"></canvas></div>
+    <input type="range" id="ed-scroll" min="0" max="0" value="0" aria-label="コースを左右にスクロール">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <button class="btn" id="ed-test">テストプレイ</button>
+        <button class="btn primary" id="ed-pub" disabled>公開する</button>
+      </div>
+      <button class="btn sm" id="ed-new">まっさらにする</button>
+    </div>
+    <p class="muted" id="ed-hint"></p>
+  </section>
+
+  <section id="view-people" class="col" hidden>
+    <div class="row" style="justify-content:space-between"><h2>みんなのハム</h2><span class="muted">おたがいにフォローすると「ともだち」になります</span></div>
+    <div id="people" class="people"></div>
+  </section>
+
+  <section id="view-board" class="col" hidden>
+    <div class="row" style="justify-content:space-between"><h2>けいじばん</h2><span class="muted">運営からのお知らせと今後の方針。返信で意見を聞かせてください</span></div>
+    <div id="board-compose" class="post" hidden>
+      <b>運営として投稿する</b>
+      <input type="text" id="bd-title" maxlength="60" placeholder="タイトル">
+      <textarea id="bd-text" rows="5" maxlength="2000" placeholder="本文"></textarea>
+      <div class="row"><button class="btn primary" id="bd-post">投稿する</button></div>
+    </div>
+    <div id="board" class="col"></div>
+  </section>
+
+  <section id="view-me" class="col" hidden>
+    <h2>プロフィール</h2>
+    <div class="maker">
+      <canvas class="preview" id="mk-preview" width="400" height="400" aria-label="あなたのハムスター"></canvas>
+      <div class="col" style="gap:10px">
+        <div class="row"><input type="text" id="mk-name" maxlength="12" placeholder="なまえ（12文字まで）" style="flex:1 1 160px"><button class="btn sm" id="mk-random">おまかせ</button></div>
+        <input type="text" id="mk-bio" maxlength="60" placeholder="ひとこと（60文字まで）">
+        <div id="mk-parts" class="col" style="gap:8px"></div>
+        <div class="row"><button class="btn primary" id="mk-save">保存する</button><span class="muted" id="mk-state"></span></div>
+      </div>
+    </div>
+    <h2>アカウント</h2>
+    <div id="account" class="post" style="gap:8px"></div>
+    <h2>称号</h2>
+    <p class="muted" id="ttl-note" style="margin:0"></p>
+    <div id="my-titles" class="titles"></div>
+    <h2>つながり</h2>
+    <div id="my-links" class="col" style="gap:10px"></div>
+  </section>
+</div>
+
+<div class="sheet-bg" id="sheet-bg" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="player">
+    <div class="bar"><b id="pl-title"></b><button class="btn sm" id="pl-close">とじる</button></div>
+    <div class="stage" id="pl-stage">
+      <canvas id="pl-canvas" width="640" height="320"></canvas>
+      <div class="hud" id="pl-hud"></div>
+      <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const T = 32, ROWS = 10, VIEW_W = 640, VIEW_H = ROWS * T;
+const $ = id => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)){ if (k === 'text') e.textContent = v; else if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== false && v != null) e.setAttribute(k, v); } e.append(...kids.filter(Boolean)); return e; };
+const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); };
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const ago = (ms) => { const s = (Date.now() - ms) / 1000; if (s < 60) return 'たった今'; if (s < 3600) return Math.floor(s/60) + '分前'; if (s < 86400) return Math.floor(s/3600) + '時間前'; const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()}`; };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* ---------- titles ---------- */
+const TITLES = [
+  { n: 1,  name: 'はじめの一歩',     note: '1種類のコースをクリア' },
+  { n: 3,  name: 'くりひろい見習い', note: '3種類のコースをクリア' },
+  { n: 5,  name: 'イガグリよけ名人', note: '5種類のコースをクリア' },
+  { n: 10, name: 'どんぐりマスター', note: '10種類のコースをクリア' },
+];
+const titleFor = n => TITLES.filter(t => n >= t.n).pop() || null;
+
+/* ---------- hamster look ---------- */
+const PARTS = {
+  body:   { label: '体の色', swatch: true, opts: [['#f0b56a','ゴールデン'],['#f4efe6','ホワイト'],['#a9a9b3','グレー'],['#8a5a3c','チョコ'],['#f2a7b8','ピンク'],['#9fd8c0','ミント'],['#9cc3ef','そら'],['#4a4040','ブラック']] },
+  belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
+  eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
+  cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
+  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花']] },
+  outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき']] },
+  color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
+  acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう']] },
+};
+const DEFAULT_LOOK = { body:'#f0b56a', belly:'#fff4e2', eyes:'dot', cheek:'pink', hat:'none', outfit:'none', color:'#d9412b', acc:'none' };
+const cleanLook = l => { const o = {...DEFAULT_LOOK}; if (l && typeof l === 'object') for (const k in PARTS) if (PARTS[k].opts.some(x => x[0] === l[k])) o[k] = l[k]; return o; };
+const randomLook = () => { const o = {}; for (const k in PARTS){ const a = PARTS[k].opts; o[k] = a[Math.floor(Math.random()*a.length)][0]; } return o; };
+function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const m = c => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f))); return `rgb(${m(r)},${m(g)},${m(b)})`; }
+
+// draws the hamster centered at (0,0), facing left, body ~30x24
+function paintHam(ctx, look, dead){
+  const L = look || DEFAULT_LOOK, C = L.color;
+  const bodyPath = () => { ctx.beginPath(); ctx.ellipse(0, 1, 15, 12, 0, 0, 7); };
+  if (L.outfit === 'cape'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(0, -4); ctx.quadraticCurveTo(22, 0, 20, 14); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill(); }
+  ctx.fillStyle = L.body; bodyPath(); ctx.fill();
+  ctx.fillStyle = L.belly; ctx.beginPath(); ctx.ellipse(-4, 5, 9, 7, 0, 0, 7); ctx.fill();
+  if (L.outfit === 'shirt' || L.outfit === 'wrap'){
+    ctx.save(); bodyPath(); ctx.clip(); ctx.fillStyle = C;
+    if (L.outfit === 'shirt') ctx.fillRect(-16, 3, 32, 12); else { ctx.fillRect(-16, 4, 32, 6); ctx.fillStyle = 'rgba(255,255,255,.35)'; for (let i = -14; i < 16; i += 5) ctx.fillRect(i, 4, 2, 6); }
+    ctx.restore();
+  }
+  ctx.fillStyle = shade(L.body, -0.12); ctx.beginPath(); ctx.arc(-4, -10, 4.5, 0, 7); ctx.arc(6, -10, 4.5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#f7a3a3'; ctx.beginPath(); ctx.arc(-4, -10, 2.2, 0, 7); ctx.fill();
+  if (L.outfit === 'scarf'){ ctx.fillStyle = C; ctx.beginPath(); ctx.ellipse(-1, 3, 12, 2.6, 0, 0, 7); ctx.fill(); ctx.fillRect(5, 3, 4, 9); }
+  if (L.outfit === 'tie'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-4, 2); ctx.lineTo(-3.5, 10); ctx.lineTo(-5.5, 12); ctx.lineTo(-7.5, 10); ctx.closePath(); ctx.fill(); }
+  // face
+  ctx.fillStyle = '#2b1d12'; ctx.strokeStyle = '#2b1d12'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+  if (dead){ ctx.font = 'bold 9px sans-serif'; ctx.fillText('x', -12, -1); }
+  else if (L.eyes === 'smile'){ ctx.beginPath(); ctx.arc(-9, -1, 2.4, Math.PI*1.1, Math.PI*1.9); ctx.stroke(); }
+  else if (L.eyes === 'sparkle'){ ctx.beginPath(); ctx.arc(-9, -2, 2.9, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-10, -3, 1, 0, 7); ctx.fill(); }
+  else if (L.eyes === 'sleepy'){ ctx.beginPath(); ctx.moveTo(-11.5, -2); ctx.lineTo(-6.5, -2); ctx.stroke(); }
+  else if (L.eyes === 'wide'){ ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-9, -2, 3.2, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#2b1d12'; ctx.beginPath(); ctx.arc(-9.5, -2, 1.5, 0, 7); ctx.fill(); }
+  else { ctx.beginPath(); ctx.arc(-9, -2, 2.2, 0, 7); ctx.fill(); }
+  ctx.fillStyle = '#f7a3a3'; ctx.beginPath(); ctx.arc(-14, 2, 2, 0, 7); ctx.fill();
+  if (L.cheek !== 'none'){ ctx.fillStyle = L.cheek === 'orange' ? 'rgba(240,140,60,.5)' : 'rgba(240,120,140,.45)'; ctx.beginPath(); ctx.ellipse(-6, 3, 3, 2, 0, 0, 7); ctx.fill(); }
+  // accessories
+  if (L.acc === 'glasses' || L.acc === 'shades'){
+    ctx.strokeStyle = '#2b1d12'; ctx.lineWidth = 1.2;
+    for (const gx of [-9, -2.5]){ ctx.beginPath(); ctx.arc(gx, -2, 3.4, 0, 7); if (L.acc === 'shades'){ ctx.fillStyle = 'rgba(20,20,30,.85)'; ctx.fill(); } ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(-5.6, -2.5); ctx.lineTo(-5.9, -2.5); ctx.moveTo(0.9, -2); ctx.lineTo(8, -3); ctx.stroke();
+  }
+  if (L.acc === 'ribbon'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(10, -9); ctx.lineTo(4, -15); ctx.lineTo(4, -4); ctx.closePath(); ctx.moveTo(10, -9); ctx.lineTo(16, -15); ctx.lineTo(16, -4); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(10, -9, 2, 0, 7); ctx.fill(); }
+  if (L.acc === 'seed'){ ctx.save(); ctx.translate(-15, 8); ctx.rotate(-0.5); ctx.fillStyle = '#2b2620'; ctx.beginPath(); ctx.ellipse(0, 0, 3, 5.5, 0, 0, 7); ctx.fill(); ctx.fillStyle = '#f2ead8'; ctx.fillRect(-0.6, -4, 1.2, 8); ctx.restore(); }
+  if (L.acc === 'bandage'){ ctx.save(); ctx.translate(3, -5); ctx.rotate(-0.5); ctx.fillStyle = '#f2c79a'; ctx.fillRect(-5, -2, 10, 4); ctx.fillStyle = '#e0a874'; ctx.fillRect(-1.5, -2, 3, 4); ctx.restore(); }
+  // hats
+  if (L.hat === 'acorn'){ ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(1, -11, 11, 6, 0, Math.PI, 0); ctx.lineTo(12, -10); ctx.lineTo(-10, -10); ctx.fill(); ctx.fillRect(0, -20, 2, 4); }
+  if (L.hat === 'crown'){ ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.moveTo(-7, -11); ctx.lineTo(-8, -21); ctx.lineTo(-3, -16); ctx.lineTo(1, -23); ctx.lineTo(5, -16); ctx.lineTo(10, -21); ctx.lineTo(9, -11); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.arc(1, -14, 1.6, 0, 7); ctx.fill(); }
+  if (L.hat === 'beret'){ ctx.fillStyle = C; ctx.beginPath(); ctx.ellipse(2, -13, 12, 5, -0.15, 0, 7); ctx.fill(); ctx.fillRect(1, -20, 2, 3); }
+  if (L.hat === 'knit'){ ctx.fillStyle = C; ctx.beginPath(); ctx.arc(1, -10, 10.5, Math.PI, 0); ctx.fill(); ctx.fillStyle = shade(C, -0.2); ctx.fillRect(-9.5, -12, 21, 4); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(1, -21, 3.2, 0, 7); ctx.fill(); }
+  if (L.hat === 'band'){ ctx.fillStyle = C; ctx.fillRect(-12, -10, 24, 3.5); ctx.beginPath(); ctx.moveTo(11, -9); ctx.lineTo(19, -13); ctx.lineTo(19, -8); ctx.closePath(); ctx.moveTo(11, -8); ctx.lineTo(18, -4); ctx.lineTo(15, -2); ctx.closePath(); ctx.fill(); }
+  if (L.hat === 'silk'){ ctx.fillStyle = '#2b2620'; ctx.fillRect(-9, -12, 21, 3); ctx.fillRect(-5, -25, 13, 13); ctx.fillStyle = C; ctx.fillRect(-5, -16, 13, 3); }
+  if (L.hat === 'flower'){ ctx.fillStyle = C; for (let i = 0; i < 5; i++){ const a = i/5*Math.PI*2; ctx.beginPath(); ctx.arc(6 + Math.cos(a)*3.6, -14 + Math.sin(a)*3.6, 2.8, 0, 7); ctx.fill(); } ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.arc(6, -14, 2.2, 0, 7); ctx.fill(); }
+}
+function drawHam(ctx, x, y, vy, dead, t, look){
+  // x,y = top-left of the 22x22 hitbox
+  ctx.save(); ctx.translate(x+12, y+12);
+  if (dead) ctx.rotate(t*8);
+  const squash = Math.max(-0.15, Math.min(0.15, vy/3000));
+  ctx.scale(1 - squash, 1 + squash);
+  paintHam(ctx, look, dead);
+  ctx.restore();
+}
+function paintAvatar(canvas, look){
+  const ctx = canvas.getContext('2d'), s = canvas.width;
+  ctx.clearRect(0, 0, s, s); ctx.save(); ctx.translate(s/2, s/2 + s*0.06); ctx.scale(s/58, s/58); paintHam(ctx, look); ctx.restore();
+}
+function avatar(look, px){ const c = el('canvas', {class: 'av', width: px*2, height: px*2, 'aria-hidden': 'true'}); c.style.width = c.style.height = px + 'px'; paintAvatar(c, look); return c; }
+
+/* ---------- built-in courses ---------- */
+function build(w, ops, ground = true, sy = 7, gy = 7){
+  const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
+  if (ground) for (let x = 0; x < w; x++) { g[8][x] = '#'; g[9][x] = '#'; }
+  for (const [k, a, b, c] of ops){
+    if (k === 'gap') for (let x = a; x < a + b; x++) { g[8][x] = '.'; g[9][x] = '.'; }
+    if (k === 'burr') g[b][a] = '*';
+    if (k === 'wall') for (let y = 8 - b; y < 8; y++) g[y][a] = '#';
+    if (k === 'plat') for (let x = a; x < a + b; x++) g[c][x] = '#';
+    if (k === 'acorn') g[b][a] = 'A';
+    if (k === 'pipe') for (let y = 0; y < ROWS; y++) if (y < b || y >= b + c) g[y][a] = '*';
+  }
+  g[sy][w - 3] = 'S'; g[gy][2] = 'G';
+  return g.map(r => r.join(''));
+}
+const BUILTIN = [
+  { id:'b1', title:'はじめてのイガグリ', official:true, createdAt:3, rows: build(40, [['burr',31,7],['gap',24,3],['burr',17,6],['burr',17,7],['acorn',12,5],['wall',8,2]]) },
+  { id:'b2', title:'くりひろいの谷', official:true, createdAt:2, rows: build(80, [['gap',66,4],['burr',67,4],['plat',52,5,5],['gap',50,9],['burr',54,4],['acorn',57,3],['burr',45,7],['burr',45,6],['wall',36,3],['burr',36,1],['acorn',30,4],['gap',24,5],['burr',26,3],['burr',16,7],['burr',13,5],['burr',10,7]]) },
+  { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',68,3,3],['acorn',63,4],['pipe',58,5,3],['pipe',48,2,3],['acorn',43,3],['pipe',38,4,3],['pipe',28,3,3],['acorn',23,4],['pipe',18,5,3],['pipe',9,3,3]], false, 4, 4) },
+];
+
+/* ---------- course drawing ---------- */
+function drawSky(ctx, camX, w, h){
+  const g = ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,'#7cc3d6'); g.addColorStop(1,'#f4dba8');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+  ctx.globalAlpha = 0.45; ctx.fillStyle = '#e9b46a';
+  for (let i = -1; i < 8; i++){ const x = i*160 - (camX*0.3 % 160); ctx.beginPath(); ctx.arc(x+80, h-40, 90, Math.PI, 0); ctx.fill(); }
+  ctx.fillStyle = '#d98c45';
+  for (let i = -1; i < 10; i++){ const x = i*110 - (camX*0.5 % 110); ctx.beginPath(); ctx.arc(x+55, h-10, 60, Math.PI, 0); ctx.fill(); }
+  ctx.globalAlpha = 1;
+}
+function drawBlock(ctx, x, y, topOpen){
+  ctx.fillStyle = '#7a5233'; ctx.fillRect(x, y, T, T);
+  ctx.fillStyle = '#5f3e25'; ctx.fillRect(x+4, y+14, 6, 4); ctx.fillRect(x+18, y+22, 8, 4);
+  if (topOpen){ ctx.fillStyle = '#c9822f'; ctx.fillRect(x, y, T, 7); ctx.fillStyle = '#a8621f'; for (let i = 0; i < 4; i++) ctx.fillRect(x + i*8 + 2, y+6, 4, 3); }
+}
+function drawBurr(ctx, cx, cy, t){
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate((t||0)*0.6);
+  ctx.strokeStyle = '#6b4310'; ctx.lineWidth = 2;
+  for (let i = 0; i < 16; i++){ const a = i/16*Math.PI*2; ctx.beginPath(); ctx.moveTo(Math.cos(a)*8, Math.sin(a)*8); ctx.lineTo(Math.cos(a)*15, Math.sin(a)*15); ctx.stroke(); }
+  ctx.fillStyle = '#8a5a1c'; ctx.beginPath(); ctx.arc(0,0,10,0,7); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#5a3410'; ctx.beginPath(); ctx.arc(cx-3, cy+1, 1.6, 0, 7); ctx.arc(cx+3, cy+1, 1.6, 0, 7); ctx.fill();
+}
+function drawAcorn(ctx, cx, cy, t){
+  cy += Math.sin((t||0)*4) * 2;
+  ctx.fillStyle = '#a86a2c'; ctx.beginPath(); ctx.ellipse(cx, cy+3, 8, 10, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#c98b4a'; ctx.beginPath(); ctx.ellipse(cx-3, cy+1, 2.5, 5, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(cx, cy-5, 10, 5, 0, Math.PI, 0); ctx.lineTo(cx+10, cy-3); ctx.lineTo(cx-10, cy-3); ctx.fill();
+  ctx.fillRect(cx-1, cy-12, 2, 4);
+}
+// goal = a vertical line on the right edge of the G column, plus a flag where G was placed
+function drawGoal(ctx, x, y){
+  const lx = x + T - 2;
+  ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, VIEW_H); ctx.stroke(); ctx.restore();
+  ctx.fillStyle = '#ece4d4'; ctx.fillRect(x+14, y-T+4, 4, T*2-4);
+  ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.moveTo(x+14, y-T+4); ctx.lineTo(x-4, y-T+13); ctx.lineTo(x+14, y-T+22); ctx.fill();
+}
+function drawCourse(ctx, rows, camX, t, opts = {}){
+  const w = rows[0].length;
+  const x0 = Math.max(0, Math.floor(camX / T)), x1 = Math.min(w - 1, Math.ceil((camX + VIEW_W) / T));
+  for (let y = 0; y < ROWS; y++) for (let x = x0; x <= x1; x++){
+    const c = rows[y][x], px = x*T - camX, py = y*T;
+    if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
+    else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
+    else if (c === 'G') drawGoal(ctx, px, py);
+    else if (c === 'A' && !(opts.taken && opts.taken.has(y*w + x))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
+    else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
+  }
+}
+
+/* ---------- game ---------- */
+function makeGame(canvas, rows, hooks){
+  const ctx = canvas.getContext('2d');
+  const w = rows[0].length, W = w * T;
+  const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22, LIFE_MAX = 15;
+  let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
+  const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
+  const S = find('S') || {x: w-3, y: 5};
+  const G = find('G') || {x: 0, y: 5};
+  const goalX = (G.x + 1) * T;
+  const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
+  function reset(){ p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: -SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+  function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.68)); }
+  function jump(){
+    if (state === 'ready'){ state = 'run'; startedAt = performance.now(); hooks.onState && hooks.onState('run'); }
+    if (state === 'run'){ p.vy = JUMP; life -= 1; if (life <= 0){ life = 0; die('ライフ切れ'); } }
+  }
+  function step(dt){
+    p.vy = Math.min(p.vy + GRAV*dt, 900);
+    p.x += p.vx * dt;
+    const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor(p.x / T);
+    for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = (tx + 1) * T; break; }
+    p.y += p.vy * dt;
+    const tx0 = Math.floor(p.x / T), tx1 = Math.floor((p.x + PW - 0.01) / T);
+    if (p.vy > 0){ const ty = Math.floor((p.y + PH) / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && x >= 0 && x < w){ p.y = ty*T - PH; p.vy = 0; break; } }
+    else if (p.vy < 0){ const ty = Math.floor(p.y / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && x >= 0 && x < w){ p.y = (ty+1)*T; p.vy = 0; break; } }
+    // the top edge of the screen is a ceiling
+    if (p.y < 0){ p.y = 0; if (p.vy < 0) p.vy = 0; }
+    const cx = p.x + PW/2, cy = p.y + PH/2;
+    for (let y = Math.max(0, Math.floor(cy/T)-1); y <= Math.min(ROWS-1, Math.floor(cy/T)+1); y++)
+      for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
+        const c = rows[y][x];
+        if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
+        if (c === 'A' && !taken.has(y*w + x) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(y*w + x); life = LIFE_MAX; }
+      }
+    // crossing the goal line at any height clears the course
+    if (cx <= goalX) return win();
+    // up to 1.5 tiles below the screen is survivable
+    if (cy > VIEW_H + T*1.5) return die('落ちた');
+  }
+  function die(why){ state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why}); }
+  function win(){ state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
+  function drawLife(f){
+    const x = 58, y = 30, bw = 110, h = 10;
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, bw+4, h+4);
+    ctx.fillStyle = f > 0.34 ? '#7bc34f' : f > 0.14 ? '#f0c050' : '#e5533c'; ctx.fillRect(x, y, bw*f, h);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('ライフ', 10, y + 10);
+  }
+  function draw(){
+    drawSky(ctx, camX, VIEW_W, VIEW_H);
+    drawCourse(ctx, rows, camX, t, {spin: true, taken});
+    drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    drawLife(life / LIFE_MAX);
+    if (hooks.hud) hooks.hud(Math.max(0, Math.ceil((p.x + PW/2 - goalX) / T)), deaths);
+  }
+  function loop(now){
+    const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
+    if (state === 'run'){ let acc = dt; while (acc > 0){ const s = Math.min(acc, 1/120); step(s); acc -= s; if (state !== 'run') break; } camX = clampCam(p.x); }
+    if (state === 'dead'){ p.vy += GRAV*dt*0.6; p.y += p.vy*dt*0.3; }
+    draw(); raf = requestAnimationFrame(loop);
+  }
+  reset(); raf = requestAnimationFrame(loop);
+  return { jump, reset, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; } };
+}
+
+/* ---------- social state ---------- */
+const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], people: new Map(), board: [], ownerId: null, names: {}, sort: 'new', ready: false };
+const me = () => (social.uid && social.people.get(social.uid)) || null;
+const myLook = () => cleanLook((me() && me().look) || store.get('hi-look'));
+const myClears = () => { const m = me(); return (m && m.clears) || store.get('hi-clears') || {}; };
+const clearCount = clears => Object.values(clears || {}).filter(v => v != null && v !== false).length;
+function personOf(uid){ return social.people.get(uid) || null; }
+function nameOf(uid){ const p = personOf(uid); return (p && p.name) || social.names[uid] || 'ななしのハム'; }
+function lookOf(uid){ const p = personOf(uid); return cleanLook(p && p.look); }
+const following = uid => { const p = personOf(uid); return Array.isArray(p && p.following) ? p.following : []; };
+const followers = uid => [...social.people.entries()].filter(([id, p]) => id !== uid && Array.isArray(p.following) && p.following.includes(uid)).map(([id]) => id);
+const isFriend = (a, b) => following(a).includes(b) && following(b).includes(a);
+function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (p.likes && p.likes[cid] === true) n++; return n; }
+const likedByMe = cid => !!(me() && me().likes && me().likes[cid] === true);
+function commentsFor(target){
+  const out = [];
+  for (const [uid, p] of social.people) for (const [id, c] of Object.entries(p.comments || {})) if (c && c.target === target && typeof c.text === 'string') out.push({id, uid, text: c.text.slice(0, 2000), at: +c.at || 0});
+  return out.sort((a, b) => a.at - b.at);
+}
+
+// one write at a time to my own person document
+let writeChain = Promise.resolve();
+function patchMe(patch){
+  if (!social.db || !social.uid) { toast('オンライン機能につながっていません'); return Promise.resolve(false); }
+  if (!social.peopleLoaded) { toast('読み込み中です。少し待ってからもう一度どうぞ'); return Promise.resolve(false); }
+  writeChain = writeChain.then(async () => {
+    const ref = social.db.doc('people/' + social.uid);
+    if (!social.people.has(social.uid)){
+      const base = { name: '', bio: '', look: myLook(), following: [], likes: {}, clears: store.get('hi-clears') || {}, comments: {}, createdAt: Date.now() };
+      for (const [k, v] of Object.entries(patch)) base[k] = (v && typeof v === 'object' && !Array.isArray(v) && base[k] && typeof base[k] === 'object') ? {...base[k], ...v} : v;
+      await ref.set(base);
+      social.people.set(social.uid, base);
+    } else await ref.update(patch);
+    return true;
+  }).catch(e => { toast(e && e.code === 'quota_exceeded' ? '保存できる量がいっぱいです' : '保存できませんでした'); return false; });
+  return writeChain;
+}
+
+/* ---------- player overlay ---------- */
+let game = null, current = null, lastClear = {sec: 0, deaths: 0};
+function openPlayer(course, mode){
+  current = {course, mode};
+  $('pl-title').textContent = course.title || '名前のないコース';
+  $('overlay').hidden = false;
+  if (game) game.stop();
+  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+}
+function closePlayer(){ if (game) game.stop(); game = null; $('overlay').hidden = true; current = null; }
+function showMsg(big, sub, btns, gain){
+  $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
+  $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
+  const b = $('pl-btns'); b.replaceChildren();
+  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(); }}));
+  $('pl-msg').hidden = false;
+}
+async function recordClear(course, sec){
+  const before = clearCount(myClears());
+  const prev = myClears()[course.id];
+  if (prev != null && prev <= sec) return null;
+  const v = Math.round(sec * 10) / 10;
+  const local = {...(store.get('hi-clears') || {}), [course.id]: v}; store.set('hi-clears', local);
+  if (social.db && social.uid) await patchMe({clears: {[course.id]: v}});
+  const after = clearCount(myClears());
+  const t = titleFor(after);
+  return t && (!titleFor(before) || titleFor(before).n !== t.n) ? t : null;
+}
+function onState(s, info){
+  if (s === 'ready') showMsg('タップでスタート', 'スペース / ↑ / タップで跳ねる');
+  if (s === 'run') $('pl-msg').hidden = true;
+  if (s === 'dead') showMsg('ミス！', `${info.why}・タップでもう一回`, []);
+  if (s === 'clear'){
+    lastClear = info;
+    const c = current.course;
+    const btns = [['もう一回', () => game.reset()]];
+    if (current.mode === 'test'){ editor.cleared = true; updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return; }
+    if (!c.official) btns.push(['いいね・コメント', () => { closePlayer(); openCourse(c.id); }, true]);
+    showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
+    const cur = current;
+    recordClear(c, info.sec).then(t => { if (t && current === cur) $('pl-gain').hidden = false, $('pl-gain').textContent = `称号「${t.name}」をゲット！`; renderMe(); });
+  }
+}
+function press(e){
+  if (!game) return;
+  if (e) e.preventDefault();
+  if (game.state === 'dead'){ game.reset(); return; }
+  if (game.state === 'clear') return;
+  game.jump();
+}
+$('pl-stage').addEventListener('pointerdown', press);
+$('pl-close').onclick = closePlayer;
+addEventListener('keydown', e => {
+  if (!$('overlay').hidden){
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
+    if (e.code === 'Escape') closePlayer();
+  } else if (!$('sheet-bg').hidden && e.code === 'Escape') closeSheet();
+});
+
+/* ---------- sheets (course detail, profile) ---------- */
+let sheet = null;
+function openSheet(kind, id){ sheet = {kind, id}; $('sheet-bg').hidden = false; renderSheet(true); }
+function closeSheet(){ sheet = null; $('sheet-bg').hidden = true; $('sheet').replaceChildren(); }
+$('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) closeSheet(); });
+const openCourse = id => openSheet('course', id);
+const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
+function whoChip(uid, px = 24){
+  const t = titleFor(clearCount((personOf(uid) || {}).clears));
+  return el('button', {class: 'linkbtn who', onclick: (e) => { e.stopPropagation(); openProfile(uid); }},
+    avatar(lookOf(uid), px), el('span', {text: nameOf(uid)}),
+    uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null,
+    social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
+    t ? el('span', {class: 'title-tag', text: t.name}) : null);
+}
+function commentBlock(target, placeholder){
+  const wrap = el('div', {class: 'comments'});
+  const list = commentsFor(target);
+  if (!list.length) wrap.append(el('p', {class: 'muted', style: 'margin:0', text: 'まだコメントはありません。'}));
+  for (const c of list){
+    const body = el('div', {class: 'body'}, el('div', {class: 'head'}, whoChip(c.uid, 20), el('span', {class: 'muted', text: ago(c.at)}),
+      c.uid === social.uid ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '削除', onclick: () => patchMe({comments: {[c.id]: null}})}) : null),
+      el('p', {text: c.text}));
+    wrap.append(el('div', {class: 'cmt'}, body));
+  }
+  return wrap;
+}
+function composer(target, placeholder, key){
+  if (!social.db || !social.uid) return el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていないため、コメントは書けません。'});
+  if (!social.canWrite) return el('p', {class: 'muted', style: 'margin:0', text: 'このページは閲覧のみのため、コメントは書けません。'});
+  const ta = el('textarea', {id: key, rows: 2, maxlength: 280, placeholder});
+  const btn = el('button', {class: 'btn primary sm', text: '送信', onclick: async () => {
+    const text = ta.value.trim(); if (!text) return;
+    btn.disabled = true;
+    const ok = await patchMe({comments: {[newId()]: {target, text: text.slice(0, 280), at: Date.now()}}});
+    btn.disabled = false; if (ok){ ta.value = ''; drafts[key] = ''; }
+  }});
+  ta.value = drafts[key] || ''; ta.oninput = () => drafts[key] = ta.value;
+  return el('div', {class: 'col', style: 'gap:6px'}, ta, el('div', {class: 'row'}, btn));
+}
+const drafts = {};
+function courseById(id){ return social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
+function renderSheet(first){
+  if (!sheet) return;
+  const box = $('sheet');
+  const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
+  box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
+  if (sheet.kind === 'course'){
+    const c = courseById(sheet.id);
+    if (!c){ box.append(el('p', {text: 'このコースは削除されました。'})); return; }
+    const cleared = myClears()[c.id];
+    box.append(
+      el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
+      el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
+      thumb(c.rows),
+      el('div', {class: 'row'},
+        el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
+        !c.official && social.db ? el('button', {class: 'btn' + (likedByMe(c.id) ? ' on' : ''), text: `${likedByMe(c.id) ? 'いいね済み' : 'いいね'} ${likeCount(c.id)}`, onclick: () => toggleLike(c.id)}) : null,
+        el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
+        c.author && c.author === social.uid ? deleteBtn(c) : null),
+      el('p', {class: 'muted', style: 'margin:0', text: cleared != null ? `あなたのベスト: ${cleared}秒` : 'まだクリアしていません'}));
+    if (!c.official){ box.append(el('h2', {text: 'コメント'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id)); }
+  } else {
+    const uid = sheet.id, p = personOf(uid);
+    box.append(profileHeader(uid));
+    if (social.uid && uid !== social.uid && social.canWrite){
+      const on = following(social.uid).includes(uid);
+      box.append(el('div', {class: 'row'}, el('button', {class: 'btn' + (on ? ' on' : ' primary'), text: on ? 'フォロー中' : 'フォローする', onclick: () => toggleFollow(uid)}),
+        following(uid).includes(social.uid) ? el('span', {class: 'muted', text: on ? 'おたがいにフォローしています' : 'あなたをフォローしています'}) : null));
+    }
+    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true));
+    const mine = social.courses.filter(c => c.author === uid);
+    box.append(el('h2', {text: `投稿したコース ${mine.length}`}));
+    box.append(mine.length ? el('div', {class: 'grid'}, ...mine.map(courseCard)) : el('p', {class: 'muted', style: 'margin:0', text: 'まだ投稿はありません。'}));
+  }
+  if (focused && $(focused)){ const f = $(focused); f.focus(); if (f.setSelectionRange && f.value) f.setSelectionRange(f.value.length, f.value.length); }
+}
+function profileHeader(uid){
+  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n);
+  return el('div', {class: 'prof'}, avatar(lookOf(uid), 96),
+    el('div', {class: 'info'},
+      el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null, social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
+      t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
+      p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
+      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'))));
+}
+function titleGrid(n, compact){
+  return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+}
+async function toggleLike(cid){
+  if (!social.canWrite) return toast('このページは閲覧のみです');
+  await patchMe({likes: {[cid]: !likedByMe(cid)}});
+}
+async function toggleFollow(uid){
+  const cur = following(social.uid);
+  await patchMe({following: cur.includes(uid) ? cur.filter(x => x !== uid) : [...cur, uid].slice(-500)});
+}
+function deleteBtn(c){
+  const b = el('button', {class: 'btn sm', text: '削除'});
+  b.onclick = async () => {
+    if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = '本当に削除'; return; }
+    try { await social.db.doc('courses/' + c.id).delete(); toast('削除しました'); closeSheet(); } catch { toast('削除できませんでした'); }
+  };
+  return b;
+}
+
+/* ---------- editor ---------- */
+const editor = { rows: null, tool: '#', cam: 0, cleared: false };
+function blankCourse(w){
+  const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
+  g[4][w-3] = 'S'; g[4][2] = 'G';
+  return g.map(r => r.join(''));
+}
+function loadDraft(){
+  const d = store.get('hi-draft');
+  if (d && Array.isArray(d.rows) && d.rows.length === ROWS){ editor.rows = d.rows; $('ed-title').value = d.title || ''; }
+  else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
+  syncWidth();
+  editor.cam = Math.max(0, editor.rows[0].length*T - VIEW_W);
+}
+function saveDraft(){ store.set('hi-draft', {rows: editor.rows, title: $('ed-title').value}); }
+const edCtx = $('ed-canvas').getContext('2d');
+function drawEditor(){
+  const w = editor.rows[0].length;
+  drawSky(edCtx, editor.cam, VIEW_W, VIEW_H);
+  edCtx.strokeStyle = 'rgba(255,255,255,.25)'; edCtx.lineWidth = 1;
+  for (let x = 0; x <= w; x++){ const px = x*T - editor.cam + .5; if (px < -1 || px > VIEW_W+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
+  for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T+.5); edCtx.lineTo(VIEW_W, y*T+.5); edCtx.stroke(); }
+  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook()});
+  edCtx.fillStyle = 'rgba(255,255,255,.85)'; edCtx.font = 'bold 12px sans-serif';
+  edCtx.fillText('← ゴール側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('スタート側 →', VIEW_W - 8, 16); edCtx.textAlign = 'left';
+  const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VIEW_W); sc.value = editor.cam;
+}
+function setCell(x, y, c){
+  const w = editor.rows[0].length;
+  if (x < 0 || x >= w || y < 0 || y >= ROWS) return;
+  if (editor.rows[y][x] === c) return;
+  if (c === 'S' || c === 'G') editor.rows = editor.rows.map(r => r.replaceAll(c, '.'));
+  const r = editor.rows[y].split(''); r[x] = c; editor.rows[y] = r.join('');
+  editor.cleared = false; updatePubBtn(); drawEditor();
+}
+function cellFrom(e){
+  const rc = $('ed-canvas').getBoundingClientRect();
+  const lx = (e.clientX - rc.left) / rc.width * VIEW_W, ly = (e.clientY - rc.top) / rc.height * VIEW_H;
+  return [Math.floor((lx + editor.cam) / T), Math.floor(ly / T)];
+}
+let painting = false;
+$('ed-canvas').addEventListener('pointerdown', e => { painting = true; $('ed-canvas').setPointerCapture(e.pointerId); const [x,y] = cellFrom(e); setCell(x, y, editor.tool); });
+$('ed-canvas').addEventListener('pointermove', e => { if (!painting || editor.tool === 'S' || editor.tool === 'G') return; const [x,y] = cellFrom(e); setCell(x, y, editor.tool); });
+$('ed-canvas').addEventListener('pointerup', () => { if (painting){ painting = false; saveDraft(); } });
+$('ed-canvas').addEventListener('wheel', e => { e.preventDefault(); const max = editor.rows[0].length*T - VIEW_W; editor.cam = Math.max(0, Math.min(max, editor.cam + (e.deltaX || e.deltaY))); drawEditor(); }, {passive: false});
+$('ed-scroll').addEventListener('input', e => { editor.cam = +e.target.value; drawEditor(); });
+document.querySelectorAll('.tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; document.querySelectorAll('.tool').forEach(o => o.setAttribute('aria-pressed', o === b)); });
+const SIZES = [40, 80, 150];
+const sizeName = c => { const len = c.rows[0].length; return len <= 50 ? 'ショート' : len <= 110 ? 'ミドル' : 'ロング'; };
+function syncWidth(){ const w = editor.rows[0].length; $('ed-width').value = SIZES.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a); }
+$('ed-width').addEventListener('change', e => {
+  const nw = +e.target.value, ow = editor.rows[0].length, d = nw - ow;
+  // keep the start side (right) anchored: add/remove empty columns just after the goal area
+  editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, 4) + '.'.repeat(d) + r.slice(4) : r.slice(0, 4) + r.slice(4 - d));
+  if (!editor.rows.join('').includes('S')){ const r = editor.rows[4].split(''); r[nw-3] = 'S'; editor.rows[4] = r.join(''); }
+  editor.cam = Math.max(0, nw*T - VIEW_W); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
+});
+$('ed-title').addEventListener('input', () => { saveDraft(); updatePubBtn(); });
+$('ed-new').onclick = () => { editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = Math.max(0, editor.rows[0].length*T - VIEW_W); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft(); };
+function validate(){
+  const all = editor.rows.join('');
+  if (!all.includes('S')) return 'スタートを置いてください';
+  if (!all.includes('G')) return 'ゴールラインを置いてください';
+  return null;
+}
+function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = Math.max(0, c.rows[0].length*T - VIEW_W); saveDraft(); setTab('make'); }
+$('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
+function updatePubBtn(){
+  const err = validate();
+  const ok = !err && editor.cleared && $('ed-title').value.trim() && social.canWrite && social.uid;
+  $('ed-pub').disabled = !ok;
+  $('ed-hint').textContent = err ? err
+    : !social.db ? 'オンライン機能につながっていないため公開できません。テストプレイは自由にできます。'
+    : !social.canWrite ? 'このページは閲覧のみのため公開できません。テストプレイは自由にできます。'
+    : !editor.cleared ? 'ハムスターは右のスタートから左へ走ります。テストプレイでゴールラインまでクリアすると公開できます。'
+    : !$('ed-title').value.trim() ? 'コースの名前を入れてください。'
+    : 'クリア確認ずみ。公開できます！';
+}
+$('ed-pub').onclick = async () => {
+  if ($('ed-pub').disabled) return;
+  $('ed-pub').disabled = true;
+  try {
+    await social.db.collection('courses').add({ title: $('ed-title').value.trim().slice(0, 30), rows: editor.rows.slice(), author: social.uid, createdAt: Date.now() });
+    toast('公開しました'); editor.cleared = false; updatePubBtn(); setTab('play'); setSort('new');
+  } catch (e) {
+    toast(e && e.code === 'quota_exceeded' ? '保存できるコース数がいっぱいです' : '公開できませんでした。もう一度ためしてください');
+    updatePubBtn();
+  }
+};
+
+/* ---------- course list ---------- */
+function thumb(rows){
+  const c = document.createElement('canvas'); const w = rows[0].length, s = 4;
+  c.width = Math.min(w, 90) * s; c.height = ROWS * s; const x = c.getContext('2d');
+  x.fillStyle = '#9fd0dc'; x.fillRect(0,0,c.width,c.height);
+  const off = Math.max(0, w - 90);
+  for (let r = 0; r < ROWS; r++) for (let i = 0; i < Math.min(w, 90); i++){
+    const ch = rows[r][i + off];
+    if (ch === '#'){ x.fillStyle = '#7a5233'; x.fillRect(i*s, r*s, s, s); }
+    if (ch === '*'){ x.fillStyle = '#5a3410'; x.beginPath(); x.arc(i*s+2, r*s+2, 2.2, 0, 7); x.fill(); }
+    if (ch === 'A'){ x.fillStyle = '#c98b4a'; x.fillRect(i*s, r*s, s, s); }
+    if (ch === 'G'){ x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(i*s+s-1, 0, 1, c.height); x.fillStyle = '#d9412b'; x.fillRect(i*s, r*s-4, s, s*2); }
+    if (ch === 'S'){ x.fillStyle = '#f0b56a'; x.fillRect(i*s, r*s, s, s); }
+  }
+  c.className = 'thumb'; c.setAttribute('aria-hidden', 'true');
+  return c;
+}
+function courseCard(c){
+  const cleared = myClears()[c.id] != null;
+  const card = el('article', {class: 'card click', tabindex: 0, onclick: () => openCourse(c.id), onkeydown: e => { if (e.key === 'Enter') openCourse(c.id); }},
+    thumb(c.rows),
+    el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
+    el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
+      el('span', {text: sizeName(c) + (c.official ? '' : `・いいね${likeCount(c.id)}・コメント${commentsFor('c:' + c.id).length}`)})));
+  return card;
+}
+function renderList(){
+  const list = $('list');
+  let items = social.courses.slice();
+  if (social.sort === 'mine') items = items.filter(c => social.uid && c.author === social.uid);
+  else if (social.sort === 'follow'){ const f = social.uid ? following(social.uid) : []; items = items.filter(c => f.includes(c.author)); }
+  else items = items.concat(BUILTIN);
+  if (social.sort === 'pop') items.sort((a, b) => likeCount(b.id) - likeCount(a.id) || b.createdAt - a.createdAt);
+  else items.sort((a, b) => (!!a.official - !!b.official) || (b.createdAt - a.createdAt));
+  list.replaceChildren();
+  if (!items.length){
+    list.append(el('div', {class: 'empty', text: social.sort === 'follow' ? 'フォロー中の人のコースはまだありません。「みんな」から気になるハムをフォローしよう。' : 'まだ公開したコースがありません。「つくる」で最初のコースを作ってみよう。'}));
+    return;
+  }
+  for (const c of items) list.append(courseCard(c));
+}
+function setSort(s){ social.sort = s; ['new','pop','follow','mine'].forEach(k => $('sort-' + k).setAttribute('aria-pressed', k === s)); renderList(); }
+['new','pop','follow','mine'].forEach(k => $('sort-' + k).onclick = () => setSort(k));
+
+/* ---------- people ---------- */
+function renderPeople(){
+  const box = $('people');
+  const ids = [...social.people.keys()];
+  ids.sort((a, b) => (b === social.uid) - (a === social.uid) || (social.uid ? isFriend(social.uid, b) - isFriend(social.uid, a) : 0) || clearCount(personOf(b).clears) - clearCount(personOf(a).clears));
+  box.replaceChildren();
+  if (!ids.length){ box.append(el('div', {class: 'empty', text: social.db ? 'まだだれもプロフィールを作っていません。マイページで最初のハムを作ろう。' : 'オンライン機能につながっていません。'})); return; }
+  for (const uid of ids){
+    const p = personOf(uid), t = titleFor(clearCount(p.clears));
+    const on = social.uid && following(social.uid).includes(uid);
+    box.append(el('article', {class: 'card click', tabindex: 0, onclick: () => openProfile(uid), onkeydown: e => { if (e.key === 'Enter') openProfile(uid); }},
+      el('div', {class: 'person'}, avatar(lookOf(uid), 56), el('div', {class: 'info'},
+        el('b', {text: nameOf(uid) + (uid === social.uid ? '（あなた）' : '')}),
+        t ? el('span', {class: 'title-tag', text: t.name}) : el('span', {class: 'muted', text: '称号なし'}),
+        el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}))),
+      el('div', {class: 'row'},
+        uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null,
+        social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
+        social.uid && uid !== social.uid && social.canWrite ? el('button', {class: 'btn sm' + (on ? ' on' : ''), text: on ? 'フォロー中' : 'フォロー', onclick: (e) => { e.stopPropagation(); toggleFollow(uid); }}) : null)));
+  }
+}
+
+/* ---------- board ---------- */
+const boardEls = new Map();
+function renderBoard(){
+  $('board-compose').hidden = !(social.isOwner && social.db);
+  const box = $('board');
+  const posts = social.board.slice().sort((a, b) => b.at - a.at);
+  for (const [id, n] of boardEls) if (!posts.some(p => p.id === id)){ n.root.remove(); boardEls.delete(id); }
+  if (!posts.length){ if (!box.querySelector('.empty')) box.replaceChildren(el('div', {class: 'empty', text: social.db ? 'まだお知らせはありません。' : 'オンライン機能につながっていません。'})); return; }
+  box.querySelector('.empty')?.remove();
+  posts.forEach((p, i) => {
+    let n = boardEls.get(p.id);
+    if (!n){
+      n = { root: el('article', {class: 'post'}), head: el('div'), replies: el('div', {class: 'replies'}), comp: el('div') };
+      n.root.append(n.head, n.replies, n.comp);
+      n.comp.append(composer('p:' + p.id, '返信する', 'bd-' + p.id));
+      boardEls.set(p.id, n);
+    }
+    n.head.replaceChildren(el('div', {class: 'col', style: 'gap:6px'},
+      el('div', {class: 'row', style: 'justify-content:space-between'}, el('h2', {text: p.title || 'お知らせ', style: 'overflow-wrap:anywhere'}), el('span', {class: 'muted', text: ago(p.at)})),
+      el('div', {class: 'row'}, whoChip(p.author, 24), social.isOwner ? postDelete(p) : null),
+      el('p', {class: 'text', text: p.text})));
+    const rs = commentsFor('p:' + p.id);
+    n.replies.replaceChildren(el('span', {class: 'muted', text: `返信 ${rs.length}`}), commentBlock('p:' + p.id));
+    if (box.children[i] !== n.root) box.insertBefore(n.root, box.children[i] || null);
+  });
+}
+function postDelete(p){
+  const b = el('button', {class: 'btn sm', text: '削除'});
+  b.onclick = async () => { if (b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = '本当に削除'; return; } try { await social.db.doc('board/' + p.id).delete(); } catch { toast('削除できませんでした'); } };
+  return b;
+}
+$('bd-post').onclick = async () => {
+  const title = $('bd-title').value.trim(), text = $('bd-text').value.trim();
+  if (!text) return toast('本文を入れてください');
+  $('bd-post').disabled = true;
+  try { await social.db.collection('board').add({title: title.slice(0, 60), text: text.slice(0, 2000), author: social.uid, at: Date.now()}); $('bd-title').value = ''; $('bd-text').value = ''; toast('投稿しました'); }
+  catch { toast('投稿できませんでした'); }
+  $('bd-post').disabled = false;
+};
+
+/* ---------- my page ---------- */
+let draftLook = null, formDirty = false;
+function buildParts(){
+  const box = $('mk-parts'); box.replaceChildren();
+  for (const [key, part] of Object.entries(PARTS)){
+    const opts = el('div', {class: 'opts', role: 'group', 'aria-label': part.label});
+    for (const [val, label] of part.opts){
+      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : ''), 'aria-pressed': String(draftLook[key] === val), title: label, 'aria-label': label, text: part.swatch ? '' : label,
+        onclick: () => { draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
+      if (part.swatch) b.style.background = val;
+      opts.append(b);
+    }
+    box.append(el('div', {class: 'part'}, el('span', {text: part.label}), opts));
+  }
+}
+function syncForm(){
+  if (formDirty) return;
+  const m = me();
+  draftLook = myLook();
+  $('mk-name').value = (m && m.name) || store.get('hi-name') || '';
+  $('mk-bio').value = (m && m.bio) || '';
+  buildParts(); paintAvatar($('mk-preview'), draftLook);
+}
+['mk-name','mk-bio'].forEach(id => $(id).addEventListener('input', () => { formDirty = true; $('mk-state').textContent = '未保存の変更があります'; }));
+$('mk-random').onclick = () => { draftLook = randomLook(); formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; };
+$('mk-save').onclick = async () => {
+  const name = $('mk-name').value.trim().slice(0, 12), bio = $('mk-bio').value.trim().slice(0, 60);
+  store.set('hi-look', draftLook); store.set('hi-name', name);
+  if (social.db && social.uid && social.canWrite){
+    $('mk-save').disabled = true;
+    const ok = await patchMe({name, bio, look: draftLook});
+    $('mk-save').disabled = false;
+    if (ok){ formDirty = false; $('mk-state').textContent = '保存しました'; }
+  } else { formDirty = false; $('mk-state').textContent = 'この端末に保存しました'; }
+  renderHeader(); renderAll();
+};
+function renderMe(){
+  const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
+  $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
+  $('my-titles').replaceChildren(...titleGrid(n).children);
+  const links = $('my-links');
+  if (!social.uid){ links.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。'})); return; }
+  const fo = following(social.uid), fr = followers(social.uid), friends = fo.filter(u => fr.includes(u));
+  const line = (label, ids) => el('div', {class: 'col', style: 'gap:6px'}, el('b', {text: `${label} ${ids.length}`}),
+    ids.length ? el('div', {class: 'row'}, ...ids.map(u => whoChip(u, 26))) : el('span', {class: 'muted', text: 'まだいません'}));
+  links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
+}
+function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; }
+$('me-btn').onclick = () => setTab('me');
+function renderAccount(){
+  const box = $('account'), a = social.account;
+  if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
+  const input = el('input', {type: 'email', id: 'acct-email', placeholder: 'メールアドレス', style: 'flex:1 1 200px', autocomplete: 'email'});
+  input.className = 'txt';
+  const note = el('span', {class: 'muted'});
+  const run = (fn, ok) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); note.textContent = ok; } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
+  const idLine = el('div', {class: 'row'}, el('span', {class: 'muted', text: 'ユーザーID: '}), el('code', {text: a.uid, style: 'font-size:12px;overflow-wrap:anywhere'}),
+    el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(a.uid).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}));
+  if (a.isGuest){
+    box.replaceChildren(
+      el('b', {text: 'ゲストとして遊んでいます'}),
+      el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
+      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メール内のリンクを開くと登録完了です。')}),
+        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。')})),
+      note, idLine);
+  } else {
+    box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine);
+  }
+}
+
+/* ---------- tabs & render ---------- */
+const TABS = ['play','make','people','board','me'];
+let tab = 'play';
+function setTab(name){
+  tab = name;
+  for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
+  if (name === 'make'){ syncWidth(); drawEditor(); updatePubBtn(); }
+  if (name === 'me') syncForm();
+  renderAll();
+}
+TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
+let renderQueued = false;
+function renderAll(){
+  if (renderQueued) return; renderQueued = true;
+  requestAnimationFrame(async () => {
+    renderQueued = false;
+    await resolveNames();
+    renderHeader();
+    if (tab === 'play') renderList();
+    if (tab === 'people') renderPeople();
+    if (tab === 'board') renderBoard();
+    if (tab === 'me'){ syncForm(); renderMe(); }
+    if (sheet) renderSheet();
+  });
+}
+async function resolveNames(){
+  if (!social.user) return;
+  const ids = new Set([...social.courses.map(c => c.author), ...social.people.keys(), ...social.board.map(p => p.author)].filter(Boolean));
+  const need = [...ids].filter(id => !(personOf(id) && personOf(id).name) && !(id in social.names));
+  if (!need.length) return;
+  try { const ps = await social.user.profiles(need); for (const id of need) social.names[id] = (ps[id] && ps[id].name) || ''; } catch {}
+}
+
+/* ---------- boot ---------- */
+loadDraft(); renderHeader(); renderAll(); updatePubBtn();
+$('db-state').textContent = '公式コースを表示中';
+(async () => {
+  let be = null;
+  try { be = window.hamuBackend ? await window.hamuBackend() : null; } catch (e) { console.warn(e); }
+  if (!be){ $('db-state').textContent = 'オフラインで遊んでいます'; return; }
+  const {db, user} = be;
+  social.user = null; social.account = be.account; renderAccount();
+  social.db = db;
+  if (user){
+    social.uid = await user.id();
+    social.isOwner = await user.isOwner();
+    const cw = await user.can('data.write');
+    social.canWrite = cw !== false && !!social.uid;
+  }
+  updatePubBtn();
+  $('db-state').textContent = '読み込み中…';
+  const fail = () => { $('db-state').textContent = '読み込めませんでした'; };
+  db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
+    social.courses = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, official: false}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
+    renderAll();
+  }, fail);
+  db.collection('people').limit(1000).onSnapshot(snap => {
+    social.people = new Map(snap.docs.map(d => [d.id, d.data()])); social.peopleLoaded = true;
+    renderAll();
+  }, fail);
+  db.collection('board').orderBy('at', 'desc').limit(100).onSnapshot(snap => {
+    social.board = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), text: String(v.text || ''), author: v.author || null, at: +v.at || 0}; });
+    renderAll();
+  }, fail);
+  const site = db.doc('meta/site'); let claimed = false;
+  site.onSnapshot(s => {
+    social.ownerId = s.exists ? (s.data().ownerId || null) : null;
+    // the operator registers themselves so everyone can see the 運営 badge
+    if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; site.set({ownerId: social.uid}).catch(() => {}); }
+    renderAll();
+  }, () => {});
+})();
+})();
+</script>
+
+</body>
+</html>
