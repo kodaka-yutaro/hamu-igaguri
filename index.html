@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="左へ走りつづけるハムスターをタップで跳ねさせてイガグリをかわすゲーム。コースを作って公開・いいね・コメントできます。">
+<meta name="description" content="右へ走りつづけるハムスターをタップで跳ねさせてイガグリをかわすゲーム。コースを作って公開・いいね・コメントできます。">
 <meta property="og:title" content="ハムとイガグリ">
 <meta property="og:description" content="ハムスターを跳ねさせてイガグリをかわそう。コースを作ってみんなに公開できるよ。">
 <title>ハムとイガグリ</title>
@@ -69,6 +69,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .empty{border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
 .stage{background:#20304a;border-radius:14px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
 .stage canvas{display:block;width:100%;height:auto;max-width:100%}
+.stage.tall{width:min(100%, calc((100dvh - 150px) * 0.625));min-width:min(100%,280px);margin:0 auto}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .tool{font:inherit;font-weight:800;font-size:13px;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .tool[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
@@ -77,7 +78,7 @@ input[type=text],input[type=email],select,textarea{font:inherit;background:var(-
 textarea{width:100%;box-sizing:border-box;resize:vertical}
 input[type=range]{width:100%}
 .overlay{position:fixed;inset:0;background:rgba(12,14,10,.9);display:flex;align-items:center;justify-content:center;z-index:30;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.player{width:min(980px,100%);display:flex;flex-direction:column;gap:10px}
+.player{width:min(520px,100%);display:flex;flex-direction:column;gap:10px}
 .player .bar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#f3ead8}
 .player .bar b{font-family:var(--display);font-weight:400;font-size:18px;overflow-wrap:anywhere}
 .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;background:rgba(20,24,40,.45);pointer-events:none;padding:8px}
@@ -125,7 +126,7 @@ input[type=range]{width:100%}
 .person .info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="backend.js"></script>
 </head>
@@ -136,7 +137,7 @@ input[type=range]{width:100%}
   <header>
     <div>
       <h1>ハム<span class="and">と</span>イガグリ</h1>
-      <p class="tag">左へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
+      <p class="tag">右へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
     </div>
     <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
   </header>
@@ -176,7 +177,7 @@ input[type=range]{width:100%}
       <button class="tool" data-t="G" aria-pressed="false"><span class="sw" style="background:#d9412b"></span>ゴールライン</button>
       <button class="tool" data-t="." aria-pressed="false"><span class="sw" style="border:2px dashed var(--muted)"></span>けす</button>
     </div>
-    <div class="stage" id="ed-stage"><canvas id="ed-canvas" width="640" height="320"></canvas></div>
+    <div class="stage tall" id="ed-stage"><canvas id="ed-canvas" width="640" height="1024"></canvas></div>
     <input type="range" id="ed-scroll" min="0" max="0" value="0" aria-label="コースを左右にスクロール">
     <div class="row" style="justify-content:space-between">
       <div class="row">
@@ -230,8 +231,8 @@ input[type=range]{width:100%}
 <div class="overlay" id="overlay" hidden>
   <div class="player">
     <div class="bar"><b id="pl-title"></b><button class="btn sm" id="pl-close">とじる</button></div>
-    <div class="stage" id="pl-stage">
-      <canvas id="pl-canvas" width="640" height="320"></canvas>
+    <div class="stage tall" id="pl-stage">
+      <canvas id="pl-canvas" width="640" height="1024"></canvas>
       <div class="hud" id="pl-hud"></div>
       <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div></div>
     </div>
@@ -241,7 +242,8 @@ input[type=range]{width:100%}
 
 <script>
 (() => {
-const T = 32, ROWS = 10, VIEW_W = 640, VIEW_H = ROWS * T;
+// portrait view: 10 tiles wide, 16 tall; canvases are drawn at 2x for sharp phones
+const T = 32, ROWS = 16, VIEW_W = 320, VIEW_H = ROWS * T, PX = 2;
 const $ = id => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)){ if (k === 'text') e.textContent = v; else if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== false && v != null) e.setAttribute(k, v); } e.append(...kids.filter(Boolean)); return e; };
 const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); };
@@ -320,7 +322,7 @@ function paintHam(ctx, look, dead){
 }
 function drawHam(ctx, x, y, vy, dead, t, look){
   // x,y = top-left of the 22x22 hitbox
-  ctx.save(); ctx.translate(x+12, y+12);
+  ctx.save(); ctx.translate(x+12, y+12); ctx.scale(-1, 1);
   if (dead) ctx.rotate(t*8);
   const squash = Math.max(-0.15, Math.min(0.15, vy/3000));
   ctx.scale(1 - squash, 1 + squash);
@@ -329,29 +331,30 @@ function drawHam(ctx, x, y, vy, dead, t, look){
 }
 function paintAvatar(canvas, look){
   const ctx = canvas.getContext('2d'), s = canvas.width;
-  ctx.clearRect(0, 0, s, s); ctx.save(); ctx.translate(s/2, s/2 + s*0.06); ctx.scale(s/58, s/58); paintHam(ctx, look); ctx.restore();
+  ctx.clearRect(0, 0, s, s); ctx.save(); ctx.translate(s/2, s/2 + s*0.06); ctx.scale(-s/58, s/58); paintHam(ctx, look); ctx.restore();
 }
 function avatar(look, px){ const c = el('canvas', {class: 'av', width: px*2, height: px*2, 'aria-hidden': 'true'}); c.style.width = c.style.height = px + 'px'; paintAvatar(c, look); return c; }
 
 /* ---------- built-in courses ---------- */
-function build(w, ops, ground = true, sy = 7, gy = 7){
+// columns count from the start (left); ground is rows 14-15
+function build(w, ops, ground = true, sy = 13, gy = 13){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
-  if (ground) for (let x = 0; x < w; x++) { g[8][x] = '#'; g[9][x] = '#'; }
+  if (ground) for (let x = 0; x < w; x++) { g[14][x] = '#'; g[15][x] = '#'; }
   for (const [k, a, b, c] of ops){
-    if (k === 'gap') for (let x = a; x < a + b; x++) { g[8][x] = '.'; g[9][x] = '.'; }
+    if (k === 'gap') for (let x = a; x < a + b; x++) { g[14][x] = '.'; g[15][x] = '.'; }
     if (k === 'burr') g[b][a] = '*';
-    if (k === 'wall') for (let y = 8 - b; y < 8; y++) g[y][a] = '#';
+    if (k === 'wall') for (let y = 14 - b; y < 14; y++) g[y][a] = '#';
     if (k === 'plat') for (let x = a; x < a + b; x++) g[c][x] = '#';
     if (k === 'acorn') g[b][a] = 'A';
     if (k === 'pipe') for (let y = 0; y < ROWS; y++) if (y < b || y >= b + c) g[y][a] = '*';
   }
-  g[sy][w - 3] = 'S'; g[gy][2] = 'G';
+  g[sy][2] = 'S'; g[gy][w - 3] = 'G';
   return g.map(r => r.join(''));
 }
 const BUILTIN = [
-  { id:'b1', title:'はじめてのイガグリ', official:true, createdAt:3, rows: build(40, [['burr',31,7],['gap',24,3],['burr',17,6],['burr',17,7],['acorn',12,5],['wall',8,2]]) },
-  { id:'b2', title:'くりひろいの谷', official:true, createdAt:2, rows: build(80, [['gap',66,4],['burr',67,4],['plat',52,5,5],['gap',50,9],['burr',54,4],['acorn',57,3],['burr',45,7],['burr',45,6],['wall',36,3],['burr',36,1],['acorn',30,4],['gap',24,5],['burr',26,3],['burr',16,7],['burr',13,5],['burr',10,7]]) },
-  { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',68,3,3],['acorn',63,4],['pipe',58,5,3],['pipe',48,2,3],['acorn',43,3],['pipe',38,4,3],['pipe',28,3,3],['acorn',23,4],['pipe',18,5,3],['pipe',9,3,3]], false, 4, 4) },
+  { id:'b1', title:'はじめてのイガグリ', official:true, createdAt:3, rows: build(40, [['burr',8,13],['gap',13,3],['burr',22,12],['burr',22,13],['acorn',27,11],['wall',31,2],['burr',35,8],['burr',18,6],['burr',29,5]]) },
+  { id:'b2', title:'くりひろいの谷', official:true, createdAt:2, rows: build(80, [['gap',9,4],['burr',11,10],['plat',23,5,11],['gap',21,9],['burr',25,10],['acorn',22,9],['burr',34,13],['burr',34,12],['wall',43,3],['burr',43,7],['acorn',49,10],['gap',50,5],['burr',52,9],['burr',63,13],['burr',66,11],['burr',69,13],['burr',15,4],['burr',38,5],['burr',58,4],['burr',73,6]]) },
+  { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',11,6,4],['acorn',16,8],['pipe',21,9,4],['pipe',31,4,4],['acorn',36,6],['pipe',41,8,4],['pipe',51,5,4],['acorn',56,7],['pipe',61,9,4],['pipe',70,6,4]], false, 7, 8) },
 ];
 
 /* ---------- course drawing ---------- */
@@ -386,11 +389,11 @@ function drawAcorn(ctx, cx, cy, t){
 }
 // goal = a vertical line on the right edge of the G column, plus a flag where G was placed
 function drawGoal(ctx, x, y){
-  const lx = x + T - 2;
+  const lx = x + 2;
   ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, VIEW_H); ctx.stroke(); ctx.restore();
   ctx.fillStyle = '#ece4d4'; ctx.fillRect(x+14, y-T+4, 4, T*2-4);
-  ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.moveTo(x+14, y-T+4); ctx.lineTo(x-4, y-T+13); ctx.lineTo(x+14, y-T+22); ctx.fill();
+  ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.moveTo(x+18, y-T+4); ctx.lineTo(x+36, y-T+13); ctx.lineTo(x+18, y-T+22); ctx.fill();
 }
 function drawCourse(ctx, rows, camX, t, opts = {}){
   const w = rows[0].length;
@@ -414,10 +417,10 @@ function makeGame(canvas, rows, hooks){
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   const S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
-  const goalX = (G.x + 1) * T;
+  const goalX = G.x * T;
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
-  function reset(){ p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: -SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
-  function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.68)); }
+  function reset(){ p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+  function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); hooks.onState && hooks.onState('run'); }
     if (state === 'run'){ p.vy = JUMP; life -= 1; if (life <= 0){ life = 0; die('ライフ切れ'); } }
@@ -425,8 +428,8 @@ function makeGame(canvas, rows, hooks){
   function step(dt){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     p.x += p.vx * dt;
-    const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor(p.x / T);
-    for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = (tx + 1) * T; break; }
+    const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
+    for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = tx * T - PW; break; }
     p.y += p.vy * dt;
     const tx0 = Math.floor(p.x / T), tx1 = Math.floor((p.x + PW - 0.01) / T);
     if (p.vy > 0){ const ty = Math.floor((p.y + PH) / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && x >= 0 && x < w){ p.y = ty*T - PH; p.vy = 0; break; } }
@@ -441,7 +444,7 @@ function makeGame(canvas, rows, hooks){
         if (c === 'A' && !taken.has(y*w + x) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(y*w + x); life = LIFE_MAX; }
       }
     // crossing the goal line at any height clears the course
-    if (cx <= goalX) return win();
+    if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
     if (cy > VIEW_H + T*1.5) return die('落ちた');
   }
@@ -454,11 +457,12 @@ function makeGame(canvas, rows, hooks){
     ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('ライフ', 10, y + 10);
   }
   function draw(){
+    ctx.setTransform(PX, 0, 0, PX, 0, 0);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
     drawCourse(ctx, rows, camX, t, {spin: true, taken});
     drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
     drawLife(life / LIFE_MAX);
-    if (hooks.hud) hooks.hud(Math.max(0, Math.ceil((p.x + PW/2 - goalX) / T)), deaths);
+    if (hooks.hud) hooks.hud(Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   function loop(now){
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
@@ -677,7 +681,7 @@ function deleteBtn(c){
 const editor = { rows: null, tool: '#', cam: 0, cleared: false };
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
-  g[4][w-3] = 'S'; g[4][2] = 'G';
+  g[7][2] = 'S'; g[7][w-3] = 'G';
   return g.map(r => r.join(''));
 }
 function loadDraft(){
@@ -685,19 +689,20 @@ function loadDraft(){
   if (d && Array.isArray(d.rows) && d.rows.length === ROWS){ editor.rows = d.rows; $('ed-title').value = d.title || ''; }
   else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
   syncWidth();
-  editor.cam = Math.max(0, editor.rows[0].length*T - VIEW_W);
+  editor.cam = 0;
 }
 function saveDraft(){ store.set('hi-draft', {rows: editor.rows, title: $('ed-title').value}); }
 const edCtx = $('ed-canvas').getContext('2d');
 function drawEditor(){
   const w = editor.rows[0].length;
+  edCtx.setTransform(PX, 0, 0, PX, 0, 0);
   drawSky(edCtx, editor.cam, VIEW_W, VIEW_H);
   edCtx.strokeStyle = 'rgba(255,255,255,.25)'; edCtx.lineWidth = 1;
   for (let x = 0; x <= w; x++){ const px = x*T - editor.cam + .5; if (px < -1 || px > VIEW_W+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
   for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T+.5); edCtx.lineTo(VIEW_W, y*T+.5); edCtx.stroke(); }
   drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook()});
   edCtx.fillStyle = 'rgba(255,255,255,.85)'; edCtx.font = 'bold 12px sans-serif';
-  edCtx.fillText('← ゴール側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('スタート側 →', VIEW_W - 8, 16); edCtx.textAlign = 'left';
+  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('ゴール側 →', VIEW_W - 8, 16); edCtx.textAlign = 'left';
   const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VIEW_W); sc.value = editor.cam;
 }
 function setCell(x, y, c){
@@ -725,20 +730,20 @@ const sizeName = c => { const len = c.rows[0].length; return len <= 50 ? 'ショ
 function syncWidth(){ const w = editor.rows[0].length; $('ed-width').value = SIZES.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a); }
 $('ed-width').addEventListener('change', e => {
   const nw = +e.target.value, ow = editor.rows[0].length, d = nw - ow;
-  // keep the start side (right) anchored: add/remove empty columns just after the goal area
-  editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, 4) + '.'.repeat(d) + r.slice(4) : r.slice(0, 4) + r.slice(4 - d));
-  if (!editor.rows.join('').includes('S')){ const r = editor.rows[4].split(''); r[nw-3] = 'S'; editor.rows[4] = r.join(''); }
-  editor.cam = Math.max(0, nw*T - VIEW_W); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
+  // keep both ends: add/remove empty columns just before the goal area on the right
+  editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, ow - 4) + '.'.repeat(d) + r.slice(ow - 4) : r.slice(0, ow - 4 + d) + r.slice(ow - 4));
+  if (!editor.rows.join('').includes('G')){ const r = editor.rows[7].split(''); r[nw-3] = 'G'; editor.rows[7] = r.join(''); }
+  editor.cam = Math.min(editor.cam, Math.max(0, nw*T - VIEW_W)); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
 });
 $('ed-title').addEventListener('input', () => { saveDraft(); updatePubBtn(); });
-$('ed-new').onclick = () => { editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = Math.max(0, editor.rows[0].length*T - VIEW_W); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft(); };
+$('ed-new').onclick = () => { editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = 0; editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft(); };
 function validate(){
   const all = editor.rows.join('');
   if (!all.includes('S')) return 'スタートを置いてください';
   if (!all.includes('G')) return 'ゴールラインを置いてください';
   return null;
 }
-function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = Math.max(0, c.rows[0].length*T - VIEW_W); saveDraft(); setTab('make'); }
+function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = 0; saveDraft(); setTab('make'); }
 $('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
 function updatePubBtn(){
   const err = validate();
@@ -747,7 +752,7 @@ function updatePubBtn(){
   $('ed-hint').textContent = err ? err
     : !social.db ? 'オンライン機能につながっていないため公開できません。テストプレイは自由にできます。'
     : !social.canWrite ? 'このページは閲覧のみのため公開できません。テストプレイは自由にできます。'
-    : !editor.cleared ? 'ハムスターは右のスタートから左へ走ります。テストプレイでゴールラインまでクリアすると公開できます。'
+    : !editor.cleared ? 'ハムスターは左のスタートから右へ走ります。テストプレイでゴールラインまでクリアすると公開できます。'
     : !$('ed-title').value.trim() ? 'コースの名前を入れてください。'
     : 'クリア確認ずみ。公開できます！';
 }
@@ -768,13 +773,13 @@ function thumb(rows){
   const c = document.createElement('canvas'); const w = rows[0].length, s = 4;
   c.width = Math.min(w, 90) * s; c.height = ROWS * s; const x = c.getContext('2d');
   x.fillStyle = '#9fd0dc'; x.fillRect(0,0,c.width,c.height);
-  const off = Math.max(0, w - 90);
+  const off = 0;
   for (let r = 0; r < ROWS; r++) for (let i = 0; i < Math.min(w, 90); i++){
     const ch = rows[r][i + off];
     if (ch === '#'){ x.fillStyle = '#7a5233'; x.fillRect(i*s, r*s, s, s); }
     if (ch === '*'){ x.fillStyle = '#5a3410'; x.beginPath(); x.arc(i*s+2, r*s+2, 2.2, 0, 7); x.fill(); }
     if (ch === 'A'){ x.fillStyle = '#c98b4a'; x.fillRect(i*s, r*s, s, s); }
-    if (ch === 'G'){ x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(i*s+s-1, 0, 1, c.height); x.fillStyle = '#d9412b'; x.fillRect(i*s, r*s-4, s, s*2); }
+    if (ch === 'G'){ x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(i*s, 0, 1, c.height); x.fillStyle = '#d9412b'; x.fillRect(i*s, r*s-4, s, s*2); }
     if (ch === 'S'){ x.fillStyle = '#f0b56a'; x.fillRect(i*s, r*s, s, s); }
   }
   c.className = 'thumb'; c.setAttribute('aria-hidden', 'true');
