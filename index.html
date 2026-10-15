@@ -292,7 +292,7 @@ input[type=range]{width:100%}
 
 <div class="overlay" id="overlay" hidden>
   <div class="player">
-    <div class="bar"><b id="pl-title"></b><button class="btn sm" id="pl-close">とじる</button></div>
+    <div class="bar"><b id="pl-title"></b><span class="row" style="gap:6px;flex:none"><button class="btn sm" id="pl-mute" aria-label="音を消す">🔊</button><button class="btn sm" id="pl-close">とじる</button></span></div>
     <div class="stage tall" id="pl-stage">
       <canvas id="pl-canvas" width="640" height="1024"></canvas>
       <div class="hud" id="pl-hud"></div>
@@ -534,6 +534,30 @@ function endlessCourse(seed, startAt = 0){
   return { rows, extend };
 }
 
+/* ---------- sound: tiny synthesized effects, no audio files ---------- */
+let audio = null, muted = store.get('hi-mute') === true;
+function sfx(name){
+  if (muted) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+    const t0 = audio.currentTime, out = audio.createGain(); out.gain.value = .25; out.connect(audio.destination);
+    // note(type, start, length, freq from → to, volume)
+    const note = (type, at, len, f0, f1, vol = 1) => {
+      const o = audio.createOscillator(), g = audio.createGain(); o.type = type;
+      o.frequency.setValueAtTime(f0, t0 + at); o.frequency.exponentialRampToValueAtTime(f1, t0 + at + len);
+      g.gain.setValueAtTime(0, t0 + at); g.gain.linearRampToValueAtTime(vol, t0 + at + .01); g.gain.exponentialRampToValueAtTime(.001, t0 + at + len);
+      o.connect(g); g.connect(out); o.start(t0 + at); o.stop(t0 + at + len + .02);
+    };
+    if (name === 'jump') note('square', 0, .09, 420, 760, .35);
+    if (name === 'start'){ note('triangle', 0, .08, 523, 523); note('triangle', .08, .08, 659, 659); note('triangle', .16, .14, 784, 784); }
+    if (name === 'acorn'){ note('sine', 0, .07, 988, 988, .8); note('sine', .07, .16, 1319, 1319, .8); }
+    if (name === 'die'){ note('sawtooth', 0, .35, 440, 90, .5); note('square', .02, .2, 200, 60, .3); }
+    if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
+  } catch {}
+}
+function setMute(m){ muted = m; store.set('hi-mute', m); const b = $('pl-mute'); if (b){ b.textContent = m ? '🔇' : '🔊'; b.setAttribute('aria-label', m ? '音を出す' : '音を消す'); } }
+
 /* ---------- game ---------- */
 function makeGame(canvas, rows, hooks){
   const ctx = canvas.getContext('2d');
@@ -554,8 +578,8 @@ function makeGame(canvas, rows, hooks){
     p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
-    if (state === 'ready'){ state = 'run'; startedAt = performance.now(); hooks.onState && hooks.onState('run'); }
-    if (state === 'run'){ p.vy = JUMP; life -= 1; if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
+    if (state === 'run'){ p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   function step(dt){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
@@ -574,15 +598,15 @@ function makeGame(canvas, rows, hooks){
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
         if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
-        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; }
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; sfx('acorn'); }
       }
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
     if (cy > VIEW_H + T*1.5) return die('落ちた');
   }
-  function die(why){ state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
-  function win(){ state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
+  function die(why){ sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
+  function win(){ sfx('clear'); state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
   function drawLife(f){
     const x = 58, y = 30, bw = 110, h = 10;
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, bw+4, h+4);
@@ -753,6 +777,7 @@ function press(e){
 }
 $('pl-stage').addEventListener('pointerdown', press);
 $('pl-close').onclick = closePlayer;
+$('pl-mute').onclick = () => setMute(!muted); setMute(muted);
 addEventListener('keydown', e => {
   if (!$('overlay').hidden){
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
