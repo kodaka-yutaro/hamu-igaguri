@@ -3,7 +3,7 @@
 右へ走りつづけるハムスターをタップで跳ねさせて、イガグリをかわすブラウザゲームです。
 コースを作って公開し、いいね・コメント・フォローができます。
 
-- 公開先: https://kodaka-yutaro.github.io/hamu-igaguri/
+- 公開先: https://hamu.kdking-tools.com/
 - `main` に push すると GitHub Actions で GitHub Pages に公開されます。
 
 ## ファイル
