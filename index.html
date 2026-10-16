@@ -55,6 +55,20 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,44px);lin
 h1 .and{color:var(--accent)}
 h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .tag{color:var(--muted);font-size:13px;margin:4px 0 0}
+.celebrate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(12,14,10,.55);cursor:pointer}
+.celebrate canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cel-card{position:relative;background:var(--panel);border:3px solid #ffd23c;border-radius:20px;padding:22px 28px;text-align:center;display:flex;flex-direction:column;gap:6px;max-width:min(86vw,360px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.cel-kind{font-weight:800;color:#b8561c;font-size:14px}
+.cel-name{font-family:var(--display);font-size:30px;line-height:1.2;color:var(--fg)}
+.cel-tap{font-size:11px;color:var(--muted);margin-top:4px}
+.cel-rays{position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;z-index:-1;border-radius:50%;background:repeating-conic-gradient(rgba(255,210,60,.35) 0 10deg,transparent 10deg 20deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.celebrate.go .cel-card{animation:cel-pop .6s cubic-bezier(.2,1.6,.4,1)}
+.celebrate.go .cel-rays{animation:cel-spin 6s linear infinite}
+.celebrate.go .cel-name{animation:cel-shine 1.2s ease-out}
+@keyframes cel-pop{0%{transform:scale(.2) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes cel-spin{to{transform:rotate(360deg)}}
+@keyframes cel-shine{0%{color:#ffd23c;transform:scale(1.3)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.celebrate.go .cel-card,.celebrate.go .cel-rays,.celebrate.go .cel-name{animation:none}}
 .bell{position:relative;width:42px;height:42px;border-radius:99px;border:1.5px solid var(--line);background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
 .bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e5533c;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
 .noti.new{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
@@ -327,6 +341,9 @@ input[type=range]{width:100%}
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="celebrate" id="celebrate" hidden><canvas id="cel-cv"></canvas>
+  <div class="cel-card"><div class="cel-rays"></div><div class="cel-kind" id="cel-kind"></div><div class="cel-name" id="cel-name"></div><div class="muted" id="cel-note"></div><div class="cel-tap">タップでとじる</div></div>
+</div>
 
 <script>
 (() => {
@@ -742,6 +759,7 @@ function sfx(name){
     if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
     if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
     if (name === 'hit'){ note('square', 0, .05, 1200, 300, .5); note('sawtooth', .02, .25, 220, 50, .8); note('triangle', .04, .2, 90, 40, .9); }
+    if (name === 'fanfare'){ [523, 659, 784].forEach((f, i) => note('square', i * .1, .1, f, f, .4)); note('square', .3, .5, 1047, 1047, .45); note('triangle', .3, .5, 523, 523, .6); [1319, 1568, 2093].forEach((f, i) => note('sine', .45 + i * .07, .2, f, f, .3)); }
     if (name === 'power') [523, 784, 1047, 1568].forEach((f, i) => note('sawtooth', i * .05, .1, f, f * 1.5, .35));
     if (name === 'bonk'){ note('square', 0, .06, 700, 1400, .4); note('triangle', .06, .14, 1047, 1568, .5); }
     if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
@@ -1091,7 +1109,7 @@ function onState(s, info){
     btns.push(['コメントする', () => { closePlayer(); openCourse(c.id); }]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
-    recordClear(c, info.sec).then(t => { if (t && current === cur) $('pl-gain').hidden = false, $('pl-gain').textContent = `称号「${t.name}」をゲット！`; renderMe(); });
+    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); });
   }
 }
 function press(e){
@@ -1577,6 +1595,33 @@ function renderMe(){
   links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
 }
 function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; renderBell(); }
+/* ---------- title celebration: confetti of acorns and a big card ---------- */
+function celebrate(t, kind){
+  const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
+  $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : '新しい称号';
+  $('cel-name').textContent = t.name; $('cel-note').textContent = t.note || '';
+  box.hidden = false; box.classList.remove('go'); void box.offsetWidth; box.classList.add('go');
+  sfx('fanfare');
+  const dpr = Math.min(2, devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
+  const bits = Array.from({length: 70}, (_, i) => ({x: W / 2, y: H * .42, vx: (Math.random() - .5) * 18 * dpr, vy: (-6 - Math.random() * 14) * dpr, r: Math.random() * 6, vr: (Math.random() - .5) * .3, k: i % 3, s: (.6 + Math.random() * .7) * dpr}));
+  const colors = ['#ffd23c', '#e5533c', '#7bc34f', '#5aa9e6', '#fff'];
+  let f = 0; cancelAnimationFrame(celebrate.raf);
+  const tick = () => {
+    ctx.clearRect(0, 0, W, H);
+    for (const b of bits){
+      b.vy += .45 * dpr; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r); ctx.scale(b.s * (b.k ? 1.4 : .7), b.s * (b.k ? 1.4 : .7));
+      if (b.k === 0) drawAcorn(ctx, 0, 0, 0);
+      else { ctx.fillStyle = colors[(b.k + Math.floor(b.r)) % colors.length]; ctx.fillRect(-4, -2, 8, 4); }
+      ctx.restore();
+    }
+    if (++f < 240 && !box.hidden) celebrate.raf = requestAnimationFrame(tick);
+  };
+  tick();
+  clearTimeout(celebrate.h); celebrate.h = setTimeout(() => box.hidden = true, 4500);
+}
+$('celebrate').addEventListener('pointerdown', e => { e.stopPropagation(); $('celebrate').hidden = true; });
+
 /* ---------- notifications: likes on my courses and comments ---------- */
 function notifications(){
   const uid = social.uid; if (!uid || !social.peopleLoaded) return [];
@@ -1615,7 +1660,7 @@ function renderBell(){
   notiTop = top;
   // a new course-maker title is announced once; the highest one reached is kept on this device
   const mt = makerTitleFor(likesReceived(social.uid)), had = store.get('hi-maker');
-  if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => toast(`称号「${mt.name}」をゲット！`), 2700); }
+  if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => celebrate(mt, 'コース職人'), 1500); }
   else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
 }
 function notiText(n){
