@@ -56,6 +56,8 @@ h1 .and{color:var(--accent)}
 h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .tag{color:var(--muted);font-size:13px;margin:4px 0 0}
 .bell{position:relative;width:42px;height:42px;border-radius:99px;border:1.5px solid var(--line);background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e5533c;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
+.noti.new{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .noti{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);font:inherit;color:var(--fg);cursor:pointer}
 .noti>.col{flex:1}
 .mebtn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--line);border-radius:99px;padding:3px 12px 3px 4px;font:inherit;font-weight:800;color:var(--fg);cursor:pointer}
@@ -191,7 +193,7 @@ input[type=range]{width:100%}
       <p class="tag">右へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
     </div>
     <span class="row" style="gap:8px;flex:none">
-    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg></button>
+    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg><span class="bell-n" id="bell-n" hidden></span></button>
     <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
     </span>
   </header>
@@ -1461,10 +1463,13 @@ function notifications(){
   }
   return out.sort((a, b) => b.at - a.at);
 }
+const notiSeen = () => Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
 let notiTop = null;
 function renderBell(){
   if (!social.peopleLoaded) return;
-  const list = notifications(), top = list.length ? list[0].at : 0;
+  const list = notifications(), top = list.length ? list[0].at : 0, seen = notiSeen(), unread = list.filter(n => n.at > seen).length;
+  const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
+  $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
   // a like arriving while the page is open gets a toast
   if (notiTop !== null && top > notiTop) toast(`${nameOf(list[0].who)}さんが${list[0].course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`);
   notiTop = top;
@@ -1474,7 +1479,7 @@ function renderBell(){
   else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
 }
 function renderNoti(box){
-  const list = notifications().slice(0, 100);
+  const list = notifications().slice(0, 100), seen = notiShownFrom;
   box.append(el('h2', {style: 'margin:0', text: 'お知らせ'}));
   if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
   if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。コースやコメントにいいねがつくと、ここに届きます。'})); return; }
@@ -1486,7 +1491,7 @@ function renderNoti(box){
       if (t.startsWith('c:')) return openCourse(t.slice(2), true);
       closeSheet(); setTab('board');
     };
-    box.append(el('button', {class: 'noti', onclick: go},
+    box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
       avatar(lookOf(n.who), 34),
       el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
         el('span', {}, el('b', {text: nameOf(n.who)}), `さんがあなたの${what}にいいねしました`),
@@ -1495,7 +1500,14 @@ function renderNoti(box){
   }
 }
 $('me-btn').onclick = () => setTab('me');
-$('bell-btn').onclick = () => openSheet('noti');
+function markNotiSeen(){
+  const now = Date.now(); store.set('hi-noti-seen', now);
+  if (social.db && social.uid && social.canWrite && me()) patchMe({notiSeen: now});
+  renderBell();
+}
+// the list keeps highlighting what was new when it was opened
+let notiShownFrom = 0;
+$('bell-btn').onclick = () => { notiShownFrom = notiSeen(); openSheet('noti'); markNotiSeen(); };
 function renderAccount(){
   const box = $('account'), a = social.account;
   if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
