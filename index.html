@@ -520,13 +520,21 @@ function drawAcorn(ctx, cx, cy, t){
   ctx.fillRect(cx-1, cy-12, 2, 4);
 }
 // goal = a vertical line on the right edge of the G column, plus a flag where G was placed
-function drawBlackAcorn(ctx, cx, cy, t){
-  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2 + Math.sin(t * 20) * .15);
+function drawBlackAcorn(ctx, cx, cy, t, k = 1, dir = 0){
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(Math.PI / 2 + dir + Math.sin(t * 20) * .15);
   ctx.fillStyle = 'rgba(40,20,60,.25)'; ctx.fillRect(-3, 8, 6, 14);
   ctx.fillStyle = '#2a2430'; ctx.beginPath(); ctx.ellipse(0, 2, 7, 9, 0, 0, 7); ctx.fill();
   ctx.fillStyle = '#4a3d52'; ctx.beginPath(); ctx.ellipse(0, -5, 8.5, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-1, -12, 2, 4);
   ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.arc(-2.5, 2, 1.3, 0, 7); ctx.arc(2.5, 2, 1.3, 0, 7); ctx.fill();
   ctx.restore();
+}
+// battle weapon: a black acorn in a glowing bubble
+function drawWeapon(ctx, cx, cy, t){
+  const b = Math.sin(t * 4) * 2;
+  ctx.save(); ctx.fillStyle = 'rgba(255,210,60,.35)'; ctx.beginPath(); ctx.arc(cx, cy + b, 14 + Math.sin(t * 8), 0, 7); ctx.fill();
+  ctx.strokeStyle = '#ffd23c'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  drawBlackAcorn(ctx, cx, cy + b, 0, .9, -Math.PI / 2);
+  ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++){ const a = t * 3 + i * 2.1; ctx.fillRect(cx + Math.cos(a) * 15 - 1, cy + b + Math.sin(a) * 15 - 1, 2, 2); }
 }
 function drawGoal(ctx, x, y){
   const lx = x + 2;
@@ -543,6 +551,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
+    else if (c === 'W' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawWeapon(ctx, px+T/2, py+T/2, t);
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
@@ -612,6 +621,105 @@ function endlessCourse(seed, startAt = 0, opts = {}){
   return { rows, extend };
 }
 
+/* ---------- friend battle course: themed zones that change every so often ---------- */
+// Same seed on both phones gives the same course. Each zone has a weapon (W) in the middle
+// that only the first one to grab it gets, and acorns come a little more often than in endless.
+const BATTLE_ZONES = ['イガグリの森', 'じめんの道', 'いわのトンネル', 'イガグリの雨', 'のぼりくだり'];
+function battleCourse(seed){
+  let s = seed >>> 0 || 1;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const rows = Array.from({length: ROWS}, () => ''), zones = [];
+  const empty = () => Array(ROWS).fill('.');
+  let since = 4, gap = 7, last = -1;
+  // safe: a row the hamster can be in at this column; an acorn or the weapon goes there when due
+  const put = (c, safe, weapon) => {
+    since++;
+    if (weapon && safe != null) c[safe] = 'W';
+    else if (safe != null && since >= 7 && c[safe] === '.'){ c[safe] = 'A'; since = 0; }
+    for (let y = 0; y < ROWS; y++) rows[y] += c[y];
+  };
+  for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c, null); }
+  const clampGap = size => { gap = Math.max(1 + size / 2, Math.min(ROWS - 2 - size / 2, gap)); };
+  const breather = n => { for (let i = 0; i < n; i++) put(empty(), null); };
+  const zone = {
+    // burr pillars with one gap each
+    'イガグリの森'(n){
+      let x = 0; const mid = Math.floor(n / 2);
+      while (x < n){
+        const space = ri(3, 4), size = ri(4, 5);
+        gap += ri(-2, 2); clampGap(size);
+        for (let i = 0; i < space; i++, x++) put(empty(), null);
+        const top = Math.round(gap - size / 2), c = empty();
+        for (let y = 0; y < ROWS; y++) if (y < top || y >= top + size) c[y] = '*';
+        put(c, top + Math.floor(size / 2), x >= mid && x - space < mid); x++;
+      }
+    },
+    // a floor to run on, with burr hurdles and floating ledges
+    'じめんの道'(n){
+      let x = 0, wDone = false;
+      while (x < n){
+        const run = ri(3, 5);
+        for (let i = 0; i < run && x < n; i++, x++){
+          const c = empty(); c[14] = c[15] = '#';
+          const ledge = i === 1 && rnd() < .5;
+          if (ledge){ c[10] = '#'; }
+          const w = !wDone && x >= n / 2; if (w) wDone = true;
+          put(c, ledge ? 9 : 13, w);
+        }
+        if (x >= n) break;
+        const h = rnd() < .35 ? 2 : 1, c = empty(); c[14] = c[15] = '#';
+        for (let k = 0; k < h; k++) c[13 - k] = '*';
+        if (rnd() < .3) c[ri(3, 6)] = '*';
+        put(c, null); x++;
+      }
+    },
+    // a winding rock tunnel: rock above and below, the passage steps up and down
+    'いわのトンネル'(n){
+      let floor = 11, run = 0; const H = 5;
+      for (let x = 0; x < n; x++){
+        if (++run >= ri(3, 5)){ run = 0; floor = Math.max(H + 1, Math.min(14, floor + (rnd() < .5 ? -1 : 1))); }
+        const c = empty();
+        for (let y = 0; y < ROWS; y++) if (y >= floor || y < floor - H) c[y] = '#';
+        if (x > 2 && x < n - 2 && run === 1 && rnd() < .3) c[floor - H] = '*'; // a burr hanging from the roof
+        put(c, floor - 2, x === Math.floor(n / 2));
+      }
+    },
+    // open sky with burrs scattered around a wandering safe lane
+    'イガグリの雨'(n){
+      for (let x = 0; x < n; x++){
+        if (x % 3 === 0){ gap += ri(-2, 2); clampGap(5); }
+        const c = empty(), top = Math.round(gap - 2.5);
+        for (let k = 0; k < 2; k++){ const y = ri(0, ROWS - 1); if (y < top - 1 || y > top + 5) c[y] = '*'; }
+        put(c, Math.round(gap), x === Math.floor(n / 2));
+      }
+    },
+    // stairs going up and down, with burrs hanging from the sky
+    'のぼりくだり'(n){
+      let floor = 14, dir = -1, step = 0;
+      for (let x = 0; x < n; x++){
+        if (++step >= 3){ step = 0; floor += dir; if (floor <= 9) dir = 1; if (floor >= 14) dir = -1; }
+        const c = empty();
+        for (let y = floor; y < ROWS; y++) c[y] = '#';
+        const hang = floor - 6;
+        if (x % 4 === 2) for (let y = 0; y < hang; y++) c[y] = '*';
+        put(c, floor - 2, x === Math.floor(n / 2));
+      }
+    },
+  };
+  function extend(toCol){
+    while (rows[0].length < toCol){
+      let i; do i = ri(0, BATTLE_ZONES.length - 1); while (i === last); last = i;
+      const name = BATTLE_ZONES[i];
+      breather(4); gap = 7;
+      zones.push({x: rows[0].length, name});
+      zone[name](ri(40, 60));
+    }
+  }
+  extend(60);
+  return { rows, extend, zones };
+}
+
 /* ---------- sound: tiny synthesized effects, no audio files ---------- */
 let audio = null, muted = store.get('hi-mute') === true;
 function sfx(name){
@@ -634,6 +742,7 @@ function sfx(name){
     if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
     if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
     if (name === 'hit'){ note('square', 0, .05, 1200, 300, .5); note('sawtooth', .02, .25, 220, 50, .8); note('triangle', .04, .2, 90, 40, .9); }
+    if (name === 'power') [523, 784, 1047, 1568].forEach((f, i) => note('sawtooth', i * .05, .1, f, f * 1.5, .35));
     if (name === 'bonk'){ note('square', 0, .06, 700, 1400, .4); note('triangle', .06, .14, 1047, 1568, .5); }
     if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
     if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
@@ -654,6 +763,9 @@ function makeGame(canvas, rows, hooks){
   const B = hooks.battle || null;
   const DASH_V = 480, DASH_T = .16, DASH_CD = .45, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .35;
   let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0, fx = [], shake = 0, wantDash = null, wantFire = 0;
+  // weapon level: 0 normal, 1 big black acorns (more damage), 2 three at once. myW: tiles I grabbed and when
+  let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
+  const shotDmg = pw => pw >= 1 ? 7 : SHOT_DMG;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
@@ -662,7 +774,7 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
@@ -681,20 +793,29 @@ function makeGame(canvas, rows, hooks){
     if (shotCd > 0){ wantFire = .25; return; }
     wantFire = 0;
     shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
-    const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, mine: true, age: 0};
-    shots.push(s); B.onFire && B.onFire(s);
+    const spread = power >= 2 ? [-90, 0, 90] : [0];
+    for (const vy of spread){
+      const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, vy, pw: power, mine: true, age: 0};
+      shots.push(s); B.onFire && B.onFire(s);
+    }
     if (life <= 0){ life = 0; die('ライフ切れ'); }
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
-  function addShot(x, y, id, lag = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y, mine: false, age: lag}); }
+  function addShot(x, y, id, lag = 0, vy = 0, pw = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y: y + vy * lag, vy, pw, mine: false, age: lag}); }
+  // the rival grabbed a weapon: it's gone here too. If we both grabbed it, the earlier grab keeps it.
+  function rivalWeapon(x, y, at){
+    const k = x*ROWS + y; taken.add(k);
+    if (myW.has(k) && myW.get(k) > at){ myW.delete(k); power = Math.max(0, power - 1); banner && banner('武器は相手が先に取った！'); }
+  }
   // my black acorn hit the rival: burst where it struck
   function dropShot(id, hit){
     const s = shots.find(x => x.id === id); shots = shots.filter(x => x.id !== id);
-    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false); sfx('bonk'); }
+    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false, shotDmg(s.pw)); sfx('bonk'); }
   }
-  function burst(x, y, me){
+  const banner = hooks.banner;
+  function burst(x, y, me, dmg = SHOT_DMG){
     for (let i = 0; i < 14; i++){ const a = Math.PI * 2 * i / 14 + Math.random() * .4, v = 70 + Math.random() * 110; fx.push({k: 'bit', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: .5 + Math.random() * .25}); }
-    fx.push({k: 'ring', x, y, age: 0, life: .3}, {k: 'txt', x, y: y - 14, age: 0, life: .9, text: '-' + SHOT_DMG, me});
+    fx.push({k: 'ring', x, y, age: 0, life: .3}, {k: 'txt', x, y: y - 14, age: 0, life: .9, text: '-' + dmg, me});
     if (me) shake = .3;
   }
   function stepFx(dt){
@@ -713,9 +834,10 @@ function makeGame(canvas, rows, hooks){
   }
   function stepShots(dt){
     const cx = p.x + PW/2, cy = p.y + PH/2;
-    for (const s of shots){ s.x += SHOT_V * dt; s.age += dt; }
-    for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < 20){
-      s.gone = true; life -= SHOT_DMG; hurtT = .5; sfx('hit'); burst(cx, cy, true); B.onHit && B.onHit(s.id);
+    for (const s of shots){ s.x += SHOT_V * dt; s.y += (s.vy || 0) * dt; s.age += dt; }
+    for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
+      const d = shotDmg(s.pw);
+      s.gone = true; life -= d; hurtT = .5; sfx('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
@@ -726,10 +848,15 @@ function makeGame(canvas, rows, hooks){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
       if (wantDash){ wantDash.t -= dt; if (dashCd <= 0) dash(wantDash.dir); else if (wantDash.t <= 0) wantDash = null; }
       if (wantFire > 0){ wantFire -= dt; if (shotCd <= 0) fire(); }
-      if (dashT > 0){ dashT -= dt; p.vx = SPEED + dashDir * DASH_V; } else p.vx = SPEED;
+      // the one behind runs faster, more the further back, so the two stay within reach of each other
+      const r = B.rival, lag = r && r.x != null && !r.dead ? r.x - p.x : 0;
+      catchUp = lag > 3*T ? Math.min(90, (lag - 3*T) * .3) : 0;
+      if (dashT > 0){ dashT -= dt; p.vx = SPEED + catchUp + dashDir * DASH_V; } else p.vx = SPEED + catchUp;
       stepShots(dt); if (state !== 'run') return;
     }
     p.x += p.vx * dt;
+    if (B && p.vx < 0){ const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor(p.x / T); for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = (tx + 1) * T; break; } }
+    if (gen && gen.zones && hooks.onZone){ const z = gen.zones[zoneAt]; if (z && p.x >= z.x * T){ zoneAt++; hooks.onZone(z.name); } }
     if (B) p.x = Math.max(S.x*T + 5, p.x);
     if (gen && p.x > (w - 30) * T){ gen.extend(w + 60); w = rows[0].length; W = w * T; }
     const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
@@ -746,6 +873,7 @@ function makeGame(canvas, rows, hooks){
         const c = rows[y][x];
         if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; sfx('acorn'); }
+        if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sfx('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
     // crossing the goal line at any height clears the course
@@ -774,15 +902,17 @@ function makeGame(canvas, rows, hooks){
         // arrow at the screen edge when the rival is out of view
         const rx = r.x - camX; if (rx < -10 || rx > VIEW_W - 10){ const ex = rx < 0 ? 10 : VIEW_W - 10, ey = Math.max(60, Math.min(VIEW_H - 20, r.y + 11)); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(ex + (rx < 0 ? -6 : 6), ey); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey - 7); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey + 7); ctx.fill(); }
       }
-      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t);
+      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V));
     }
     if (!(hurtT > 0 && Math.floor(t * 20) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
     if (B) drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
+    if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
     drawLife(life / LIFE_MAX);
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / LIFE_MAX, x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); }
+    if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   function loop(now){
@@ -795,7 +925,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
   reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
+  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, get power(){ return power; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
     get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
@@ -854,10 +984,12 @@ function openPlayer(course, mode){
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
   if (mode === 'battle'){
-    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => endlessCourse(battle.seed, 0, {acornGap: 7, noItems: true}),
-      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), t: game.time}), onHit: id => battleSend('hit', {id})},
+    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => banner(name, true),
+      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, t: game.time}), onHit: id => battleSend('hit', {id}),
+        onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
       hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
     $('pl-ctrl').hidden = false; fitPlayer();
+    if (window.__hamuTest) window.__hamu = {game, battle};
     return;
   }
   if (mode === 'endless'){
@@ -1631,7 +1763,8 @@ async function battleJoin(code, host){
     })
     .on('broadcast', {event: 'start'}, ({payload}) => battleStart(payload.seed, payload.round))
     .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, dead: payload.dead, dist: payload.dist}); })
-    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t))); })
+    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t)), +payload.vy || 0, +payload.pw || 0); })
+    .on('broadcast', {event: 'wpn'}, ({payload}) => { if (live(payload)) game.rivalWeapon(payload.x, payload.y, payload.t); })
     .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id, true); })
     .on('broadcast', {event: 'dead'}, ({payload}) => { if (payload.round === battle.round){ battle.rivalDead = payload; battleDecide(); } })
     .on('broadcast', {event: 'won'}, ({payload}) => { if (payload.round === battle.round && !battle.result){ battle.result = 'lose'; battleShowResult(); } })
@@ -1742,7 +1875,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく、2つ目で3連発）。離れると後ろの人が速くなります。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
