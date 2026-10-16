@@ -1461,9 +1461,17 @@ function notifications(){
       }
     }
   }
+  // news from the operator's board, and new courses by people I follow
+  for (const b of social.board) if (b.author !== uid && b.at) out.push({who: b.author, at: b.at, post: b});
+  const f = new Set(following(uid));
+  for (const c of social.courses) if (f.has(c.author) && c.createdAt) out.push({who: c.author, at: c.createdAt, newCourse: c});
   return out.sort((a, b) => b.at - a.at);
 }
-const notiSeen = () => Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
+const notiSeen = () => {
+  // first visit: start counting from now so old board posts don't all show up as new
+  if (store.get('hi-noti-seen') === null && social.peopleLoaded) store.set('hi-noti-seen', Date.now());
+  return Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
+};
 let notiTop = null;
 function renderBell(){
   if (!social.peopleLoaded) return;
@@ -1471,19 +1479,32 @@ function renderBell(){
   const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
   $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
   // a like arriving while the page is open gets a toast
-  if (notiTop !== null && top > notiTop) toast(`${nameOf(list[0].who)}さんが${list[0].course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`);
+  if (notiTop !== null && top > notiTop) toast(notiText(list[0]));
   notiTop = top;
   // a new course-maker title is announced once; the highest one reached is kept on this device
   const mt = makerTitleFor(likesReceived(social.uid)), had = store.get('hi-maker');
   if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => toast(`称号「${mt.name}」をゲット！`), 2700); }
   else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
 }
+function notiText(n){
+  if (n.post) return `運営からのお知らせ「${n.post.title || '（無題）'}」`;
+  if (n.newCourse) return `${nameOf(n.who)}さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`;
+  return `${nameOf(n.who)}さんが${n.course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`;
+}
 function renderNoti(box){
   const list = notifications().slice(0, 100), seen = notiShownFrom;
   box.append(el('h2', {style: 'margin:0', text: 'お知らせ'}));
   if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
-  if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。コースやコメントにいいねがつくと、ここに届きます。'})); return; }
+  if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。いいね、運営からのお知らせ、フォロー中の人の新しいコースがここに届きます。'})); return; }
   for (const n of list){
+    if (n.post || n.newCourse){
+      box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: () => { if (n.newCourse) return openCourse(n.newCourse.id); closeSheet(); setTab('board'); }},
+        avatar(lookOf(n.who), 34),
+        el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
+          n.post ? el('span', {}, el('b', {text: '運営からのお知らせ'}), `「${n.post.title || '（無題）'}」`) : el('span', {}, el('b', {text: nameOf(n.who)}), `さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`),
+          el('span', {class: 'muted', style: 'font-size:12px', text: ago(n.at)}))));
+      continue;
+    }
     const what = n.course ? `コース「${n.course.title || '名前のないコース'}」` : `コメント「${n.comment.text.length > 24 ? n.comment.text.slice(0, 24) + '…' : n.comment.text}」`;
     const go = () => {
       if (n.course) return openCourse(n.course.id);
