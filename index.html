@@ -80,7 +80,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .ctrl{align-self:stretch;display:flex;gap:8px;touch-action:none;user-select:none;-webkit-user-select:none}
 .ctrl button{font:inherit;font-weight:800;font-size:17px;border:0;border-radius:14px;padding:14px 0;flex:1;background:#f3ead8;color:#2b2620;touch-action:none}
 .ctrl button:active{transform:translateY(2px);filter:brightness(.9)}
-.ctrl .fire{flex:1.6;background:#4a3d52;color:#fff} .ctrl .jump{flex:1.8;background:#b8561c;color:#fff}
+.ctrl .fire{flex:2;background:#4a3d52;color:#fff}
 .card.endless{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--panel))}
 .rank{display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:8px;cursor:pointer}
 .rank:hover{background:var(--soft)} .rank.me{background:color-mix(in srgb,var(--gold) 22%,transparent)}
@@ -310,7 +310,7 @@ input[type=range]{width:100%}
     </div>
     <div class="ctrl" id="pl-ctrl" hidden>
       <button id="ct-back" aria-label="うしろにダッシュ">◀</button><button id="ct-fwd" aria-label="まえにダッシュ">▶</button>
-      <button id="ct-fire" class="fire">黒どんぐり</button><button id="ct-jump" class="jump">ジャンプ</button>
+      <button id="ct-fire" class="fire">黒どんぐり</button>
     </div>
   </div>
 </div>
@@ -945,16 +945,16 @@ function press(e){
 $('pl-stage').addEventListener('pointerdown', press);
 // battle buttons react on touch-down so they feel instant
 const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (e.pointerType === 'touch') return; if (game && inBattle() && !battle.result) fn(); });
-ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire()); ctl('ct-jump', () => game.jump());
+ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire());
 // phones: every finger counts on its own, so holding one button never blocks another or the jump tap
-const ACT = {'ct-back': () => game.dash(-1), 'ct-fwd': () => game.dash(1), 'ct-fire': () => game.fire(), 'ct-jump': () => game.jump()};
+const ACT = {'ct-back': () => game.dash(-1), 'ct-fwd': () => game.dash(1), 'ct-fire': () => game.fire()};
 $('overlay').addEventListener('touchstart', e => {
   if (!inBattle() || !game) return;
   for (const tch of e.changedTouches){
     const t = document.elementFromPoint(tch.clientX, tch.clientY); if (!t) continue;
     const b = t.closest('#pl-ctrl button');
     if (b){ e.preventDefault(); if (!battle.result) ACT[b.id](); continue; }
-    if (t.closest('#pl-stage') && !t.closest('button')){ e.preventDefault(); if (game.state === 'run' && !battle.result) game.jump(); }
+    if (!t.closest('button') && !t.closest('.bar')){ e.preventDefault(); if (game.state === 'run' && !battle.result) game.jump(); }
   }
 }, {passive: false});
 $('pl-close').onclick = closePlayer;
@@ -1625,7 +1625,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      'タップでジャンプ。◀ ▶ で前後にすばやくダッシュ。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
