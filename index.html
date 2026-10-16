@@ -611,7 +611,8 @@ function sfx(name){
     if (name === 'die'){ note('sawtooth', 0, .35, 440, 90, .5); note('square', .02, .2, 200, 60, .3); }
     if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
     if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
-    if (name === 'hit'){ note('sawtooth', 0, .18, 160, 70, .7); note('square', 0, .08, 900, 400, .3); }
+    if (name === 'hit'){ note('square', 0, .05, 1200, 300, .5); note('sawtooth', .02, .25, 220, 50, .8); note('triangle', .04, .2, 90, 40, .9); }
+    if (name === 'bonk'){ note('square', 0, .06, 700, 1400, .4); note('triangle', .06, .14, 1047, 1568, .5); }
     if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
     if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
   } catch {}
@@ -629,8 +630,8 @@ function makeGame(canvas, rows, hooks){
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
   // battle only: dashes forward/back, black acorns flying forward, the rival's hamster
   const B = hooks.battle || null;
-  const DASH_V = 480, DASH_T = .16, DASH_CD = .6, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .45;
-  let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0;
+  const DASH_V = 480, DASH_T = .16, DASH_CD = .45, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .35;
+  let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0, fx = [], shake = 0, wantDash = null, wantFire = 0;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
@@ -639,18 +640,24 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; dashT = dashCd = shotCd = hurtT = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
     if (state === 'run'){ p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
+  // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
+  // so jump, dash and fire can be mashed together without any of them getting lost
   function dash(dir){
-    if (!B || state !== 'run' || dashCd > 0) return;
+    if (!B || state !== 'run') return;
+    if (dashCd > 0){ wantDash = {dir, t: .25}; return; }
+    wantDash = null;
     dashDir = dir; dashT = DASH_T; dashCd = DASH_CD; sfx('dash');
   }
   function fire(){
-    if (!B || state !== 'run' || shotCd > 0) return;
+    if (!B || state !== 'run') return;
+    if (shotCd > 0){ wantFire = .25; return; }
+    wantFire = 0;
     shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
     const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, mine: true, age: 0};
     shots.push(s); B.onFire && B.onFire(s);
@@ -658,12 +665,35 @@ function makeGame(canvas, rows, hooks){
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
   function addShot(x, y, id, lag = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y, mine: false, age: lag}); }
-  function dropShot(id){ shots = shots.filter(s => s.id !== id); }
+  // my black acorn hit the rival: burst where it struck
+  function dropShot(id, hit){
+    const s = shots.find(x => x.id === id); shots = shots.filter(x => x.id !== id);
+    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false); sfx('bonk'); }
+  }
+  function burst(x, y, me){
+    for (let i = 0; i < 14; i++){ const a = Math.PI * 2 * i / 14 + Math.random() * .4, v = 70 + Math.random() * 110; fx.push({k: 'bit', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: .5 + Math.random() * .25}); }
+    fx.push({k: 'ring', x, y, age: 0, life: .3}, {k: 'txt', x, y: y - 14, age: 0, life: .9, text: '-' + SHOT_DMG, me});
+    if (me) shake = .3;
+  }
+  function stepFx(dt){
+    for (const f of fx){ f.age += dt; if (f.k === 'bit'){ f.vy += 500 * dt; f.x += f.vx * dt; f.y += f.vy * dt; } if (f.k === 'txt') f.y -= 30 * dt; }
+    fx = fx.filter(f => f.age < f.life); shake = Math.max(0, shake - dt);
+  }
+  function drawFx(){
+    for (const f of fx){
+      const k = 1 - f.age / f.life;
+      ctx.globalAlpha = Math.max(0, k);
+      if (f.k === 'bit'){ ctx.fillStyle = '#2a2230'; ctx.fillRect(f.x - camX - 2, f.y - 2, 4, 4); ctx.fillStyle = '#8a6a9a'; ctx.fillRect(f.x - camX - 1, f.y - 1, 2, 2); }
+      if (f.k === 'ring'){ ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(f.x - camX, f.y, 8 + 26 * (1 - k), 0, Math.PI * 2); ctx.stroke(); }
+      if (f.k === 'txt'){ ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(f.text, f.x - camX, f.y); ctx.fillStyle = f.me ? '#ff6a4d' : '#ffd23c'; ctx.fillText(f.text, f.x - camX, f.y); ctx.textAlign = 'left'; }
+    }
+    ctx.globalAlpha = 1;
+  }
   function stepShots(dt){
     const cx = p.x + PW/2, cy = p.y + PH/2;
     for (const s of shots){ s.x += SHOT_V * dt; s.age += dt; }
     for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < 20){
-      s.gone = true; life -= SHOT_DMG; hurtT = .5; sfx('hit'); B.onHit && B.onHit(s.id);
+      s.gone = true; life -= SHOT_DMG; hurtT = .5; sfx('hit'); burst(cx, cy, true); B.onHit && B.onHit(s.id);
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
@@ -672,6 +702,8 @@ function makeGame(canvas, rows, hooks){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     if (B){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
+      if (wantDash){ wantDash.t -= dt; if (dashCd <= 0) dash(wantDash.dir); else if (wantDash.t <= 0) wantDash = null; }
+      if (wantFire > 0){ wantFire -= dt; if (shotCd <= 0) fire(); }
       if (dashT > 0){ dashT -= dt; p.vx = SPEED + dashDir * DASH_V; } else p.vx = SPEED;
       stepShots(dt); if (state !== 'run') return;
     }
@@ -708,7 +740,8 @@ function makeGame(canvas, rows, hooks){
     ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('ライフ', 10, y + 10);
   }
   function draw(){
-    ctx.setTransform(PX, 0, 0, PX, 0, 0);
+    const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
+    ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
     drawCourse(ctx, rows, camX, t, {spin: true, taken});
     if (B){
@@ -722,7 +755,10 @@ function makeGame(canvas, rows, hooks){
       for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t);
     }
     if (!(hurtT > 0 && Math.floor(t * 20) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (B) drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
+    if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
+    ctx.setTransform(PX, 0, 0, PX, 0, 0);
     drawLife(life / LIFE_MAX);
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / LIFE_MAX, x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
@@ -731,6 +767,7 @@ function makeGame(canvas, rows, hooks){
     const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
     if (state === 'run'){ let acc = dt; while (acc > 0){ const s = Math.min(acc, 1/120); step(s); acc -= s; if (state !== 'run') break; } camX = clampCam(p.x); }
     if (state === 'dead'){ p.vy += GRAV*dt*0.6; p.y += p.vy*dt*0.3; }
+    if (B) stepFx(dt);
     draw(); raf = requestAnimationFrame(loop);
   }
   // battle: both players start at the same moment without a jump
@@ -900,15 +937,26 @@ function onState(s, info){
 function press(e){
   if (!game) return;
   if (e) e.preventDefault();
-  if (inBattle()){ if (game.state === 'run' && !battle.result) game.jump(); return; }
+  if (inBattle()){ if (e && e.pointerType === 'touch') return; if (game.state === 'run' && !battle.result) game.jump(); return; }
   if (game.state === 'dead'){ game.reset(); return; }
   if (game.state === 'clear') return;
   game.jump();
 }
 $('pl-stage').addEventListener('pointerdown', press);
 // battle buttons react on touch-down so they feel instant
-const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (game && inBattle() && !battle.result) fn(); });
+const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (e.pointerType === 'touch') return; if (game && inBattle() && !battle.result) fn(); });
 ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire()); ctl('ct-jump', () => game.jump());
+// phones: every finger counts on its own, so holding one button never blocks another or the jump tap
+const ACT = {'ct-back': () => game.dash(-1), 'ct-fwd': () => game.dash(1), 'ct-fire': () => game.fire(), 'ct-jump': () => game.jump()};
+$('overlay').addEventListener('touchstart', e => {
+  if (!inBattle() || !game) return;
+  for (const tch of e.changedTouches){
+    const t = document.elementFromPoint(tch.clientX, tch.clientY); if (!t) continue;
+    const b = t.closest('#pl-ctrl button');
+    if (b){ e.preventDefault(); if (!battle.result) ACT[b.id](); continue; }
+    if (t.closest('#pl-stage') && !t.closest('button')){ e.preventDefault(); if (game.state === 'run' && !battle.result) game.jump(); }
+  }
+}, {passive: false});
 $('pl-close').onclick = closePlayer;
 $('pl-mute').onclick = () => setMute(!muted); setMute(muted);
 addEventListener('keydown', e => {
@@ -1467,7 +1515,7 @@ async function battleJoin(code, host){
     .on('broadcast', {event: 'start'}, ({payload}) => battleStart(payload.seed, payload.round))
     .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, dead: payload.dead, dist: payload.dist}); })
     .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t))); })
-    .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id); })
+    .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id, true); })
     .on('broadcast', {event: 'dead'}, ({payload}) => { if (payload.round === battle.round){ battle.rivalDead = payload; battleDecide(); } })
     .on('broadcast', {event: 'won'}, ({payload}) => { if (payload.round === battle.round && !battle.result){ battle.result = 'lose'; battleShowResult(); } })
     .subscribe(async st => { if (st === 'SUBSCRIBED') await ch.track({uid: social.uid, name: nameOf(social.uid), look: myLook(), at: Date.now()}); });
