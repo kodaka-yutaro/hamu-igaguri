@@ -55,6 +55,11 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,44px);lin
 h1 .and{color:var(--accent)}
 h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .tag{color:var(--muted);font-size:13px;margin:4px 0 0}
+.bell{position:relative;width:42px;height:42px;border-radius:99px;border:1.5px solid var(--line);background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e5533c;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
+.noti{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);font:inherit;color:var(--fg);cursor:pointer}
+.noti.new{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.noti>.col{flex:1}
 .mebtn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--line);border-radius:99px;padding:3px 12px 3px 4px;font:inherit;font-weight:800;color:var(--fg);cursor:pointer}
 nav{display:flex;gap:2px;border-bottom:2px solid var(--line);overflow-x:auto}
 nav button{font:inherit;font-weight:800;background:none;border:0;color:var(--muted);padding:8px 12px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
@@ -156,12 +161,12 @@ input[type=range]{width:100%}
 .opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
 .opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
 .like{font:inherit;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);border-radius:99px;padding:3px 12px 3px 9px;cursor:pointer}
-.like .nut{position:relative;width:14px;height:15px;flex:none}
-.like .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
-.like .nut::after{content:"";position:absolute;left:0;top:1px;width:14px;height:6px;border-radius:7px 7px 3px 3px;background:var(--muted);box-shadow:5px -2px 0 -2px var(--muted)}
+.like .nut,.noti .nut{position:relative;width:14px;height:15px;flex:none}
+.like .nut::before,.noti .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
+.like .nut::after,.noti .nut::after{content:"";position:absolute;left:0;top:1px;width:14px;height:6px;border-radius:7px 7px 3px 3px;background:var(--muted);box-shadow:5px -2px 0 -2px var(--muted)}
 .like.on{border-color:#a8622a;color:#a8622a}
-.like.on .nut::before{background:#c98a45}
-.like.on .nut::after{background:#6e4a24;box-shadow:5px -2px 0 -2px #6e4a24}
+.like.on .nut::before,.noti .nut::before{background:#c98a45}
+.like.on .nut::after,.noti .nut::after{background:#6e4a24;box-shadow:5px -2px 0 -2px #6e4a24}
 .like.sm{font-size:12px;padding:1px 9px 1px 7px}
 .like:disabled{opacity:.5;cursor:default}
 .search{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -186,7 +191,10 @@ input[type=range]{width:100%}
       <h1>ハム<span class="and">と</span>イガグリ</h1>
       <p class="tag">右へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
     </div>
+    <span class="row" style="gap:8px;flex:none">
+    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg><span class="bell-n" id="bell-n" hidden></span></button>
     <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
+    </span>
   </header>
 
   <nav role="tablist">
@@ -895,7 +903,7 @@ function renderEndless(){
       el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer({title: '終わりのないイガグリ'}, 'endless')})),
     el('div', {class: 'muted'}, 'じぶんのベスト ', el('b', {style: 'color:var(--fg)', text: mine ? `${mine}マス` : 'まだなし'}), pos >= 0 ? `（${pos + 1}位）` : ''),
     rank.length ? el('div', {class: 'col', style: 'gap:4px'}, ...rank.slice(0, 3).map(rankRow)) : el('span', {class: 'muted', text: 'まだ記録がありません。一番乗りしよう！'}),
-    rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : null);
+    rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : '');
 }
 
 async function recordClear(course, sec){
@@ -1026,6 +1034,7 @@ function renderSheet(first){
   const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
   if (sheet.kind === 'battle'){ renderBattleLobby(box); return; }
+  if (sheet.kind === 'noti'){ renderNoti(box); return; }
   if (sheet.kind === 'rank'){
     box.append(el('h2', {style: 'margin:0', text: 'エンドレス ランキング'}), el('div', {class: 'col', style: 'gap:4px'}, ...endlessRanking().slice(0, 100).map(rankRow)));
     return;
@@ -1081,7 +1090,9 @@ function likeButton(c, key = c.id, small){
 }
 async function toggleLike(cid){
   if (!social.canWrite) return toast('このページは閲覧のみです');
-  await patchMe({likes: {[cid]: !likedByMe(cid)}});
+  const on = !likedByMe(cid);
+  // likedAt tells the owner when it happened, for their notifications
+  await patchMe(on ? {likes: {[cid]: true}, likedAt: {[cid]: Date.now()}} : {likes: {[cid]: false}});
 }
 async function toggleFollow(uid){
   const cur = following(social.uid);
@@ -1410,8 +1421,66 @@ function renderMe(){
     ids.length ? el('div', {class: 'row'}, ...ids.map(u => whoChip(u, 26))) : el('span', {class: 'muted', text: 'まだいません'}));
   links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
 }
-function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; }
+function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; renderBell(); }
+/* ---------- notifications: likes on my courses and comments ---------- */
+function notifications(){
+  const uid = social.uid; if (!uid || !social.peopleLoaded) return [];
+  const mine = me() || {}, courses = new Map(social.courses.filter(c => c.author === uid).map(c => [c.id, c])), out = [];
+  for (const [who, p] of social.people){
+    if (who === uid || !p.likes) continue;
+    for (const [k, v] of Object.entries(p.likes)){
+      if (v !== true) continue;
+      const at = +(p.likedAt && p.likedAt[k]) || 0;
+      if (courses.has(k)) out.push({who, at, course: courses.get(k)});
+      else if (k.startsWith('cm:' + uid + ':')){
+        const c = (mine.comments || {})[k.slice(uid.length + 4)];
+        if (c && typeof c.text === 'string') out.push({who, at, comment: c});
+      }
+    }
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+const notiSeen = () => Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
+let notiTop = null;
+function renderBell(){
+  const list = notifications(), seen = notiSeen(), unread = list.filter(n => n.at > seen).length;
+  const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
+  $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
+  // a like arriving while the page is open gets a toast too
+  const top = list.length ? list[0].at : 0;
+  if (notiTop !== null && top > notiTop && top > seen && list[0].at) toast(`${nameOf(list[0].who)}さんが${list[0].course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`);
+  if (social.peopleLoaded) notiTop = top;
+}
+function markNotiSeen(){
+  const now = Date.now(); store.set('hi-noti-seen', now);
+  if (social.db && social.uid && social.canWrite && me()) patchMe({notiSeen: now});
+  renderBell();
+}
+function renderNoti(box){
+  const list = notifications().slice(0, 100), seen = notiShownFrom;
+  box.append(el('h2', {style: 'margin:0', text: 'お知らせ'}));
+  if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
+  if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。コースやコメントにいいねがつくと、ここに届きます。'})); return; }
+  for (const n of list){
+    const what = n.course ? `コース「${n.course.title || '名前のないコース'}」` : `コメント「${n.comment.text.length > 24 ? n.comment.text.slice(0, 24) + '…' : n.comment.text}」`;
+    const go = () => {
+      if (n.course) return openCourse(n.course.id);
+      const t = String(n.comment.target || '');
+      if (t.startsWith('c:')) return openCourse(t.slice(2), true);
+      closeSheet(); setTab('board');
+    };
+    box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
+      avatar(lookOf(n.who), 34),
+      el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
+        el('span', {}, el('b', {text: nameOf(n.who)}), `さんがあなたの${what}にいいねしました`),
+        el('span', {class: 'muted', style: 'font-size:12px', text: n.at ? ago(n.at) : '以前'})),
+      el('span', {class: 'nut', 'aria-hidden': 'true'})));
+  }
+}
 $('me-btn').onclick = () => setTab('me');
+// the list keeps highlighting what was new when it was opened
+let notiShownFrom = 0;
+$('bell-btn').onclick = () => { notiShownFrom = notiSeen(); openSheet('noti'); markNotiSeen(); };
 function renderAccount(){
   const box = $('account'), a = social.account;
   if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
@@ -1609,7 +1678,7 @@ function renderBattleCard(){
   box.replaceChildren(head, el('div', {class: 'row'},
     el('button', {class: 'btn primary', text: '部屋を作る', onclick: () => battleJoin(battleCode(), true)}),
     inp, el('button', {class: 'btn', text: '入る', onclick: () => battleJoin(inp.value, false)})),
-    battleWins() ? el('span', {class: 'muted', text: `これまで ${battleWins()}勝`}) : null);
+    battleWins() ? el('span', {class: 'muted', text: `これまで ${battleWins()}勝`}) : '');
 }
 function renderBattleLobby(box){
   const r = battle.rivalInfo, link = location.origin + location.pathname + '?battle=' + battle.code;
