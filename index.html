@@ -56,9 +56,7 @@ h1 .and{color:var(--accent)}
 h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .tag{color:var(--muted);font-size:13px;margin:4px 0 0}
 .bell{position:relative;width:42px;height:42px;border-radius:99px;border:1.5px solid var(--line);background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
-.bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e5533c;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
 .noti{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);font:inherit;color:var(--fg);cursor:pointer}
-.noti.new{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
 .noti>.col{flex:1}
 .mebtn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--line);border-radius:99px;padding:3px 12px 3px 4px;font:inherit;font-weight:800;color:var(--fg);cursor:pointer}
 nav{display:flex;gap:2px;border-bottom:2px solid var(--line);overflow-x:auto}
@@ -101,6 +99,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .badge.op{background:var(--accent);color:var(--accent-fg)}
 .badge.friend{background:var(--gold);color:#2b2620}
 .title-tag{font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap}
+.title-tag.maker{color:#8a5a2b}
 .empty{border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
 .stage{background:#20304a;border-radius:14px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -192,7 +191,7 @@ input[type=range]{width:100%}
       <p class="tag">右へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
     </div>
     <span class="row" style="gap:8px;flex:none">
-    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg><span class="bell-n" id="bell-n" hidden></span></button>
+    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg></button>
     <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
     </span>
   </header>
@@ -292,6 +291,9 @@ input[type=range]{width:100%}
     <p class="muted" id="ttl-note" style="margin:0"></p>
     <p class="muted" id="my-endless" style="margin:0"></p>
     <div id="my-titles" class="titles"></div>
+    <h3 style="margin:6px 0 0">コース職人</h3>
+    <p class="muted" id="maker-note" style="margin:0"></p>
+    <div id="maker-titles" class="titles"></div>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
   </section>
@@ -343,6 +345,16 @@ const TITLES = [
   { n: 10, name: 'どんぐりマスター', note: '10種類のコースをクリア' },
 ];
 const titleFor = n => TITLES.filter(t => n >= t.n).pop() || null;
+// course-maker titles: likes other players gave to the courses you made
+const MAKER_TITLES = [
+  { n: 1,  name: '新米コース職人',   note: '作ったコースに1いいね' },
+  { n: 3,  name: 'コース職人',       note: '作ったコースに3いいね' },
+  { n: 5,  name: '腕利きコース職人', note: '作ったコースに5いいね' },
+  { n: 10, name: '名コース職人',     note: '作ったコースに10いいね' },
+  { n: 20, name: 'コースの匠',       note: '作ったコースに20いいね' },
+  { n: 50, name: '伝説のコース職人', note: '作ったコースに50いいね' },
+];
+const makerTitleFor = n => MAKER_TITLES.filter(t => n >= t.n).pop() || null;
 
 /* ---------- hamster look ---------- */
 // tableware lying in the endless course: pick one up to unlock it as a hat or accessory
@@ -800,6 +812,12 @@ const following = uid => { const p = personOf(uid); return Array.isArray(p && p.
 const followers = uid => [...social.people.entries()].filter(([id, p]) => id !== uid && Array.isArray(p.following) && p.following.includes(uid)).map(([id]) => id);
 const isFriend = (a, b) => following(a).includes(b) && following(b).includes(a);
 function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (p.likes && p.likes[cid] === true) n++; return n; }
+function likesReceived(uid){
+  if (!uid) return 0;
+  const ids = new Set(social.courses.filter(c => c.author === uid).map(c => c.id)); let n = 0;
+  for (const [who, p] of social.people) if (who !== uid && p.likes) for (const id of ids) if (p.likes[id] === true) n++;
+  return n;
+}
 const likedByMe = cid => !!(me() && me().likes && me().likes[cid] === true);
 function commentsFor(target){
   const out = [];
@@ -1062,7 +1080,7 @@ function renderSheet(first){
       box.append(el('div', {class: 'row'}, el('button', {class: 'btn' + (on ? ' on' : ' primary'), text: on ? 'フォロー中' : 'フォローする', onclick: () => toggleFollow(uid)}),
         following(uid).includes(social.uid) ? el('span', {class: 'muted', text: on ? 'おたがいにフォローしています' : 'あなたをフォローしています'}) : null));
     }
-    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true));
+    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true), el('h3', {text: 'コース職人'}), titleGrid(likesReceived(uid), true, MAKER_TITLES));
     const mine = social.courses.filter(c => c.author === uid);
     box.append(el('h2', {text: `投稿したコース ${mine.length}`}));
     box.append(mine.length ? el('div', {class: 'grid'}, ...mine.map(courseCard)) : el('p', {class: 'muted', style: 'margin:0', text: 'まだ投稿はありません。'}));
@@ -1070,17 +1088,17 @@ function renderSheet(first){
   if (focused && $(focused)){ const f = $(focused); f.focus(); if (f.setSelectionRange && f.value) f.setSelectionRange(f.value.length, f.value.length); }
 }
 function profileHeader(uid){
-  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n);
+  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n), lk = likesReceived(uid), mt = makerTitleFor(lk);
   return el('div', {class: 'prof'}, avatar(lookOf(uid), 96),
     el('div', {class: 'info'},
       el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null, social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
-      t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
+      t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null, mt ? el('span', {class: 'title-tag maker', style: 'font-size:13px', text: mt.name}) : null) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
-      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
+      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
-function titleGrid(n, compact){
-  return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+function titleGrid(n, compact, list = TITLES){
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -1314,12 +1332,12 @@ function renderPeople(){
   box.replaceChildren();
   if (!ids.length){ box.append(el('div', {class: 'empty', text: !social.db ? 'オンライン機能につながっていません。' : !total ? 'まだだれもプロフィールを作っていません。マイページで最初のハムを作ろう。' : q ? `「${$('pp-q').value.trim()}」に合うハムは見つかりませんでした。` : 'ここにはまだだれもいません。'})); return; }
   for (const uid of ids){
-    const p = personOf(uid), t = titleFor(clearCount(p.clears));
+    const p = personOf(uid), t = titleFor(clearCount(p.clears)), mt = makerTitleFor(likesReceived(uid));
     const on = social.uid && following(social.uid).includes(uid);
     box.append(el('article', {class: 'card click', tabindex: 0, onclick: () => openProfile(uid), onkeydown: e => { if (e.key === 'Enter') openProfile(uid); }},
       el('div', {class: 'person'}, avatar(lookOf(uid), 56), el('div', {class: 'info'},
         el('b', {text: nameOf(uid) + (uid === social.uid ? '（あなた）' : '')}),
-        t ? el('span', {class: 'title-tag', text: t.name}) : el('span', {class: 'muted', text: '称号なし'}),
+        t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', text: t.name}) : null, mt ? el('span', {class: 'title-tag maker', text: mt.name}) : null) : el('span', {class: 'muted', text: '称号なし'}),
         el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}),
         el('span', {class: 'muted code', text: codeOf(uid)}))),
       el('div', {class: 'row'},
@@ -1412,6 +1430,9 @@ function renderMe(){
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
   $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
   $('my-titles').replaceChildren(...titleGrid(n).children);
+  const lk = likesReceived(social.uid), mt = makerTitleFor(lk), mn = MAKER_TITLES.find(x => lk < x.n);
+  $('maker-note').textContent = `作ったコースがもらったいいね ${lk}` + (mt ? `・いまの称号「${mt.name}」` : '') + (mn ? `・次の「${mn.name}」まであと${mn.n - lk}` : '・コース職人の称号を全部集めました！');
+  $('maker-titles').replaceChildren(...titleGrid(lk, false, MAKER_TITLES).children);
   const eb = myEndless(), ep = endlessRanking().findIndex(r => r.uid === social.uid);
   $('my-endless').textContent = eb ? `エンドレスのベスト ${eb}マス` + (ep >= 0 ? `（ランキング${ep + 1}位）` : '') : 'エンドレスの記録はまだありません';
   const links = $('my-links');
@@ -1440,24 +1461,20 @@ function notifications(){
   }
   return out.sort((a, b) => b.at - a.at);
 }
-const notiSeen = () => Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
 let notiTop = null;
 function renderBell(){
-  const list = notifications(), seen = notiSeen(), unread = list.filter(n => n.at > seen).length;
-  const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
-  $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
-  // a like arriving while the page is open gets a toast too
-  const top = list.length ? list[0].at : 0;
-  if (notiTop !== null && top > notiTop && top > seen && list[0].at) toast(`${nameOf(list[0].who)}さんが${list[0].course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`);
-  if (social.peopleLoaded) notiTop = top;
-}
-function markNotiSeen(){
-  const now = Date.now(); store.set('hi-noti-seen', now);
-  if (social.db && social.uid && social.canWrite && me()) patchMe({notiSeen: now});
-  renderBell();
+  if (!social.peopleLoaded) return;
+  const list = notifications(), top = list.length ? list[0].at : 0;
+  // a like arriving while the page is open gets a toast
+  if (notiTop !== null && top > notiTop) toast(`${nameOf(list[0].who)}さんが${list[0].course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`);
+  notiTop = top;
+  // a new course-maker title is announced once; the highest one reached is kept on this device
+  const mt = makerTitleFor(likesReceived(social.uid)), had = store.get('hi-maker');
+  if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => toast(`称号「${mt.name}」をゲット！`), 2700); }
+  else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
 }
 function renderNoti(box){
-  const list = notifications().slice(0, 100), seen = notiShownFrom;
+  const list = notifications().slice(0, 100);
   box.append(el('h2', {style: 'margin:0', text: 'お知らせ'}));
   if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
   if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。コースやコメントにいいねがつくと、ここに届きます。'})); return; }
@@ -1469,7 +1486,7 @@ function renderNoti(box){
       if (t.startsWith('c:')) return openCourse(t.slice(2), true);
       closeSheet(); setTab('board');
     };
-    box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
+    box.append(el('button', {class: 'noti', onclick: go},
       avatar(lookOf(n.who), 34),
       el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
         el('span', {}, el('b', {text: nameOf(n.who)}), `さんがあなたの${what}にいいねしました`),
@@ -1478,9 +1495,7 @@ function renderNoti(box){
   }
 }
 $('me-btn').onclick = () => setTab('me');
-// the list keeps highlighting what was new when it was opened
-let notiShownFrom = 0;
-$('bell-btn').onclick = () => { notiShownFrom = notiSeen(); openSheet('noti'); markNotiSeen(); };
+$('bell-btn').onclick = () => openSheet('noti');
 function renderAccount(){
   const box = $('account'), a = social.account;
   if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
@@ -1727,6 +1742,7 @@ $('db-state').textContent = '公式コースを表示中';
   };
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
+    social.coursesLoaded = true;
     social.courses = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, official: false}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();
