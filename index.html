@@ -1022,6 +1022,12 @@ function lookOf(uid){ const p = personOf(uid); return cleanLook(p && p.look); }
 const following = uid => { const p = personOf(uid); return Array.isArray(p && p.following) ? p.following : []; };
 const followers = uid => [...social.people.entries()].filter(([id, p]) => id !== uid && Array.isArray(p.following) && p.following.includes(uid)).map(([id]) => id);
 const isFriend = (a, b) => following(a).includes(b) && following(b).includes(a);
+// how many players cleared a course, and the fastest time, from everyone's clears
+function clearStats(cid){
+  let n = 0, best = Infinity;
+  for (const p of social.people.values()){ const v = p.clears && p.clears[cid]; if (v != null && isFinite(+v)){ n++; best = Math.min(best, +v); } }
+  return {n, best: n ? best : null};
+}
 function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (p.likes && p.likes[cid] === true) n++; return n; }
 function likesReceived(uid){
   if (!uid) return 0;
@@ -1285,6 +1291,7 @@ function renderSheet(first){
     box.append(
       el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
       el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
+      (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
       thumb(c.rows),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
@@ -1513,7 +1520,7 @@ function courseCard(c){
     thumb(c.rows),
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
-      el('span', {text: sizeName(c)})),
+      el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
     el('div', {class: 'row'}, likeButton(c),
       el('button', {class: 'like', onclick: (e) => { e.stopPropagation(); openCourse(c.id, true); }}, el('span', {text: `コメント ${commentsFor('c:' + c.id).length}`}))));
   return card;
