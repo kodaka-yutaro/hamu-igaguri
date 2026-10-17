@@ -95,9 +95,6 @@
       async attachEmail(email) { const r = await sb.auth.updateUser({ email }, { emailRedirectTo: location.origin + location.pathname }); if (r.error) throw r.error; },
       // sign in to an existing hamster from another device
       async signInEmail(email) { const r = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } }); if (r.error) throw r.error; },
-      // finish either of the above with the code from the email, without leaving this app
-      // (a home-screen app on iPhone keeps its own login, so opening the email link in Safari doesn't sign it in)
-      async verifyCode(email, token, attaching) { const r = await sb.auth.verifyOtp({ email, token, type: attaching ? 'email_change' : 'email' }); if (r.error) throw r.error; location.reload(); },
       // move this login to another browser (e.g. Safari → the home-screen app, which keeps its own storage).
       // The code is the session's refresh token: using it elsewhere ends the session here.
       // Once the code is shown this browser lets go of the session (no refresh, nothing saved), otherwise its next

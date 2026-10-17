@@ -319,7 +319,7 @@ input[type=range]{width:100%}
     <p>ハムスターが右へ走りつづけるので、タップ（パソコンはスペースか↑キー）で跳ねさせて、道にあるイガグリをよけながらゴールラインを目指します。跳ねるたびにライフが減るので、どんぐりを拾って回復しながら進むのがコツ。登録なしで、スマホのブラウザからそのまま無料で遊べます。</p>
     <h2>コースを作ってみんなと遊ぶ</h2>
     <p>「つくる」タブでショート・ミドル・ロングの3種類の長さからコースを作り、自分でクリアできたら公開できます。公開されたコースには、いいねやコメントがつけられます。気に入った作者をフォローして、お互いにフォローすると「ともだち」になります。ハムスターの色や帽子、衣装を着せ替えて自分だけのプロフィールも作れます。</p>
-    <p class="muted"><a href="about.html">遊び方とよくある質問</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/hamu_to_igaguri" target="_blank" rel="noopener">公式X（@hamu_to_igaguri）</a> ・ © ハムとイガグリ</p>
+    <p class="muted"><a href="about.html">遊び方とよくある質問</a> ・ <a href="tips.html">攻略のコツ</a> ・ <a href="course-guide.html">コース作りのコツ</a> ・ <a href="news.html">更新情報</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/hamu_to_igaguri" target="_blank" rel="noopener">公式X（@hamu_to_igaguri）</a> ・ © ハムとイガグリ</p>
   </footer>
 </div>
 
@@ -1759,16 +1759,7 @@ function renderAccount(){
   const input = el('input', {type: 'email', id: 'acct-email', placeholder: 'メールアドレス', style: 'flex:1 1 200px', autocomplete: 'email'});
   input.className = 'txt';
   const note = el('span', {class: 'muted'});
-  // after sending, ask for the code in the email; the link in it works too, but only in the browser it opens in
-  const codeIn = el('input', {type: 'text', inputmode: 'numeric', autocomplete: 'one-time-code', placeholder: 'メールのコード', maxlength: 10, style: 'flex:1 1 140px;letter-spacing:.15em'});
-  codeIn.className = 'txt';
-  const codeRow = el('div', {class: 'row', hidden: 'hidden'});
-  let sentTo = '', attaching = false;
-  codeRow.append(codeIn, el('button', {class: 'btn primary sm', text: 'コードで確定', onclick: async () => {
-    const t = codeIn.value.replace(/\D/g, ''); if (t.length < 6) return toast('メールに書かれた数字のコードを入れてください');
-    try { note.textContent = '確認しています…'; await a.verifyCode(sentTo, t, attaching); } catch (e) { note.textContent = 'コードが違うか、期限が切れています。もう一度送ってください。'; }
-  }}));
-  const run = (fn, ok, attach) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); sentTo = v; attaching = !!attach; note.textContent = ok; codeRow.hidden = false; codeIn.focus(); } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
+  const run = (fn, ok) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); note.textContent = ok; } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
   const idLine = el('div', {class: 'row'}, el('span', {class: 'muted', text: 'ユーザーID: '}), el('code', {text: a.uid, style: 'font-size:12px;overflow-wrap:anywhere'}),
     el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(a.uid).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}));
   // moving this hamster to another browser or the home-screen app without email
@@ -1791,9 +1782,9 @@ function renderAccount(){
     box.replaceChildren(
       el('b', {text: 'ゲストとして遊んでいます'}),
       el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
-      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールに書かれたコードを下に入れてください。', true)}),
-        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールに書かれたコードを下に入れてください。')})),
-      note, codeRow, idLine, moveBox);
+      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールのリンクを押すと登録が完了します。')}),
+        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールのリンクを押すとログインできます。')})),
+      note, idLine, moveBox);
   } else {
     box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine, moveBox);
   }
