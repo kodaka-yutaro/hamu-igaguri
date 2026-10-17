@@ -1074,8 +1074,14 @@ function showMsg(big, sub, btns, gain){
   $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
   $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
   const b = $('pl-btns'); b.replaceChildren();
-  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(e); }}));
+  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onpointerdown: (e) => e.stopPropagation(), onclick: (e) => { e.stopPropagation(); fn(e); }}));
   $('pl-msg').hidden = false;
+}
+// open a post to X with the text and a link back to the game (or to one course)
+const SITE = 'https://hamu.kdking-tools.com/';
+const courseUrl = id => SITE + '?c=' + encodeURIComponent(id);
+function shareX(text, url = SITE){
+  open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent('ハムとイガグリ')}`, '_blank', 'noopener');
 }
 const myItems = () => { const m = me(); const o = {...(store.get('hi-items') || {}), ...((m && m.items) || {})}; if (myEndless() >= 200) o.pan = true; return o; }; // early pan owners got it by distance
 function gotItem(item){
@@ -1131,7 +1137,7 @@ function onState(s, info){
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
-    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [['Xで自慢する', () => shareX(`エンドレスで${n}マス進んだ！🐹🌰 きみはどこまで行ける？`)]], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
     if (n > prev) recordEndless(n);
     return;
   }
@@ -1146,6 +1152,7 @@ function onState(s, info){
       btns.push([label(), async (e) => { const b = e.currentTarget; await toggleLike(c.id); b.textContent = label(); }, true]);
     }
     btns.push(['コメントする', () => { closePlayer(); openCourse(c.id); }]);
+    btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
     recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); });
@@ -1260,6 +1267,7 @@ function renderSheet(first){
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
         el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
+        el('button', {class: 'btn sm', text: 'Xでシェア', onclick: () => shareX(`「${c.title || '名前のないコース'}」このコース、クリアできる？🐹🌰`, courseUrl(c.id))}),
         c.author && c.author === social.uid ? deleteBtn(c) : null),
       el('p', {class: 'muted', style: 'margin:0', text: cleared != null ? `あなたのベスト: ${cleared}秒` : 'まだクリアしていません'}));
     box.append(el('h2', {text: `コメント ${commentsFor('c:' + c.id).length}`, id: 'cm-head'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id));
@@ -1802,7 +1810,7 @@ function setTab(name){
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
-let renderQueued = false;
+let renderQueued = false, deepCourse = new URLSearchParams(location.search).get('c');
 function renderAll(){
   if (renderQueued) return; renderQueued = true;
   requestAnimationFrame(async () => {
@@ -1814,6 +1822,8 @@ function renderAll(){
     if (tab === 'board') renderBoard();
     if (tab === 'me'){ syncForm(); renderMe(); }
     if (sheet) renderSheet();
+    // a shared link (?c=<course id>) opens that course once it has loaded
+    if (deepCourse && courseById(deepCourse)){ const id = deepCourse; deepCourse = null; openCourse(id); }
   });
 }
 async function resolveNames(){
