@@ -1078,7 +1078,7 @@ function showMsg(big, sub, btns, gain){
   $('pl-msg').hidden = false;
 }
 // open a post to X with the text and a link back to the game (or to one course)
-const SITE = 'https://kodaka-yutaro.github.io/hamu-igaguri/';
+const SITE = 'https://hamu.kdking-tools.com/';
 const courseUrl = id => SITE + '?c=' + encodeURIComponent(id);
 function shareX(text, url = SITE){
   open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent('ハムとイガグリ')}`, '_blank', 'noopener');
