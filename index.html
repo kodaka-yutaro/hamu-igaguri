@@ -24,7 +24,7 @@
 <meta name="twitter:description" content="ハムスターを跳ねさせてイガグリをかわそう。コースを作ってみんなに公開できるよ。">
 <meta name="twitter:image" content="https://hamu.kdking-tools.com/og.png">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoGame","name":"ハムとイガグリ","url":"https://hamu.kdking-tools.com/","image":"https://hamu.kdking-tools.com/og.png","description":"右へ走るハムスターをタップで跳ねさせてイガグリをかわすブラウザゲーム。コースを作って公開・いいね・コメントができます。","genre":["アクション","カジュアル"],"gamePlatform":["Web browser","スマートフォン"],"applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}
+{"@context":"https://schema.org","@type":"VideoGame","name":"ハムとイガグリ","url":"https://hamu.kdking-tools.com/","image":"https://hamu.kdking-tools.com/og.png","description":"右へ走るハムスターをタップで跳ねさせてイガグリをかわすブラウザゲーム。コースを作って公開・いいね・コメントができます。","genre":["アクション","カジュアル"],"gamePlatform":["Web browser","スマートフォン"],"applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ja","isAccessibleForFree":true,"sameAs":["https://x.com/hamu_to_igaguri"],"offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"}}
 </script>
 <title>ハムとイガグリ｜タップでよける無料ブラウザゲーム・コース作成も</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,6 +55,25 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,6vw,44px);lin
 h1 .and{color:var(--accent)}
 h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .tag{color:var(--muted);font-size:13px;margin:4px 0 0}
+.celebrate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(12,14,10,.55);cursor:pointer}
+.celebrate canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.cel-card{position:relative;background:var(--panel);border:3px solid #ffd23c;border-radius:20px;padding:22px 28px;text-align:center;display:flex;flex-direction:column;gap:6px;max-width:min(86vw,360px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.cel-kind{font-weight:800;color:#b8561c;font-size:14px}
+.cel-name{font-family:var(--display);font-size:30px;line-height:1.2;color:var(--fg)}
+.cel-tap{font-size:11px;color:var(--muted);margin-top:4px}
+.cel-rays{position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;z-index:-1;border-radius:50%;background:repeating-conic-gradient(rgba(255,210,60,.35) 0 10deg,transparent 10deg 20deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.celebrate.go .cel-card{animation:cel-pop .6s cubic-bezier(.2,1.6,.4,1)}
+.celebrate.go .cel-rays{animation:cel-spin 6s linear infinite}
+.celebrate.go .cel-name{animation:cel-shine 1.2s ease-out}
+@keyframes cel-pop{0%{transform:scale(.2) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes cel-spin{to{transform:rotate(360deg)}}
+@keyframes cel-shine{0%{color:#ffd23c;transform:scale(1.3)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.celebrate.go .cel-card,.celebrate.go .cel-rays,.celebrate.go .cel-name{animation:none}}
+.bell{position:relative;width:42px;height:42px;border-radius:99px;border:1.5px solid var(--line);background:none;color:var(--fg);display:grid;place-items:center;cursor:pointer;padding:0}
+.bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:#e5533c;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
+.noti.new{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel))}
+.noti{display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;background:var(--panel);font:inherit;color:var(--fg);cursor:pointer}
+.noti>.col{flex:1}
 .mebtn{display:flex;align-items:center;gap:8px;background:none;border:1.5px solid var(--line);border-radius:99px;padding:3px 12px 3px 4px;font:inherit;font-weight:800;color:var(--fg);cursor:pointer}
 nav{display:flex;gap:2px;border-bottom:2px solid var(--line);overflow-x:auto}
 nav button{font:inherit;font-weight:800;background:none;border:0;color:var(--muted);padding:8px 12px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
@@ -96,6 +115,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .badge.op{background:var(--accent);color:var(--accent-fg)}
 .badge.friend{background:var(--gold);color:#2b2620}
 .title-tag{font-size:11px;font-weight:800;color:var(--accent);white-space:nowrap}
+.title-tag.maker{color:#8a5a2b}
 .empty{border:2px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
 .stage{background:#20304a;border-radius:14px;overflow:hidden;position:relative;touch-action:none;user-select:none;-webkit-user-select:none}
 html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
@@ -156,12 +176,12 @@ input[type=range]{width:100%}
 .opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
 .opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
 .like{font:inherit;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);border-radius:99px;padding:3px 12px 3px 9px;cursor:pointer}
-.like .nut{position:relative;width:14px;height:15px;flex:none}
-.like .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
-.like .nut::after{content:"";position:absolute;left:0;top:1px;width:14px;height:6px;border-radius:7px 7px 3px 3px;background:var(--muted);box-shadow:5px -2px 0 -2px var(--muted)}
+.like .nut,.noti .nut{position:relative;width:14px;height:15px;flex:none}
+.like .nut::before,.noti .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
+.like .nut::after,.noti .nut::after{content:"";position:absolute;left:0;top:1px;width:14px;height:6px;border-radius:7px 7px 3px 3px;background:var(--muted);box-shadow:5px -2px 0 -2px var(--muted)}
 .like.on{border-color:#a8622a;color:#a8622a}
-.like.on .nut::before{background:#c98a45}
-.like.on .nut::after{background:#6e4a24;box-shadow:5px -2px 0 -2px #6e4a24}
+.like.on .nut::before,.noti .nut::before{background:#c98a45}
+.like.on .nut::after,.noti .nut::after{background:#6e4a24;box-shadow:5px -2px 0 -2px #6e4a24}
 .like.sm{font-size:12px;padding:1px 9px 1px 7px}
 .like:disabled{opacity:.5;cursor:default}
 .search{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -186,7 +206,10 @@ input[type=range]{width:100%}
       <h1>ハム<span class="and">と</span>イガグリ</h1>
       <p class="tag">右へ走りつづけるハムスターを、タップでぴょんと跳ねさせてイガグリをかわそう。コースはだれでも作って公開できます。</p>
     </div>
+    <span class="row" style="gap:8px;flex:none">
+    <button class="bell" id="bell-btn" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 2a6 6 0 0 0-6 6v3.6L4.3 15a1 1 0 0 0 .9 1.5h13.6a1 1 0 0 0 .9-1.5L18 11.6V8a6 6 0 0 0-6-6zm0 20a3 3 0 0 0 2.8-2h-5.6A3 3 0 0 0 12 22z"/></svg><span class="bell-n" id="bell-n" hidden></span></button>
     <button class="mebtn" id="me-btn" aria-label="マイページ"><canvas class="av" id="me-av" width="72" height="72" style="width:36px;height:36px"></canvas><span id="me-name">マイページ</span></button>
+    </span>
   </header>
 
   <nav role="tablist">
@@ -284,6 +307,9 @@ input[type=range]{width:100%}
     <p class="muted" id="ttl-note" style="margin:0"></p>
     <p class="muted" id="my-endless" style="margin:0"></p>
     <div id="my-titles" class="titles"></div>
+    <h3 style="margin:6px 0 0">コース職人</h3>
+    <p class="muted" id="maker-note" style="margin:0"></p>
+    <div id="maker-titles" class="titles"></div>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
   </section>
@@ -293,7 +319,7 @@ input[type=range]{width:100%}
     <p>ハムスターが右へ走りつづけるので、タップ（パソコンはスペースか↑キー）で跳ねさせて、道にあるイガグリをよけながらゴールラインを目指します。跳ねるたびにライフが減るので、どんぐりを拾って回復しながら進むのがコツ。登録なしで、スマホのブラウザからそのまま無料で遊べます。</p>
     <h2>コースを作ってみんなと遊ぶ</h2>
     <p>「つくる」タブでショート・ミドル・ロングの3種類の長さからコースを作り、自分でクリアできたら公開できます。公開されたコースには、いいねやコメントがつけられます。気に入った作者をフォローして、お互いにフォローすると「ともだち」になります。ハムスターの色や帽子、衣装を着せ替えて自分だけのプロフィールも作れます。</p>
-    <p class="muted"><a href="about.html">遊び方とよくある質問</a> ・ <a href="tips.html">攻略のコツ</a> ・ <a href="course-guide.html">コース作りのコツ</a> ・ <a href="news.html">更新情報</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ © ハムとイガグリ</p>
+    <p class="muted"><a href="about.html">遊び方とよくある質問</a> ・ <a href="tips.html">攻略のコツ</a> ・ <a href="course-guide.html">コース作りのコツ</a> ・ <a href="news.html">更新情報</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/hamu_to_igaguri" target="_blank" rel="noopener">公式X（@hamu_to_igaguri）</a> ・ © ハムとイガグリ</p>
   </footer>
 </div>
 
@@ -315,6 +341,9 @@ input[type=range]{width:100%}
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="celebrate" id="celebrate" hidden><canvas id="cel-cv"></canvas>
+  <div class="cel-card"><div class="cel-rays"></div><div class="cel-kind" id="cel-kind"></div><div class="cel-name" id="cel-name"></div><div class="muted" id="cel-note"></div><div class="cel-tap">タップでとじる</div></div>
+</div>
 
 <script>
 (() => {
@@ -335,6 +364,16 @@ const TITLES = [
   { n: 10, name: 'どんぐりマスター', note: '10種類のコースをクリア' },
 ];
 const titleFor = n => TITLES.filter(t => n >= t.n).pop() || null;
+// course-maker titles: likes other players gave to the courses you made
+const MAKER_TITLES = [
+  { n: 1,  name: '新米コース職人',   note: '作ったコースに1いいね' },
+  { n: 3,  name: 'コース職人',       note: '作ったコースに3いいね' },
+  { n: 5,  name: '腕利きコース職人', note: '作ったコースに5いいね' },
+  { n: 10, name: '名コース職人',     note: '作ったコースに10いいね' },
+  { n: 20, name: 'コースの匠',       note: '作ったコースに20いいね' },
+  { n: 50, name: '伝説のコース職人', note: '作ったコースに50いいね' },
+];
+const makerTitleFor = n => MAKER_TITLES.filter(t => n >= t.n).pop() || null;
 
 /* ---------- hamster look ---------- */
 // tableware lying in the endless course: pick one up to unlock it as a hat or accessory
@@ -498,13 +537,32 @@ function drawAcorn(ctx, cx, cy, t){
   ctx.fillRect(cx-1, cy-12, 2, 4);
 }
 // goal = a vertical line on the right edge of the G column, plus a flag where G was placed
-function drawBlackAcorn(ctx, cx, cy, t){
-  ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 2 + Math.sin(t * 20) * .15);
+function drawBlackAcorn(ctx, cx, cy, t, k = 1, dir = 0){
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k); ctx.rotate(Math.PI / 2 + dir + Math.sin(t * 20) * .15);
   ctx.fillStyle = 'rgba(40,20,60,.25)'; ctx.fillRect(-3, 8, 6, 14);
   ctx.fillStyle = '#2a2430'; ctx.beginPath(); ctx.ellipse(0, 2, 7, 9, 0, 0, 7); ctx.fill();
   ctx.fillStyle = '#4a3d52'; ctx.beginPath(); ctx.ellipse(0, -5, 8.5, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.fillRect(-1, -12, 2, 4);
   ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.arc(-2.5, 2, 1.3, 0, 7); ctx.arc(2.5, 2, 1.3, 0, 7); ctx.fill();
   ctx.restore();
+}
+// battle weapon: a black acorn in a glowing bubble
+function drawWeapon(ctx, cx, cy, t){
+  const b = Math.sin(t * 4) * 2;
+  ctx.save(); ctx.fillStyle = 'rgba(255,210,60,.35)'; ctx.beginPath(); ctx.arc(cx, cy + b, 14 + Math.sin(t * 8), 0, 7); ctx.fill();
+  ctx.strokeStyle = '#ffd23c'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  drawBlackAcorn(ctx, cx, cy + b, 0, .9, -Math.PI / 2);
+  ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++){ const a = t * 3 + i * 2.1; ctx.fillRect(cx + Math.cos(a) * 15 - 1, cy + b + Math.sin(a) * 15 - 1, 2, 2); }
+}
+// battle items: R shoots backward too, H makes the life bar bigger
+function drawPowerItem(ctx, cx, cy, t, c){
+  const b = Math.sin(t * 4 + 1) * 2;
+  ctx.save(); ctx.fillStyle = c === 'R' ? 'rgba(90,169,230,.35)' : 'rgba(229,83,60,.3)'; ctx.beginPath(); ctx.arc(cx, cy + b, 14, 0, 7); ctx.fill();
+  ctx.strokeStyle = c === 'R' ? '#5aa9e6' : '#e5533c'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  if (c === 'R'){ drawBlackAcorn(ctx, cx - 2, cy + b, 0, .75, Math.PI); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(cx - 13, cy + b); ctx.lineTo(cx - 8, cy + b - 4); ctx.lineTo(cx - 8, cy + b + 4); ctx.fill(); }
+  else {
+    ctx.save(); ctx.translate(cx, cy + b); ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.moveTo(0, 8); ctx.bezierCurveTo(-12, -1, -6, -10, 0, -4); ctx.bezierCurveTo(6, -10, 12, -1, 0, 8); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-1, -4, 2, 8); ctx.fillRect(-4, -1, 8, 2); ctx.restore();
+  }
 }
 function drawGoal(ctx, x, y){
   const lx = x + 2;
@@ -521,6 +579,8 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
+    else if (c === 'W' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawWeapon(ctx, px+T/2, py+T/2, t);
+    else if ((c === 'R' || c === 'H') && !(opts.taken && opts.taken.has(x*ROWS + y))) drawPowerItem(ctx, px+T/2, py+T/2, t, c);
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
@@ -590,6 +650,108 @@ function endlessCourse(seed, startAt = 0, opts = {}){
   return { rows, extend };
 }
 
+/* ---------- friend battle course: themed zones that change every so often ---------- */
+// Same seed on both phones gives the same course. Each zone has a weapon (W) in the middle
+// that only the first one to grab it gets, and acorns come a little more often than in endless.
+const BATTLE_ZONES = ['イガグリの森', 'じめんの道', 'いわのトンネル', 'イガグリの雨', 'のぼりくだり'];
+function battleCourse(seed){
+  let s = seed >>> 0 || 1;
+  const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const rows = Array.from({length: ROWS}, () => ''), zones = [];
+  const empty = () => Array(ROWS).fill('.');
+  let since = 4, gap = 7, last = -1, sinceItem = 0; const safeAt = [];
+  // safe: a row the hamster can be in at this column; an acorn or the weapon goes there when due
+  const put = (c, safe, weapon) => {
+    since++; sinceItem++;
+    if (weapon && safe != null) c[safe] = 'W';
+    // past 100 tiles: now and then a rear-shot (R) or a life-up (H)
+    else if (safe != null && rows[0].length >= 100 && sinceItem >= 28 && c[safe] === '.'){ c[safe] = rnd() < .4 ? 'R' : 'H'; sinceItem = ri(-8, 0); }
+    else if (safe != null && since >= 7 && c[safe] === '.'){ c[safe] = 'A'; since = 0; }
+    safeAt.push(safe == null ? null : safe);
+    for (let y = 0; y < ROWS; y++) rows[y] += c[y];
+  };
+  for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c, null); }
+  const clampGap = size => { gap = Math.max(1 + size / 2, Math.min(ROWS - 2 - size / 2, gap)); };
+  const breather = n => { for (let i = 0; i < n; i++) put(empty(), null); };
+  const zone = {
+    // burr pillars with one gap each
+    'イガグリの森'(n){
+      let x = 0; const mid = Math.floor(n / 2);
+      while (x < n){
+        const space = ri(3, 4), size = ri(4, 5);
+        gap += ri(-2, 2); clampGap(size);
+        for (let i = 0; i < space; i++, x++) put(empty(), null);
+        const top = Math.round(gap - size / 2), c = empty();
+        for (let y = 0; y < ROWS; y++) if (y < top || y >= top + size) c[y] = '*';
+        put(c, top + Math.floor(size / 2), x >= mid && x - space < mid); x++;
+      }
+    },
+    // a floor to run on, with burr hurdles and floating ledges
+    'じめんの道'(n){
+      let x = 0, wDone = false;
+      while (x < n){
+        const run = ri(3, 5);
+        for (let i = 0; i < run && x < n; i++, x++){
+          const c = empty(); c[14] = c[15] = '#';
+          const ledge = i === 1 && rnd() < .5;
+          if (ledge){ c[10] = '#'; }
+          const w = !wDone && x >= n / 2; if (w) wDone = true;
+          put(c, ledge ? 9 : 13, w);
+        }
+        if (x >= n) break;
+        const h = rnd() < .35 ? 2 : 1, c = empty(); c[14] = c[15] = '#';
+        for (let k = 0; k < h; k++) c[13 - k] = '*';
+        if (rnd() < .3) c[ri(3, 6)] = '*';
+        put(c, null); x++;
+      }
+    },
+    // a winding rock tunnel: rock above and below, the passage steps up and down
+    'いわのトンネル'(n){
+      let floor = 11, run = 0; const H = 5;
+      for (let x = 0; x < n; x++){
+        if (++run >= ri(3, 5)){ run = 0; floor = Math.max(H + 1, Math.min(14, floor + (rnd() < .5 ? -1 : 1))); }
+        const c = empty();
+        for (let y = 0; y < ROWS; y++) if (y >= floor || y < floor - H) c[y] = '#';
+        if (x > 2 && x < n - 2 && run === 1 && rnd() < .3) c[floor - H] = '*'; // a burr hanging from the roof
+        put(c, floor - 2, x === Math.floor(n / 2));
+      }
+    },
+    // open sky with burrs scattered around a wandering safe lane
+    'イガグリの雨'(n){
+      for (let x = 0; x < n; x++){
+        if (x % 3 === 0){ gap += ri(-2, 2); clampGap(5); }
+        const c = empty(), top = Math.round(gap - 2.5);
+        for (let k = 0; k < 2; k++){ const y = ri(0, ROWS - 1); if (y < top - 1 || y > top + 5) c[y] = '*'; }
+        put(c, Math.round(gap), x === Math.floor(n / 2));
+      }
+    },
+    // stairs going up and down, with burrs hanging from the sky
+    'のぼりくだり'(n){
+      let floor = 14, dir = -1, step = 0;
+      for (let x = 0; x < n; x++){
+        if (++step >= 3){ step = 0; floor += dir; if (floor <= 9) dir = 1; if (floor >= 14) dir = -1; }
+        const c = empty();
+        for (let y = floor; y < ROWS; y++) c[y] = '#';
+        const hang = floor - 6;
+        if (x % 4 === 2) for (let y = 0; y < hang; y++) c[y] = '*';
+        put(c, floor - 2, x === Math.floor(n / 2));
+      }
+    },
+  };
+  function extend(toCol){
+    while (rows[0].length < toCol){
+      let i; do i = ri(0, BATTLE_ZONES.length - 1); while (i === last); last = i;
+      const name = BATTLE_ZONES[i];
+      breather(4); gap = 7;
+      zones.push({x: rows[0].length, name});
+      zone[name](ri(40, 60));
+    }
+  }
+  extend(60);
+  return { rows, extend, zones, safeAt };
+}
+
 /* ---------- sound: tiny synthesized effects, no audio files ---------- */
 let audio = null, muted = store.get('hi-mute') === true;
 function sfx(name){
@@ -612,6 +774,8 @@ function sfx(name){
     if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
     if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
     if (name === 'hit'){ note('square', 0, .05, 1200, 300, .5); note('sawtooth', .02, .25, 220, 50, .8); note('triangle', .04, .2, 90, 40, .9); }
+    if (name === 'fanfare'){ [523, 659, 784].forEach((f, i) => note('square', i * .1, .1, f, f, .4)); note('square', .3, .5, 1047, 1047, .45); note('triangle', .3, .5, 523, 523, .6); [1319, 1568, 2093].forEach((f, i) => note('sine', .45 + i * .07, .2, f, f, .3)); }
+    if (name === 'power') [523, 784, 1047, 1568].forEach((f, i) => note('sawtooth', i * .05, .1, f, f * 1.5, .35));
     if (name === 'bonk'){ note('square', 0, .06, 700, 1400, .4); note('triangle', .06, .14, 1047, 1568, .5); }
     if (name === 'item') [784, 988, 1175, 1568, 1976].forEach((f, i) => note('square', i * .06, .12, f, f, .45));
     if (name === 'clear') [523, 659, 784, 1047].forEach((f, i) => note('triangle', i * .1, i === 3 ? .4 : .12, f, f));
@@ -632,6 +796,11 @@ function makeGame(canvas, rows, hooks){
   const B = hooks.battle || null;
   const DASH_V = 480, DASH_T = .16, DASH_CD = .45, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .35;
   let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0, fx = [], shake = 0, wantDash = null, wantFire = 0;
+  // weapon level: 0 normal, 1 big black acorns (more damage), 2 three at once. myW: tiles I grabbed and when
+  let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
+  // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
+  let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
+  const shotDmg = pw => pw >= 1 ? 7 : SHOT_DMG;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
@@ -640,11 +809,11 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
-    if (state === 'run'){ p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -659,20 +828,30 @@ function makeGame(canvas, rows, hooks){
     if (shotCd > 0){ wantFire = .25; return; }
     wantFire = 0;
     shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
-    const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, mine: true, age: 0};
-    shots.push(s); B.onFire && B.onFire(s);
+    const spread = (power >= 2 ? [-90, 0, 90] : [0]).map(vy => [vy, 1]);
+    if (rear) spread.push([0, -1]);
+    for (const [vy, dir] of spread){
+      const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: dir > 0 ? p.x + PW : p.x, y: p.y + PH/2, vy, dir, pw: power, mine: true, age: 0};
+      shots.push(s); B.onFire && B.onFire(s);
+    }
     if (life <= 0){ life = 0; die('ライフ切れ'); }
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
-  function addShot(x, y, id, lag = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y, mine: false, age: lag}); }
+  function addShot(x, y, id, lag = 0, vy = 0, pw = 0, dir = 1){ if (state === 'run') shots.push({id, x: x + SHOT_V * dir * lag, y: y + vy * lag, vy, pw, dir, mine: false, age: lag}); }
+  // the rival grabbed a weapon: it's gone here too. If we both grabbed it, the earlier grab keeps it.
+  function rivalWeapon(x, y, at){
+    const k = x*ROWS + y; taken.add(k);
+    if (myW.has(k) && myW.get(k) > at){ myW.delete(k); power = Math.max(0, power - 1); banner && banner('武器は相手が先に取った！'); }
+  }
   // my black acorn hit the rival: burst where it struck
   function dropShot(id, hit){
     const s = shots.find(x => x.id === id); shots = shots.filter(x => x.id !== id);
-    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false); sfx('bonk'); }
+    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false, shotDmg(s.pw)); sfx('bonk'); }
   }
-  function burst(x, y, me){
+  const banner = hooks.banner;
+  function burst(x, y, me, dmg = SHOT_DMG){
     for (let i = 0; i < 14; i++){ const a = Math.PI * 2 * i / 14 + Math.random() * .4, v = 70 + Math.random() * 110; fx.push({k: 'bit', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, age: 0, life: .5 + Math.random() * .25}); }
-    fx.push({k: 'ring', x, y, age: 0, life: .3}, {k: 'txt', x, y: y - 14, age: 0, life: .9, text: '-' + SHOT_DMG, me});
+    fx.push({k: 'ring', x, y, age: 0, life: .3}, {k: 'txt', x, y: y - 14, age: 0, life: .9, text: '-' + dmg, me});
     if (me) shake = .3;
   }
   function stepFx(dt){
@@ -691,9 +870,10 @@ function makeGame(canvas, rows, hooks){
   }
   function stepShots(dt){
     const cx = p.x + PW/2, cy = p.y + PH/2;
-    for (const s of shots){ s.x += SHOT_V * dt; s.age += dt; }
-    for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < 20){
-      s.gone = true; life -= SHOT_DMG; hurtT = .5; sfx('hit'); burst(cx, cy, true); B.onHit && B.onHit(s.id);
+    for (const s of shots){ s.x += SHOT_V * (s.dir || 1) * dt; s.y += (s.vy || 0) * dt; s.age += dt; }
+    if (ghostT <= 0) for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
+      const d = shotDmg(s.pw);
+      s.gone = true; life -= d; hurtT = .5; sfx('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
@@ -702,12 +882,19 @@ function makeGame(canvas, rows, hooks){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     if (B){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
+      ghostT = Math.max(0, ghostT - dt);
+      if (hoverT > 0){ hoverT -= dt; p.vy = 0; }
       if (wantDash){ wantDash.t -= dt; if (dashCd <= 0) dash(wantDash.dir); else if (wantDash.t <= 0) wantDash = null; }
       if (wantFire > 0){ wantFire -= dt; if (shotCd <= 0) fire(); }
-      if (dashT > 0){ dashT -= dt; p.vx = SPEED + dashDir * DASH_V; } else p.vx = SPEED;
+      // the one behind runs faster, more the further back, so the two stay within reach of each other
+      const r = B.rival, lag = r && r.x != null && !r.dead ? r.x - p.x : 0;
+      catchUp = lag > 3*T ? Math.min(90, (lag - 3*T) * .3) : 0;
+      if (dashT > 0){ dashT -= dt; p.vx = SPEED + catchUp + dashDir * DASH_V; } else p.vx = SPEED + catchUp;
       stepShots(dt); if (state !== 'run') return;
     }
     p.x += p.vx * dt;
+    if (B && p.vx < 0){ const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor(p.x / T); for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = (tx + 1) * T; break; } }
+    if (gen && gen.zones && hooks.onZone){ const z = gen.zones[zoneAt]; if (z && p.x >= z.x * T){ zoneAt++; hooks.onZone(z.name); } }
     if (B) p.x = Math.max(S.x*T + 5, p.x);
     if (gen && p.x > (w - 30) * T){ gen.extend(w + 60); w = rows[0].length; W = w * T; }
     const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
@@ -722,8 +909,14 @@ function makeGame(canvas, rows, hooks){
     for (let y = Math.max(0, Math.floor(cy/T)-1); y <= Math.min(ROWS-1, Math.floor(cy/T)+1); y++)
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
-        if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
-        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; sfx('acorn'); }
+        if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sfx('acorn'); }
+        if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
+          taken.add(x*ROWS + y); sfx('power');
+          if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
+          else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; banner && banner(`ライフアップ！最大${maxLife}`, true); }
+        }
+        if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sfx('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
     // crossing the goal line at any height clears the course
@@ -731,7 +924,19 @@ function makeGame(canvas, rows, hooks){
     // up to 1.5 tiles below the screen is survivable
     if (cy > VIEW_H + T*1.5) return die('落ちた');
   }
-  function die(why){ sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
+  // battle: the first miss costs a stock and puts you back in a safe spot with a moment of invincibility
+  function respawn(why){
+    stocks--; sfx('die'); burst(p.x + PW/2, p.y + PH/2, true, 0); fx.pop();
+    const safe = (gen && gen.safeAt) || [], c0 = Math.max(0, Math.floor((p.x + PW/2) / T));
+    let col = -1;
+    for (let d = 0; d < 40 && col < 0; d++) for (const c of [c0 + d, c0 - d]) if (c >= 0 && safe[c] != null){ col = c; break; }
+    if (col >= 0){ p.x = col * T + 5; p.y = safe[col] * T + (T - PH) / 2; }
+    else p.y = Math.min(p.y, VIEW_H / 2);
+    p.vy = 0; life = maxLife; ghostT = 2.2; hoverT = 1.2; shots = shots.filter(s => s.mine);
+    banner && banner(`ミス！（${why}）のこり${stocks}`, true);
+    B.onDown && B.onDown(why, stocks);
+  }
+  function die(why){ if (B && stocks > 1 && state === 'run') return respawn(why); sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
   function win(){ sfx('clear'); state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
   function drawLife(f){
     const x = 58, y = 30, bw = 110, h = 10;
@@ -752,15 +957,18 @@ function makeGame(canvas, rows, hooks){
         // arrow at the screen edge when the rival is out of view
         const rx = r.x - camX; if (rx < -10 || rx > VIEW_W - 10){ const ex = rx < 0 ? 10 : VIEW_W - 10, ey = Math.max(60, Math.min(VIEW_H - 20, r.y + 11)); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(ex + (rx < 0 ? -6 : 6), ey); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey - 7); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey + 7); ctx.fill(); }
       }
-      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t);
+      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V * (s.dir || 1)));
     }
-    if (!(hurtT > 0 && Math.floor(t * 20) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (!(hurtT > 0 && Math.floor(t * 20) % 2) && !(ghostT > 0 && Math.floor(t * 12) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
     if (B) drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
+    if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
-    drawLife(life / LIFE_MAX);
-    if (B && B.rival && B.rival.life != null){ const f = B.rival.life / LIFE_MAX, x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); }
+    drawLife(life / maxLife);
+    if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
+    if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
+    if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   function loop(now){
@@ -773,8 +981,8 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
   reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
-    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
+  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
+    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
 /* ---------- social state ---------- */
@@ -792,6 +1000,12 @@ const following = uid => { const p = personOf(uid); return Array.isArray(p && p.
 const followers = uid => [...social.people.entries()].filter(([id, p]) => id !== uid && Array.isArray(p.following) && p.following.includes(uid)).map(([id]) => id);
 const isFriend = (a, b) => following(a).includes(b) && following(b).includes(a);
 function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (p.likes && p.likes[cid] === true) n++; return n; }
+function likesReceived(uid){
+  if (!uid) return 0;
+  const ids = new Set(social.courses.filter(c => c.author === uid).map(c => c.id)); let n = 0;
+  for (const [who, p] of social.people) if (who !== uid && p.likes) for (const id of ids) if (p.likes[id] === true) n++;
+  return n;
+}
 const likedByMe = cid => !!(me() && me().likes && me().likes[cid] === true);
 function commentsFor(target){
   const out = [];
@@ -826,10 +1040,13 @@ function openPlayer(course, mode){
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
   if (mode === 'battle'){
-    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => endlessCourse(battle.seed, 0, {acornGap: 7, noItems: true}),
-      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), t: game.time}), onHit: id => battleSend('hit', {id})},
+    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => banner(name, true),
+      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, dir: s.dir, t: game.time}), onHit: id => battleSend('hit', {id}),
+        onDown: (why, left) => battleSend('down', {left}),
+        onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
       hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
     $('pl-ctrl').hidden = false; fitPlayer();
+    if (window.__hamuTest) window.__hamu = {game, battle};
     return;
   }
   if (mode === 'endless'){
@@ -857,8 +1074,14 @@ function showMsg(big, sub, btns, gain){
   $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
   $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
   const b = $('pl-btns'); b.replaceChildren();
-  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onclick: (e) => { e.stopPropagation(); fn(e); }}));
+  for (const [label, fn, primary] of btns || []) b.append(el('button', {class: 'btn sm' + (primary ? ' primary' : ''), text: label, onpointerdown: (e) => e.stopPropagation(), onclick: (e) => { e.stopPropagation(); fn(e); }}));
   $('pl-msg').hidden = false;
+}
+// open a post to X with the text and a link back to the game (or to one course)
+const SITE = 'https://hamu.kdking-tools.com/';
+const courseUrl = id => SITE + '?c=' + encodeURIComponent(id);
+function shareX(text, url = SITE){
+  open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${encodeURIComponent('ハムとイガグリ')}`, '_blank', 'noopener');
 }
 const myItems = () => { const m = me(); const o = {...(store.get('hi-items') || {}), ...((m && m.items) || {})}; if (myEndless() >= 200) o.pan = true; return o; }; // early pan owners got it by distance
 function gotItem(item){
@@ -895,7 +1118,7 @@ function renderEndless(){
       el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer({title: '終わりのないイガグリ'}, 'endless')})),
     el('div', {class: 'muted'}, 'じぶんのベスト ', el('b', {style: 'color:var(--fg)', text: mine ? `${mine}マス` : 'まだなし'}), pos >= 0 ? `（${pos + 1}位）` : ''),
     rank.length ? el('div', {class: 'col', style: 'gap:4px'}, ...rank.slice(0, 3).map(rankRow)) : el('span', {class: 'muted', text: 'まだ記録がありません。一番乗りしよう！'}),
-    rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : null);
+    rank.length > 3 ? el('button', {class: 'linkbtn', style: 'align-self:flex-start', text: 'ランキングをすべて見る', onclick: () => openSheet('rank')}) : '');
 }
 
 async function recordClear(course, sec){
@@ -914,7 +1137,7 @@ function onState(s, info){
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
-    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [['Xで自慢する', () => shareX(`エンドレスで${n}マス進んだ！🐹🌰 きみはどこまで行ける？`)]], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
     if (n > prev) recordEndless(n);
     return;
   }
@@ -929,9 +1152,10 @@ function onState(s, info){
       btns.push([label(), async (e) => { const b = e.currentTarget; await toggleLike(c.id); b.textContent = label(); }, true]);
     }
     btns.push(['コメントする', () => { closePlayer(); openCourse(c.id); }]);
+    btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
-    recordClear(c, info.sec).then(t => { if (t && current === cur) $('pl-gain').hidden = false, $('pl-gain').textContent = `称号「${t.name}」をゲット！`; renderMe(); });
+    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); });
   }
 }
 function press(e){
@@ -1026,6 +1250,7 @@ function renderSheet(first){
   const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
   if (sheet.kind === 'battle'){ renderBattleLobby(box); return; }
+  if (sheet.kind === 'noti'){ renderNoti(box); return; }
   if (sheet.kind === 'rank'){
     box.append(el('h2', {style: 'margin:0', text: 'エンドレス ランキング'}), el('div', {class: 'col', style: 'gap:4px'}, ...endlessRanking().slice(0, 100).map(rankRow)));
     return;
@@ -1042,6 +1267,7 @@ function renderSheet(first){
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
         el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
+        el('button', {class: 'btn sm', text: 'Xでシェア', onclick: () => shareX(`「${c.title || '名前のないコース'}」このコース、クリアできる？🐹🌰`, courseUrl(c.id))}),
         c.author && c.author === social.uid ? deleteBtn(c) : null),
       el('p', {class: 'muted', style: 'margin:0', text: cleared != null ? `あなたのベスト: ${cleared}秒` : 'まだクリアしていません'}));
     box.append(el('h2', {text: `コメント ${commentsFor('c:' + c.id).length}`, id: 'cm-head'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id));
@@ -1053,7 +1279,7 @@ function renderSheet(first){
       box.append(el('div', {class: 'row'}, el('button', {class: 'btn' + (on ? ' on' : ' primary'), text: on ? 'フォロー中' : 'フォローする', onclick: () => toggleFollow(uid)}),
         following(uid).includes(social.uid) ? el('span', {class: 'muted', text: on ? 'おたがいにフォローしています' : 'あなたをフォローしています'}) : null));
     }
-    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true));
+    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true), el('h3', {text: 'コース職人'}), titleGrid(likesReceived(uid), true, MAKER_TITLES));
     const mine = social.courses.filter(c => c.author === uid);
     box.append(el('h2', {text: `投稿したコース ${mine.length}`}));
     box.append(mine.length ? el('div', {class: 'grid'}, ...mine.map(courseCard)) : el('p', {class: 'muted', style: 'margin:0', text: 'まだ投稿はありません。'}));
@@ -1061,17 +1287,17 @@ function renderSheet(first){
   if (focused && $(focused)){ const f = $(focused); f.focus(); if (f.setSelectionRange && f.value) f.setSelectionRange(f.value.length, f.value.length); }
 }
 function profileHeader(uid){
-  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n);
+  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n), lk = likesReceived(uid), mt = makerTitleFor(lk);
   return el('div', {class: 'prof'}, avatar(lookOf(uid), 96),
     el('div', {class: 'info'},
       el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null, social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
-      t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null,
+      t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null, mt ? el('span', {class: 'title-tag maker', style: 'font-size:13px', text: mt.name}) : null) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
-      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
+      el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
-function titleGrid(n, compact){
-  return el('div', {class: 'titles'}, ...TITLES.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+function titleGrid(n, compact, list = TITLES){
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -1081,7 +1307,9 @@ function likeButton(c, key = c.id, small){
 }
 async function toggleLike(cid){
   if (!social.canWrite) return toast('このページは閲覧のみです');
-  await patchMe({likes: {[cid]: !likedByMe(cid)}});
+  const on = !likedByMe(cid);
+  // likedAt tells the owner when it happened, for their notifications
+  await patchMe(on ? {likes: {[cid]: true}, likedAt: {[cid]: Date.now()}} : {likes: {[cid]: false}});
 }
 async function toggleFollow(uid){
   const cur = following(social.uid);
@@ -1303,12 +1531,12 @@ function renderPeople(){
   box.replaceChildren();
   if (!ids.length){ box.append(el('div', {class: 'empty', text: !social.db ? 'オンライン機能につながっていません。' : !total ? 'まだだれもプロフィールを作っていません。マイページで最初のハムを作ろう。' : q ? `「${$('pp-q').value.trim()}」に合うハムは見つかりませんでした。` : 'ここにはまだだれもいません。'})); return; }
   for (const uid of ids){
-    const p = personOf(uid), t = titleFor(clearCount(p.clears));
+    const p = personOf(uid), t = titleFor(clearCount(p.clears)), mt = makerTitleFor(likesReceived(uid));
     const on = social.uid && following(social.uid).includes(uid);
     box.append(el('article', {class: 'card click', tabindex: 0, onclick: () => openProfile(uid), onkeydown: e => { if (e.key === 'Enter') openProfile(uid); }},
       el('div', {class: 'person'}, avatar(lookOf(uid), 56), el('div', {class: 'info'},
         el('b', {text: nameOf(uid) + (uid === social.uid ? '（あなた）' : '')}),
-        t ? el('span', {class: 'title-tag', text: t.name}) : el('span', {class: 'muted', text: '称号なし'}),
+        t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', text: t.name}) : null, mt ? el('span', {class: 'title-tag maker', text: mt.name}) : null) : el('span', {class: 'muted', text: '称号なし'}),
         el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}),
         el('span', {class: 'muted code', text: codeOf(uid)}))),
       el('div', {class: 'row'},
@@ -1401,6 +1629,9 @@ function renderMe(){
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
   $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
   $('my-titles').replaceChildren(...titleGrid(n).children);
+  const lk = likesReceived(social.uid), mt = makerTitleFor(lk), mn = MAKER_TITLES.find(x => lk < x.n);
+  $('maker-note').textContent = `作ったコースがもらったいいね ${lk}` + (mt ? `・いまの称号「${mt.name}」` : '') + (mn ? `・次の「${mn.name}」まであと${mn.n - lk}` : '・コース職人の称号を全部集めました！');
+  $('maker-titles').replaceChildren(...titleGrid(lk, false, MAKER_TITLES).children);
   const eb = myEndless(), ep = endlessRanking().findIndex(r => r.uid === social.uid);
   $('my-endless').textContent = eb ? `エンドレスのベスト ${eb}マス` + (ep >= 0 ? `（ランキング${ep + 1}位）` : '') : 'エンドレスの記録はまだありません';
   const links = $('my-links');
@@ -1410,8 +1641,118 @@ function renderMe(){
     ids.length ? el('div', {class: 'row'}, ...ids.map(u => whoChip(u, 26))) : el('span', {class: 'muted', text: 'まだいません'}));
   links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
 }
-function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; }
+function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; renderBell(); }
+/* ---------- title celebration: confetti of acorns and a big card ---------- */
+function celebrate(t, kind){
+  const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
+  $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : '新しい称号';
+  $('cel-name').textContent = t.name; $('cel-note').textContent = t.note || '';
+  box.hidden = false; box.classList.remove('go'); void box.offsetWidth; box.classList.add('go');
+  sfx('fanfare');
+  const dpr = Math.min(2, devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
+  const bits = Array.from({length: 70}, (_, i) => ({x: W / 2, y: H * .42, vx: (Math.random() - .5) * 18 * dpr, vy: (-6 - Math.random() * 14) * dpr, r: Math.random() * 6, vr: (Math.random() - .5) * .3, k: i % 3, s: (.6 + Math.random() * .7) * dpr}));
+  const colors = ['#ffd23c', '#e5533c', '#7bc34f', '#5aa9e6', '#fff'];
+  let f = 0; cancelAnimationFrame(celebrate.raf);
+  const tick = () => {
+    ctx.clearRect(0, 0, W, H);
+    for (const b of bits){
+      b.vy += .45 * dpr; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.r += b.vr;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r); ctx.scale(b.s * (b.k ? 1.4 : .7), b.s * (b.k ? 1.4 : .7));
+      if (b.k === 0) drawAcorn(ctx, 0, 0, 0);
+      else { ctx.fillStyle = colors[(b.k + Math.floor(b.r)) % colors.length]; ctx.fillRect(-4, -2, 8, 4); }
+      ctx.restore();
+    }
+    if (++f < 240 && !box.hidden) celebrate.raf = requestAnimationFrame(tick);
+  };
+  tick();
+  clearTimeout(celebrate.h); celebrate.h = setTimeout(() => box.hidden = true, 4500);
+}
+$('celebrate').addEventListener('pointerdown', e => { e.stopPropagation(); $('celebrate').hidden = true; });
+
+/* ---------- notifications: likes on my courses and comments ---------- */
+function notifications(){
+  const uid = social.uid; if (!uid || !social.peopleLoaded) return [];
+  const mine = me() || {}, courses = new Map(social.courses.filter(c => c.author === uid).map(c => [c.id, c])), out = [];
+  for (const [who, p] of social.people){
+    if (who === uid || !p.likes) continue;
+    for (const [k, v] of Object.entries(p.likes)){
+      if (v !== true) continue;
+      const at = +(p.likedAt && p.likedAt[k]) || 0;
+      if (courses.has(k)) out.push({who, at, course: courses.get(k)});
+      else if (k.startsWith('cm:' + uid + ':')){
+        const c = (mine.comments || {})[k.slice(uid.length + 4)];
+        if (c && typeof c.text === 'string') out.push({who, at, comment: c});
+      }
+    }
+  }
+  // news from the operator's board, and new courses by people I follow
+  for (const b of social.board) if (b.author !== uid && b.at) out.push({who: b.author, at: b.at, post: b});
+  const f = new Set(following(uid));
+  for (const c of social.courses) if (f.has(c.author) && c.createdAt) out.push({who: c.author, at: c.createdAt, newCourse: c});
+  return out.sort((a, b) => b.at - a.at);
+}
+const notiSeen = () => {
+  // first visit: start counting from now so old board posts don't all show up as new
+  if (store.get('hi-noti-seen') === null && social.peopleLoaded) store.set('hi-noti-seen', Date.now());
+  return Math.max(+((me() || {}).notiSeen) || 0, +store.get('hi-noti-seen') || 0);
+};
+let notiTop = null;
+function renderBell(){
+  if (!social.peopleLoaded) return;
+  const list = notifications(), top = list.length ? list[0].at : 0, seen = notiSeen(), unread = list.filter(n => n.at > seen).length;
+  const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
+  $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
+  // a like arriving while the page is open gets a toast
+  if (notiTop !== null && top > notiTop) toast(notiText(list[0]));
+  notiTop = top;
+  // a new course-maker title is announced once; the highest one reached is kept on this device
+  const mt = makerTitleFor(likesReceived(social.uid)), had = store.get('hi-maker');
+  if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => celebrate(mt, 'コース職人'), 1500); }
+  else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
+}
+function notiText(n){
+  if (n.post) return `運営からのお知らせ「${n.post.title || '（無題）'}」`;
+  if (n.newCourse) return `${nameOf(n.who)}さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`;
+  return `${nameOf(n.who)}さんが${n.course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`;
+}
+function renderNoti(box){
+  const list = notifications().slice(0, 100), seen = notiShownFrom;
+  box.append(el('h2', {style: 'margin:0', text: 'お知らせ'}));
+  if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
+  if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。いいね、運営からのお知らせ、フォロー中の人の新しいコースがここに届きます。'})); return; }
+  for (const n of list){
+    if (n.post || n.newCourse){
+      box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: () => { if (n.newCourse) return openCourse(n.newCourse.id); closeSheet(); setTab('board'); }},
+        avatar(lookOf(n.who), 34),
+        el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
+          n.post ? el('span', {}, el('b', {text: '運営からのお知らせ'}), `「${n.post.title || '（無題）'}」`) : el('span', {}, el('b', {text: nameOf(n.who)}), `さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`),
+          el('span', {class: 'muted', style: 'font-size:12px', text: ago(n.at)}))));
+      continue;
+    }
+    const what = n.course ? `コース「${n.course.title || '名前のないコース'}」` : `コメント「${n.comment.text.length > 24 ? n.comment.text.slice(0, 24) + '…' : n.comment.text}」`;
+    const go = () => {
+      if (n.course) return openCourse(n.course.id);
+      const t = String(n.comment.target || '');
+      if (t.startsWith('c:')) return openCourse(t.slice(2), true);
+      closeSheet(); setTab('board');
+    };
+    box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
+      avatar(lookOf(n.who), 34),
+      el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
+        el('span', {}, el('b', {text: nameOf(n.who)}), `さんがあなたの${what}にいいねしました`),
+        el('span', {class: 'muted', style: 'font-size:12px', text: n.at ? ago(n.at) : '以前'})),
+      el('span', {class: 'nut', 'aria-hidden': 'true'})));
+  }
+}
 $('me-btn').onclick = () => setTab('me');
+function markNotiSeen(){
+  const now = Date.now(); store.set('hi-noti-seen', now);
+  if (social.db && social.uid && social.canWrite && me()) patchMe({notiSeen: now});
+  renderBell();
+}
+// the list keeps highlighting what was new when it was opened
+let notiShownFrom = 0;
+$('bell-btn').onclick = () => { notiShownFrom = notiSeen(); openSheet('noti'); markNotiSeen(); };
 function renderAccount(){
   const box = $('account'), a = social.account;
   if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
@@ -1460,7 +1801,7 @@ function setTab(name){
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
-let renderQueued = false;
+let renderQueued = false, deepCourse = new URLSearchParams(location.search).get('c');
 function renderAll(){
   if (renderQueued) return; renderQueued = true;
   requestAnimationFrame(async () => {
@@ -1472,6 +1813,8 @@ function renderAll(){
     if (tab === 'board') renderBoard();
     if (tab === 'me'){ syncForm(); renderMe(); }
     if (sheet) renderSheet();
+    // a shared link (?c=<course id>) opens that course once it has loaded
+    if (deepCourse && courseById(deepCourse)){ const id = deepCourse; deepCourse = null; openCourse(id); }
   });
 }
 async function resolveNames(){
@@ -1504,8 +1847,10 @@ async function battleJoin(code, host){
       battlePresence();
     })
     .on('broadcast', {event: 'start'}, ({payload}) => battleStart(payload.seed, payload.round))
-    .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, dead: payload.dead, dist: payload.dist}); })
-    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t))); })
+    .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, maxLife: payload.maxLife, stocks: payload.stocks, dead: payload.dead, dist: payload.dist}); })
+    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t)), +payload.vy || 0, +payload.pw || 0, payload.dir === -1 ? -1 : 1); })
+    .on('broadcast', {event: 'down'}, ({payload}) => { if (live(payload)) banner(`相手がミス！あいてのこり${payload.left}`); })
+    .on('broadcast', {event: 'wpn'}, ({payload}) => { if (live(payload)) game.rivalWeapon(payload.x, payload.y, payload.t); })
     .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id, true); })
     .on('broadcast', {event: 'dead'}, ({payload}) => { if (payload.round === battle.round){ battle.rivalDead = payload; battleDecide(); } })
     .on('broadcast', {event: 'won'}, ({payload}) => { if (payload.round === battle.round && !battle.result){ battle.result = 'lose'; battleShowResult(); } })
@@ -1600,7 +1945,7 @@ function renderBattleCard(){
   box.replaceChildren(head, el('div', {class: 'row'},
     el('button', {class: 'btn primary', text: '部屋を作る', onclick: () => battleJoin(battleCode(), true)}),
     inp, el('button', {class: 'btn', text: '入る', onclick: () => battleJoin(inp.value, false)})),
-    battleWins() ? el('span', {class: 'muted', text: `これまで ${battleWins()}勝`}) : null);
+    battleWins() ? el('span', {class: 'muted', text: `これまで ${battleWins()}勝`}) : '');
 }
 function renderBattleLobby(box){
   const r = battle.rivalInfo, link = location.origin + location.pathname + '?battle=' + battle.code;
@@ -1616,7 +1961,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
@@ -1649,6 +1994,7 @@ $('db-state').textContent = '公式コースを表示中';
   };
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
+    social.coursesLoaded = true;
     social.courses = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, official: false}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();
