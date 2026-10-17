@@ -111,6 +111,11 @@
       async useTransferCode(code) { const r = await sb.auth.refreshSession({ refresh_token: code.trim() }); if (r.error || !r.data.session) throw r.error || new Error('invalid'); location.reload(); },
       async signOut() { await sb.auth.signOut(); location.reload(); },
     };
-    return { db: { doc, collection }, user, account };
+    // live rooms for friend battles: broadcast messages + who is in the room (nothing is stored)
+    const realtime = {
+      join(name, key) { return sb.channel(name, { config: { broadcast: { self: false }, presence: { key } } }); },
+      leave(ch) { return sb.removeChannel(ch); },
+    };
+    return { db: { doc, collection }, user, account, realtime };
   };
 })();
