@@ -679,8 +679,8 @@ function battleCourse(seed){
     since++; sinceItem++;
     if (weapon && safe != null) c[safe] = 'W';
     // past 100 tiles: now and then a rear-shot (R) or a life-up (H)
-    else if (safe != null && rows[0].length >= 100 && sinceItem >= 28 && c[safe] === '.'){ c[safe] = rnd() < .4 ? 'R' : 'H'; sinceItem = ri(-8, 0); }
-    else if (safe != null && since >= 7 && c[safe] === '.'){ c[safe] = 'A'; since = 0; }
+    else if (safe != null && rows[0].length >= 100 && sinceItem >= 45 && c[safe] === '.'){ c[safe] = rnd() < .4 ? 'R' : 'H'; sinceItem = ri(-10, 0); }
+    else if (safe != null && since >= 8 && c[safe] === '.'){ c[safe] = 'A'; since = 0; }
     safeAt.push(safe == null ? null : safe);
     for (let y = 0; y < ROWS; y++) rows[y] += c[y];
   };
@@ -808,7 +808,7 @@ function makeGame(canvas, rows, hooks){
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
   // battle only: dashes forward/back, black acorns flying forward, the rival's hamster
   const B = hooks.battle || null;
-  const DASH_V = 480, DASH_T = .16, DASH_CD = .45, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .35;
+  const DASH_V = 480, DASH_T = .16, DASH_CD = .45, SHOT_V = 360, SHOT_LIFE = 2.2, SHOT_COST = 2, SHOT_DMG = 5, SHOT_CD = .8;
   let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0, fx = [], shake = 0, wantDash = null, wantFire = 0;
   // weapon level: 0 normal, 1 big black acorns (more damage), 2 three at once. myW: tiles I grabbed and when
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
@@ -856,7 +856,11 @@ function makeGame(canvas, rows, hooks){
   // the rival grabbed a weapon: it's gone here too. If we both grabbed it, the earlier grab keeps it.
   function rivalWeapon(x, y, at){
     const k = x*ROWS + y; taken.add(k);
-    if (myW.has(k) && myW.get(k) > at){ myW.delete(k); power = Math.max(0, power - 1); banner && banner('武器は相手が先に取った！'); }
+    if (myW.has(k) && myW.get(k) > at){
+      myW.delete(k);
+      if (rows[y][x] === 'H'){ maxLife = Math.max(LIFE_MAX, maxLife - 3); life = Math.min(life, maxLife); banner && banner('ライフアップは相手が先に取った！'); }
+      else { power = Math.max(0, power - 1); banner && banner('武器は相手が先に取った！'); }
+    }
   }
   // my black acorn hit the rival: burst where it struck
   function dropShot(id, hit){
@@ -889,6 +893,8 @@ function makeGame(canvas, rows, hooks){
     if (ghostT <= 0) for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
       const d = shotDmg(s.pw);
       s.gone = true; life -= d; hurtT = .5; sfx('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
+      // getting hit costs one step of gear: the rear shot goes first, then a weapon level
+      if (rear){ rear = false; banner && banner('うしろ撃ちを落とした…'); } else if (power > 0){ power--; banner && banner(power ? '武器が1段下がった…' : '武器を落とした…'); }
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
@@ -931,7 +937,7 @@ function makeGame(canvas, rows, hooks){
         if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
           taken.add(x*ROWS + y); sfx('power');
           if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
-          else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; banner && banner(`ライフアップ！最大${maxLife}`, true); }
+          else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); banner && banner(`ライフアップ！最大${maxLife}`, true); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, -1); }
         }
         if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sfx('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
@@ -998,7 +1004,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
   reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
+  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
     get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
@@ -1060,7 +1066,7 @@ function openPlayer(course, mode){
     game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => banner(name, true),
       battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, dir: s.dir, t: game.time}), onHit: id => battleSend('hit', {id}),
         onDown: (why, left) => battleSend('down', {left}),
-        onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
+        onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); if (lv >= 0) banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
       hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
     $('pl-ctrl').hidden = false; fitPlayer();
     if (window.__hamuTest) window.__hamu = {game, battle};
@@ -1978,7 +1984,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく当てやすく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく当てやすく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。武器とライフアップは先に取った人のもの。黒どんぐりに当たると、うしろ撃ち→武器の順に1段ずつ失います。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
