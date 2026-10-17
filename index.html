@@ -493,6 +493,7 @@ function build(w, ops, ground = true, sy = 13, gy = 13){
     if (k === 'wall') for (let y = 14 - b; y < 14; y++) g[y][a] = '#';
     if (k === 'plat') for (let x = a; x < a + b; x++) g[c][x] = '#';
     if (k === 'acorn') g[b][a] = 'A';
+    if (k === 'spring') g[b][a] = 'J';
     if (k === 'pipe') for (let y = 0; y < ROWS; y++) if (y < b || y >= b + c) g[y][a] = '*';
   }
   g[sy][2] = 'S'; g[gy][w - 3] = 'G';
@@ -504,6 +505,10 @@ const BUILTIN = [
   { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',11,6,4],['acorn',16,8],['pipe',21,9,4],['pipe',31,4,4],['acorn',36,6],['pipe',41,8,4],['pipe',51,5,4],['acorn',56,7],['pipe',61,9,4],['pipe',70,6,4]], false, 7, 8) },
   { id:'b4', title:'どんぐりの森', official:true, createdAt:0.3, rows: build(80, [['burr',9,13],['wall',15,2],['burr',15,10],['gap',20,4],['burr',22,8],['plat',27,6,10],['burr',29,9],['burr',31,13],['acorn',30,8],['wall',38,3],['burr',41,13],['burr',42,13],['gap',46,5],['plat',47,3,11],['burr',48,7],['burr',55,12],['burr',55,13],['wall',60,2],['burr',63,6],['acorn',64,10],['gap',66,6],['burr',68,10],['burr',73,13]]) },
   { id:'b5', title:'イガグリトンネル', official:true, createdAt:0.2, rows: build(120, [['pipe',12,6,5],['pipe',18,8,5],['acorn',21,10],['pipe',24,5,5],['pipe',30,9,5],['pipe',36,7,5],['acorn',39,9],['pipe',42,4,5],['pipe',48,6,5],['pipe',54,9,5],['acorn',57,11],['pipe',60,10,4],['pipe',65,7,4],['pipe',70,5,4],['acorn',73,7],['pipe',75,3,4],['pipe',80,6,4],['pipe',85,8,4],['acorn',88,10],['pipe',90,7,4],['pipe',95,5,4],['pipe',100,9,4],['acorn',103,11],['pipe',105,6,4],['pipe',110,4,4]], false, 7, 8) },
+  { id:'b7', title:'バネでぴょーん！', official:true, createdAt:4, rows: build(90, [['spring',8,13],['wall',12,6],['acorn',13,7],['spring',16,13],['gap',18,8],['burr',22,4],['acorn',22,9],
+    ['spring',29,13],['burr',31,13],['burr',32,13],['burr',33,13],['burr',34,13],['burr',35,13],['spring',37,13],['burr',39,13],['burr',40,13],['burr',41,13],['burr',42,13],['spring',44,13],
+    ['spring',48,13],['plat',50,6,7],['acorn',52,6],['burr',54,12],['burr',54,13],['spring',57,13],['wall',60,9],['acorn',60,4],['burr',64,13],['burr',65,13],
+    ['spring',68,13],['gap',70,8],['acorn',73,8],['burr',75,3],['spring',80,13],['burr',83,12],['burr',83,13],['burr',84,13],['burr',84,12]]) },
   { id:'b6', title:'ハムの大冒険', official:true, createdAt:0.1, rows: build(150, [['burr',10,13],['gap',15,5],['burr',17,10],['wall',25,2],['burr',28,13],['plat',33,5,10],['gap',32,8],['burr',35,9],['acorn',36,8],['burr',44,12],['burr',44,13],['wall',50,3],['burr',50,9],['gap',55,12],['pipe',58,6,5],['pipe',63,8,5],['acorn',65,10],['burr',72,13],['burr',76,11],['wall',80,2],['gap',85,4],['burr',87,9],['burr',92,13],['burr',93,13],['plat',98,4,10],['gap',97,6],['acorn',99,9],['wall',106,3],['burr',110,12],['burr',110,13],['gap',114,14],['pipe',117,5,5],['pipe',122,9,5],['acorn',124,11],['burr',131,13],['wall',136,2],['burr',140,9],['burr',143,13]]) },
 ];
 
