@@ -244,6 +244,7 @@ input[type=range]{width:100%}
       <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
       <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
       <button class="tool" data-t="A" aria-pressed="false"><span class="sw" style="background:#a86a2c;border-radius:50% 50% 45% 45%"></span>どんぐり</button>
+      <button class="tool" data-t="J" aria-pressed="false"><span class="sw" style="background:linear-gradient(#e5533c 0 35%,#9aa3ad 35%)"></span>バネ</button>
       <button class="tool" data-t="S" aria-pressed="false"><span class="sw" style="background:#f0b56a;border-radius:50%"></span>スタート</button>
       <button class="tool" data-t="G" aria-pressed="false"><span class="sw" style="background:#d9412b"></span>ゴールライン</button>
       <button class="tool" data-t="." aria-pressed="false"><span class="sw" style="border:2px dashed var(--muted)"></span>けす</button>
@@ -545,6 +546,17 @@ function drawBlackAcorn(ctx, cx, cy, t, k = 1, dir = 0){
   ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.arc(-2.5, 2, 1.3, 0, 7); ctx.arc(2.5, 2, 1.3, 0, 7); ctx.fill();
   ctx.restore();
 }
+// spring: a red pad on a coil; it squashes and boings right after being used
+function drawSpring(ctx, x, y, since){
+  const k = since < .35 ? Math.sin(since / .35 * Math.PI * 3) * (1 - since / .35) : 0, top = y + 12 - k * 8;
+  ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = 3; ctx.beginPath();
+  const n = 4, h = y + T - 2 - top;
+  for (let i = 0; i <= n; i++){ const yy = top + 4 + h * i / n; ctx.lineTo(x + (i % 2 ? 24 : 8), yy); }
+  ctx.stroke();
+  ctx.fillStyle = '#5f6a75'; ctx.fillRect(x + 4, y + T - 4, T - 8, 4);
+  ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 3, top, T - 6, 7, 3) : ctx.rect(x + 3, top, T - 6, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(x + 6, top + 1, T - 14, 2);
+}
 // battle weapon: a black acorn in a glowing bubble
 function drawWeapon(ctx, cx, cy, t){
   const b = Math.sin(t * 4) * 2;
@@ -579,6 +591,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
+    else if (c === 'J') drawSpring(ctx, px, py, opts.springs && opts.springs.has(x*ROWS + y) ? t - opts.springs.get(x*ROWS + y) : 9);
     else if (c === 'W' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawWeapon(ctx, px+T/2, py+T/2, t);
     else if ((c === 'R' || c === 'H') && !(opts.taken && opts.taken.has(x*ROWS + y))) drawPowerItem(ctx, px+T/2, py+T/2, t, c);
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
@@ -774,6 +787,7 @@ function sfx(name){
     if (name === 'dash') note('sine', 0, .12, 300, 900, .5);
     if (name === 'fire'){ note('square', 0, .1, 220, 110, .5); note('sine', .02, .1, 600, 300, .3); }
     if (name === 'hit'){ note('square', 0, .05, 1200, 300, .5); note('sawtooth', .02, .25, 220, 50, .8); note('triangle', .04, .2, 90, 40, .9); }
+    if (name === 'spring'){ note('sine', 0, .25, 200, 900, .7); note('triangle', .02, .2, 400, 1600, .3); }
     if (name === 'fanfare'){ [523, 659, 784].forEach((f, i) => note('square', i * .1, .1, f, f, .4)); note('square', .3, .5, 1047, 1047, .45); note('triangle', .3, .5, 523, 523, .6); [1319, 1568, 2093].forEach((f, i) => note('sine', .45 + i * .07, .2, f, f, .3)); }
     if (name === 'power') [523, 784, 1047, 1568].forEach((f, i) => note('sawtooth', i * .05, .1, f, f * 1.5, .35));
     if (name === 'bonk'){ note('square', 0, .06, 700, 1400, .4); note('triangle', .06, .14, 1047, 1568, .5); }
@@ -800,7 +814,8 @@ function makeGame(canvas, rows, hooks){
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
   // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
   let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
-  const shotDmg = pw => pw >= 1 ? 7 : SHOT_DMG;
+  let springCd = 0, springs = new Map();
+  const shotDmg = () => SHOT_DMG; // big acorns are only easier to hit
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
@@ -809,7 +824,7 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springCd = 0; springs = new Map(); dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
@@ -829,7 +844,7 @@ function makeGame(canvas, rows, hooks){
     wantFire = 0;
     shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
     const spread = (power >= 2 ? [-90, 0, 90] : [0]).map(vy => [vy, 1]);
-    if (rear) spread.push([0, -1]);
+    if (rear) for (const [vy] of spread.slice()) spread.push([vy, -1]);
     for (const [vy, dir] of spread){
       const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: dir > 0 ? p.x + PW : p.x, y: p.y + PH/2, vy, dir, pw: power, mine: true, age: 0};
       shots.push(s); B.onFire && B.onFire(s);
@@ -879,7 +894,7 @@ function makeGame(canvas, rows, hooks){
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
   }
   function step(dt){
-    p.vy = Math.min(p.vy + GRAV*dt, 900);
+    p.vy = Math.min(p.vy + GRAV*dt, 900); springCd -= dt;
     if (B){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
       ghostT = Math.max(0, ghostT - dt);
@@ -911,6 +926,8 @@ function makeGame(canvas, rows, hooks){
         const c = rows[y][x];
         if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sfx('acorn'); }
+        // spring: a big bounce that costs no life
+        if (c === 'J' && springCd <= 0 && Math.abs(cx - (x*T+T/2)) < 22 && cy > y*T - 6 && cy < y*T + T + 4){ p.vy = JUMP * 1.55; springCd = .25; springs.set(x*ROWS + y, t); hoverT = 0; sfx('spring'); }
         if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
           taken.add(x*ROWS + y); sfx('power');
           if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
@@ -948,7 +965,7 @@ function makeGame(canvas, rows, hooks){
     const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
-    drawCourse(ctx, rows, camX, t, {spin: true, taken});
+    drawCourse(ctx, rows, camX, t, {spin: true, taken, springs});
     if (B){
       const r = B.rival;
       if (r && r.x != null){
@@ -1961,7 +1978,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく当てやすく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
