@@ -1450,8 +1450,8 @@ function renderAccount(){
     box.replaceChildren(
       el('b', {text: 'ゲストとして遊んでいます'}),
       el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
-      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールに書かれたコードを下に入れてください。', true)}),
-        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールに書かれたコードを下に入れてください。')})),
+      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールのリンクを押すか、メールに書かれたコードを下に入れてください。', true)}),
+        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールのリンクを押すか、メールに書かれたコードを下に入れてください。')})),
       note, codeRow, idLine, moveBox);
   } else {
     box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine, moveBox);
