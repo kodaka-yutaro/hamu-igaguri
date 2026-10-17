@@ -553,6 +553,17 @@ function drawWeapon(ctx, cx, cy, t){
   drawBlackAcorn(ctx, cx, cy + b, 0, .9, -Math.PI / 2);
   ctx.fillStyle = '#fff'; for (let i = 0; i < 3; i++){ const a = t * 3 + i * 2.1; ctx.fillRect(cx + Math.cos(a) * 15 - 1, cy + b + Math.sin(a) * 15 - 1, 2, 2); }
 }
+// battle items: R shoots backward too, H makes the life bar bigger
+function drawPowerItem(ctx, cx, cy, t, c){
+  const b = Math.sin(t * 4 + 1) * 2;
+  ctx.save(); ctx.fillStyle = c === 'R' ? 'rgba(90,169,230,.35)' : 'rgba(229,83,60,.3)'; ctx.beginPath(); ctx.arc(cx, cy + b, 14, 0, 7); ctx.fill();
+  ctx.strokeStyle = c === 'R' ? '#5aa9e6' : '#e5533c'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+  if (c === 'R'){ drawBlackAcorn(ctx, cx - 2, cy + b, 0, .75, Math.PI); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(cx - 13, cy + b); ctx.lineTo(cx - 8, cy + b - 4); ctx.lineTo(cx - 8, cy + b + 4); ctx.fill(); }
+  else {
+    ctx.save(); ctx.translate(cx, cy + b); ctx.fillStyle = '#e5533c'; ctx.beginPath(); ctx.moveTo(0, 8); ctx.bezierCurveTo(-12, -1, -6, -10, 0, -4); ctx.bezierCurveTo(6, -10, 12, -1, 0, 8); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.fillRect(-1, -4, 2, 8); ctx.fillRect(-4, -1, 8, 2); ctx.restore();
+  }
+}
 function drawGoal(ctx, x, y){
   const lx = x + 2;
   ctx.save(); ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 3;
@@ -569,6 +580,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
     else if (c === 'W' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawWeapon(ctx, px+T/2, py+T/2, t);
+    else if ((c === 'R' || c === 'H') && !(opts.taken && opts.taken.has(x*ROWS + y))) drawPowerItem(ctx, px+T/2, py+T/2, t, c);
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
@@ -648,12 +660,15 @@ function battleCourse(seed){
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rows = Array.from({length: ROWS}, () => ''), zones = [];
   const empty = () => Array(ROWS).fill('.');
-  let since = 4, gap = 7, last = -1;
+  let since = 4, gap = 7, last = -1, sinceItem = 0; const safeAt = [];
   // safe: a row the hamster can be in at this column; an acorn or the weapon goes there when due
   const put = (c, safe, weapon) => {
-    since++;
+    since++; sinceItem++;
     if (weapon && safe != null) c[safe] = 'W';
+    // past 100 tiles: now and then a rear-shot (R) or a life-up (H)
+    else if (safe != null && rows[0].length >= 100 && sinceItem >= 28 && c[safe] === '.'){ c[safe] = rnd() < .4 ? 'R' : 'H'; sinceItem = ri(-8, 0); }
     else if (safe != null && since >= 7 && c[safe] === '.'){ c[safe] = 'A'; since = 0; }
+    safeAt.push(safe == null ? null : safe);
     for (let y = 0; y < ROWS; y++) rows[y] += c[y];
   };
   for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c, null); }
@@ -734,7 +749,7 @@ function battleCourse(seed){
     }
   }
   extend(60);
-  return { rows, extend, zones };
+  return { rows, extend, zones, safeAt };
 }
 
 /* ---------- sound: tiny synthesized effects, no audio files ---------- */
@@ -783,6 +798,8 @@ function makeGame(canvas, rows, hooks){
   let dashT = 0, dashDir = 0, dashCd = 0, shotCd = 0, hurtT = 0, shots = [], shotSeq = 0, fx = [], shake = 0, wantDash = null, wantFire = 0;
   // weapon level: 0 normal, 1 big black acorns (more damage), 2 three at once. myW: tiles I grabbed and when
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
+  // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
+  let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
   const shotDmg = pw => pw >= 1 ? 7 : SHOT_DMG;
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
@@ -792,11 +809,11 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
-    if (state === 'run'){ p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -811,15 +828,16 @@ function makeGame(canvas, rows, hooks){
     if (shotCd > 0){ wantFire = .25; return; }
     wantFire = 0;
     shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
-    const spread = power >= 2 ? [-90, 0, 90] : [0];
-    for (const vy of spread){
-      const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: p.x + PW, y: p.y + PH/2, vy, pw: power, mine: true, age: 0};
+    const spread = (power >= 2 ? [-90, 0, 90] : [0]).map(vy => [vy, 1]);
+    if (rear) spread.push([0, -1]);
+    for (const [vy, dir] of spread){
+      const s = {id: (B.me || 'm') + ':' + (++shotSeq), x: dir > 0 ? p.x + PW : p.x, y: p.y + PH/2, vy, dir, pw: power, mine: true, age: 0};
       shots.push(s); B.onFire && B.onFire(s);
     }
     if (life <= 0){ life = 0; die('ライフ切れ'); }
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
-  function addShot(x, y, id, lag = 0, vy = 0, pw = 0){ if (state === 'run') shots.push({id, x: x + SHOT_V * lag, y: y + vy * lag, vy, pw, mine: false, age: lag}); }
+  function addShot(x, y, id, lag = 0, vy = 0, pw = 0, dir = 1){ if (state === 'run') shots.push({id, x: x + SHOT_V * dir * lag, y: y + vy * lag, vy, pw, dir, mine: false, age: lag}); }
   // the rival grabbed a weapon: it's gone here too. If we both grabbed it, the earlier grab keeps it.
   function rivalWeapon(x, y, at){
     const k = x*ROWS + y; taken.add(k);
@@ -852,8 +870,8 @@ function makeGame(canvas, rows, hooks){
   }
   function stepShots(dt){
     const cx = p.x + PW/2, cy = p.y + PH/2;
-    for (const s of shots){ s.x += SHOT_V * dt; s.y += (s.vy || 0) * dt; s.age += dt; }
-    for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
+    for (const s of shots){ s.x += SHOT_V * (s.dir || 1) * dt; s.y += (s.vy || 0) * dt; s.age += dt; }
+    if (ghostT <= 0) for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
       const d = shotDmg(s.pw);
       s.gone = true; life -= d; hurtT = .5; sfx('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
@@ -864,6 +882,8 @@ function makeGame(canvas, rows, hooks){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     if (B){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
+      ghostT = Math.max(0, ghostT - dt);
+      if (hoverT > 0){ hoverT -= dt; p.vy = 0; }
       if (wantDash){ wantDash.t -= dt; if (dashCd <= 0) dash(wantDash.dir); else if (wantDash.t <= 0) wantDash = null; }
       if (wantFire > 0){ wantFire -= dt; if (shotCd <= 0) fire(); }
       // the one behind runs faster, more the further back, so the two stay within reach of each other
@@ -889,8 +909,13 @@ function makeGame(canvas, rows, hooks){
     for (let y = Math.max(0, Math.floor(cy/T)-1); y <= Math.min(ROWS-1, Math.floor(cy/T)+1); y++)
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
-        if (c === '*' && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
-        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = LIFE_MAX; sfx('acorn'); }
+        if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sfx('acorn'); }
+        if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
+          taken.add(x*ROWS + y); sfx('power');
+          if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
+          else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; banner && banner(`ライフアップ！最大${maxLife}`, true); }
+        }
         if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sfx('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
@@ -899,7 +924,19 @@ function makeGame(canvas, rows, hooks){
     // up to 1.5 tiles below the screen is survivable
     if (cy > VIEW_H + T*1.5) return die('落ちた');
   }
-  function die(why){ sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
+  // battle: the first miss costs a stock and puts you back in a safe spot with a moment of invincibility
+  function respawn(why){
+    stocks--; sfx('die'); burst(p.x + PW/2, p.y + PH/2, true, 0); fx.pop();
+    const safe = (gen && gen.safeAt) || [], c0 = Math.max(0, Math.floor((p.x + PW/2) / T));
+    let col = -1;
+    for (let d = 0; d < 40 && col < 0; d++) for (const c of [c0 + d, c0 - d]) if (c >= 0 && safe[c] != null){ col = c; break; }
+    if (col >= 0){ p.x = col * T + 5; p.y = safe[col] * T + (T - PH) / 2; }
+    else p.y = Math.min(p.y, VIEW_H / 2);
+    p.vy = 0; life = maxLife; ghostT = 2.2; hoverT = 1.2; shots = shots.filter(s => s.mine);
+    banner && banner(`ミス！（${why}）のこり${stocks}`, true);
+    B.onDown && B.onDown(why, stocks);
+  }
+  function die(why){ if (B && stocks > 1 && state === 'run') return respawn(why); sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
   function win(){ sfx('clear'); state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
   function drawLife(f){
     const x = 58, y = 30, bw = 110, h = 10;
@@ -920,16 +957,17 @@ function makeGame(canvas, rows, hooks){
         // arrow at the screen edge when the rival is out of view
         const rx = r.x - camX; if (rx < -10 || rx > VIEW_W - 10){ const ex = rx < 0 ? 10 : VIEW_W - 10, ey = Math.max(60, Math.min(VIEW_H - 20, r.y + 11)); ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.moveTo(ex + (rx < 0 ? -6 : 6), ey); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey - 7); ctx.lineTo(ex + (rx < 0 ? 6 : -6), ey + 7); ctx.fill(); }
       }
-      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V));
+      for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V * (s.dir || 1)));
     }
-    if (!(hurtT > 0 && Math.floor(t * 20) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (!(hurtT > 0 && Math.floor(t * 20) % 2) && !(ghostT > 0 && Math.floor(t * 12) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
     if (B) drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
-    drawLife(life / LIFE_MAX);
-    if (B && B.rival && B.rival.life != null){ const f = B.rival.life / LIFE_MAX, x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); }
+    drawLife(life / maxLife);
+    if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
+    if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
@@ -943,8 +981,8 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
   reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, get power(){ return power; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
-    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
+  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
+    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
 /* ---------- social state ---------- */
@@ -1003,7 +1041,8 @@ function openPlayer(course, mode){
   if (game) game.stop();
   if (mode === 'battle'){
     game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => banner(name, true),
-      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, t: game.time}), onHit: id => battleSend('hit', {id}),
+      battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, dir: s.dir, t: game.time}), onHit: id => battleSend('hit', {id}),
+        onDown: (why, left) => battleSend('down', {left}),
         onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
       hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
     $('pl-ctrl').hidden = false; fitPlayer();
@@ -1807,8 +1846,9 @@ async function battleJoin(code, host){
       battlePresence();
     })
     .on('broadcast', {event: 'start'}, ({payload}) => battleStart(payload.seed, payload.round))
-    .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, dead: payload.dead, dist: payload.dist}); })
-    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t)), +payload.vy || 0, +payload.pw || 0); })
+    .on('broadcast', {event: 'st'}, ({payload}) => { if (payload.round === battle.round && battle.rival) Object.assign(battle.rival, {x: payload.x, y: payload.y, vy: payload.vy, life: payload.life, maxLife: payload.maxLife, stocks: payload.stocks, dead: payload.dead, dist: payload.dist}); })
+    .on('broadcast', {event: 'shot'}, ({payload}) => { if (live(payload)) game.addShot(payload.x, payload.y, payload.id, Math.max(0, Math.min(.4, game.time - payload.t)), +payload.vy || 0, +payload.pw || 0, payload.dir === -1 ? -1 : 1); })
+    .on('broadcast', {event: 'down'}, ({payload}) => { if (live(payload)) banner(`相手がミス！あいてのこり${payload.left}`); })
     .on('broadcast', {event: 'wpn'}, ({payload}) => { if (live(payload)) game.rivalWeapon(payload.x, payload.y, payload.t); })
     .on('broadcast', {event: 'hit'}, ({payload}) => { if (live(payload)) game.dropShot(payload.id, true); })
     .on('broadcast', {event: 'dead'}, ({payload}) => { if (payload.round === battle.round){ battle.rivalDead = payload; battleDecide(); } })
@@ -1920,7 +1960,7 @@ function renderBattleLobby(box){
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
-      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく、2つ目で3連発）。離れると後ろの人が速くなります。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
+      '画面のどこをタップしてもジャンプ。◀ ▶ で前後にすばやくダッシュ。光る武器を先に取ると黒どんぐりが強くなります（1つ目で大きく、2つ目で3連発）。離れると後ろの人が速くなります。のこりは2つで、1回ミスしても続けられます。100マスをすぎると、うしろ撃ち（青）とライフアップ（赤）のアイテムも出ます。「黒どんぐり」で前に向かって発射します（ライフ2消費、当たった相手はライフ5減る）。先にミスしたほうの負け。どんぐりはいつもより多めです。パソコンは スペース・← →・X キー。'),
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
