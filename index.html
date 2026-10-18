@@ -244,7 +244,6 @@ input[type=range]{width:100%}
       <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
       <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
       <button class="tool" data-t="A" aria-pressed="false"><span class="sw" style="background:#a86a2c;border-radius:50% 50% 45% 45%"></span>どんぐり</button>
-      <button class="tool" data-t="J" aria-pressed="false"><span class="sw" style="background:linear-gradient(#e5533c 0 35%,#9aa3ad 35%)"></span>バネ</button>
       <button class="tool" data-t="O" aria-pressed="false"><span class="sw" style="background:#ff6fa3;border-radius:50%"></span>ボール</button>
       <button class="tool" data-t="C" aria-pressed="false"><span class="sw" style="background:#3b3f47;border-radius:3px 8px 3px 3px"></span>大砲</button>
       <button class="tool" data-t="S" aria-pressed="false"><span class="sw" style="background:#f0b56a;border-radius:50%"></span>スタート</button>
@@ -265,6 +264,11 @@ input[type=range]{width:100%}
       <button class="btn sm" id="ed-new">まっさらにする</button>
     </div>
     <p class="muted" id="ed-hint"></p>
+    <div class="card col" id="ed-op" hidden style="gap:8px">
+      <div class="row"><span class="badge op">運営</span><label class="row" for="ed-kind">公開先 <select id="ed-kind"><option value="">みんなのコース</option><option value="official">公式コース</option><option value="piece">エンドレス用パーツ</option></select></label></div>
+      <p class="muted" id="ed-kind-note" style="margin:0"></p>
+      <div class="col" id="ed-pieces" style="gap:6px"></div>
+    </div>
   </section>
 
   <section id="view-people" class="col" hidden>
@@ -507,10 +511,6 @@ const BUILTIN = [
   { id:'b3', title:'そらとぶハム', official:true, createdAt:1, rows: build(80, [['pipe',11,6,4],['acorn',16,8],['pipe',21,9,4],['pipe',31,4,4],['acorn',36,6],['pipe',41,8,4],['pipe',51,5,4],['acorn',56,7],['pipe',61,9,4],['pipe',70,6,4]], false, 7, 8) },
   { id:'b4', title:'どんぐりの森', official:true, createdAt:0.3, rows: build(80, [['burr',9,13],['wall',15,2],['burr',15,10],['gap',20,4],['burr',22,8],['plat',27,6,10],['burr',29,9],['burr',31,13],['acorn',30,8],['wall',38,3],['burr',41,13],['burr',42,13],['gap',46,5],['plat',47,3,11],['burr',48,7],['burr',55,12],['burr',55,13],['wall',60,2],['burr',63,6],['acorn',64,10],['gap',66,6],['burr',68,10],['burr',73,13]]) },
   { id:'b5', title:'イガグリトンネル', official:true, createdAt:0.2, rows: build(120, [['pipe',12,6,5],['pipe',18,8,5],['acorn',21,10],['pipe',24,5,5],['pipe',30,9,5],['pipe',36,7,5],['acorn',39,9],['pipe',42,4,5],['pipe',48,6,5],['pipe',54,9,5],['acorn',57,11],['pipe',60,10,4],['pipe',65,7,4],['pipe',70,5,4],['acorn',73,7],['pipe',75,3,4],['pipe',80,6,4],['pipe',85,8,4],['acorn',88,10],['pipe',90,7,4],['pipe',95,5,4],['pipe',100,9,4],['acorn',103,11],['pipe',105,6,4],['pipe',110,4,4]], false, 7, 8) },
-  { id:'b7', title:'バネでぴょーん！', official:true, createdAt:4, rows: build(90, [['spring',8,13],['wall',12,6],['acorn',13,7],['spring',16,13],['gap',18,8],['burr',22,4],['acorn',22,9],
-    ['spring',29,13],['burr',31,13],['burr',32,13],['burr',33,13],['burr',34,13],['burr',35,13],['spring',37,13],['burr',39,13],['burr',40,13],['burr',41,13],['burr',42,13],['spring',44,13],
-    ['spring',48,13],['plat',50,6,7],['acorn',52,6],['burr',54,12],['burr',54,13],['spring',57,13],['wall',60,9],['acorn',60,4],['burr',64,13],['burr',65,13],
-    ['spring',68,13],['gap',70,8],['acorn',73,8],['burr',75,3],['spring',80,13],['burr',83,12],['burr',83,13],['burr',84,13],['burr',84,12]]) },
   { id:'b6', title:'ハムの大冒険', official:true, createdAt:0.1, rows: build(150, [['burr',10,13],['gap',15,5],['burr',17,10],['wall',25,2],['burr',28,13],['plat',33,5,10],['gap',32,8],['burr',35,9],['acorn',36,8],['burr',44,12],['burr',44,13],['wall',50,3],['burr',50,9],['gap',55,12],['pipe',58,6,5],['pipe',63,8,5],['acorn',65,10],['burr',72,13],['burr',76,11],['wall',80,2],['gap',85,4],['burr',87,9],['burr',92,13],['burr',93,13],['plat',98,4,10],['gap',97,6],['acorn',99,9],['wall',106,3],['burr',110,12],['burr',110,13],['gap',114,14],['pipe',117,5,5],['pipe',122,9,5],['acorn',124,11],['burr',131,13],['wall',136,2],['burr',140,9],['burr',143,13]]) },
 ];
 
@@ -634,6 +634,13 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
 // Pillars of burrs with one gap each. It tightens over the first 300 tiles, then mixes in
 // harder stretches: winding tunnels, 3-row gaps and burr walls in the open.
 // Acorns sit in a gap often enough that a careful player never runs out of life.
+// an endless piece: the columns from the start to the goal line, with the goal's row as the way out
+function toPiece(rows){
+  let S = null, G = null;
+  rows.forEach((r, y) => { for (let x = 0; x < r.length; x++){ if (r[x] === 'S' && !S) S = {x, y}; if (r[x] === 'G' && !G) G = {x, y}; } });
+  if (!S || !G || G.x - S.x < 2) return null;
+  return {rows: rows.map(r => r.slice(S.x, G.x + 1).replace(/[SG]/g, '.')), exit: G.y};
+}
 function endlessCourse(seed, startAt = 0, opts = {}){
   let s = seed >>> 0 || 1;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -643,7 +650,8 @@ function endlessCourse(seed, startAt = 0, opts = {}){
   const empty = () => Array(ROWS).fill('.');
   const len = () => rows[0].length + startAt;
   for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c); }
-  let gap = 7, sinceAcorn = 6;
+  let gap = 7, sinceAcorn = 6, pieceAt = 0, lastPiece = -1;
+  const pieces = opts.pieces || [];
   const clampGap = size => { gap = Math.max(1 + size / 2, Math.min(ROWS - 2 - size / 2, gap)); };
   function pillar(size, acorn){
     const top = Math.round(gap - size / 2), bot = top + size, c = empty();
@@ -667,6 +675,16 @@ function endlessCourse(seed, startAt = 0, opts = {}){
       const h = Math.max(0, Math.min(1, (len() - 300) / 500)); // then 0 → 1 more over the next 500
       const acornDue = sinceAcorn >= Math.min(opts.acornGap || 99, 12 - Math.round(2 * k * (1 - h)));
       const roll = rnd();
+      // now and then, one of the operator's hand-made pieces, with open space on both sides
+      if (pieces.length && len() > 150 && len() - pieceAt > 50 && roll > .85){
+        let i = ri(0, pieces.length - 1); if (i === lastPiece && pieces.length > 1) i = (i + 1) % pieces.length;
+        const pc = pieces[i]; lastPiece = i;
+        open(4, 0);
+        for (let x = 0; x < pc.rows[0].length; x++) put(pc.rows.map(r => r[x]));
+        gap = pc.exit; clampGap(5); open(3, 0); pieceAt = len();
+        if (pc.rows.some(r => r.includes('A'))) sinceAcorn = 0; else sinceAcorn += pc.rows[0].length + 7;
+        continue;
+      }
       if (k >= 1 && roll < .22 + .1 * h){
         // winding tunnel: the gap climbs a row every 2 columns or sinks a row every 3
         const n = ri(5, 8 + Math.round(5 * h)), size = h > .5 && rnd() < .4 ? 4 : 5; let dir = rnd() < .5 ? -1 : 1, run = 0;
@@ -847,7 +865,10 @@ function makeGame(canvas, rows, hooks){
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
   // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
   let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
-  let springCd = 0, springs = new Map();
+  // springs: when each spring, ball or cannon last went off. Each part only ignores the hamster
+  // for a moment after its own bounce, so a fast hamster still hits the next one in its path
+  let springs = new Map();
+  const ready = (k, cd) => !(t - (springs.has(k) ? springs.get(k) : -9) < cd);
   // knock: sideways push from a bounce ball or a cannon shot, fading out. cannon: the one I'm sitting in
   let kvx = 0, cannon = null;
   const shotDmg = () => SHOT_DMG; // big acorns are only easier to hit
@@ -859,7 +880,7 @@ function makeGame(canvas, rows, hooks){
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springCd = 0; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
@@ -937,7 +958,7 @@ function makeGame(canvas, rows, hooks){
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
   }
   function step(dt){
-    p.vy = Math.min(p.vy + GRAV*dt, 900); springCd -= dt;
+    p.vy = Math.min(p.vy + GRAV*dt, 900);
     if (B){
       dashCd = Math.max(0, dashCd - dt); shotCd = Math.max(0, shotCd - dt); hurtT = Math.max(0, hurtT - dt);
       ghostT = Math.max(0, ghostT - dt);
@@ -956,9 +977,8 @@ function makeGame(canvas, rows, hooks){
       if (cannon.t <= 0){
         p.vy = -900; kvx = 330; p.x += 14; p.y -= 14; sfx('boom'); shake = .25;
         for (let i = 0; i < 10; i++) fx.push({k: 'puff', x: cannon.x * T + T * .9, y: cannon.y * T + 2, vx: 40 + Math.random() * 80, vy: -40 - Math.random() * 80, age: 0, life: .5 + Math.random() * .3});
-        springs.set(cannon.x * ROWS + cannon.y, t); springCd = .4; cannon = null;
-      }
-      return;
+        springs.set(cannon.x * ROWS + cannon.y, t); cannon = null;
+      } else return;
     }
     kvx *= Math.exp(-dt * 2.2); if (Math.abs(kvx) < 3) kvx = 0;
     p.vx += kvx;
@@ -983,18 +1003,18 @@ function makeGame(canvas, rows, hooks){
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sfx('acorn'); }
         // spring: a big bounce that costs no life
         // bounce ball: knocks you away hard from wherever you touch it
-        if (c === 'O' && springCd <= 0){
+        if (c === 'O' && ready(x*ROWS + y, .18)){
           const bx = x*T + T/2, by = y*T + T/2, dx = cx - bx, dy = cy - by, d = Math.hypot(dx, dy);
           if (d < 26){
             const nx = d ? dx / d : 0, ny = d ? dy / d : -1;
             p.vy = ny > .45 ? 650 : Math.min(-720, ny * 1000 - 420); kvx = nx * 520;
             p.x += nx * (26 - d); p.y += ny * (26 - d);
-            springCd = .18; springs.set(x*ROWS + y, t); hoverT = 0; shake = .15; sfx('boing');
+            springs.set(x*ROWS + y, t); hoverT = 0; shake = .15; sfx('boing');
             for (let i = 0; i < 8; i++){ const a = Math.atan2(ny, nx) + (Math.random() - .5) * 1.6; fx.push({k: 'star', x: bx + nx * 14, y: by + ny * 14, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, age: 0, life: .4}); }
           }
         }
-        if (c === 'C' && springCd <= 0 && !cannon && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 20){ cannon = {x, y, t: .45}; kvx = 0; hoverT = 0; sfx('clunk'); }
-        if (c === 'J' && springCd <= 0 && Math.abs(cx - (x*T+T/2)) < 22 && cy > y*T - 6 && cy < y*T + T + 4){ p.vy = JUMP * 1.55; springCd = .25; springs.set(x*ROWS + y, t); hoverT = 0; sfx('spring'); }
+        if (c === 'C' && ready(x*ROWS + y, .4) && !cannon && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 20){ cannon = {x, y, t: .45}; kvx = 0; hoverT = 0; sfx('clunk'); }
+        if (c === 'J' && ready(x*ROWS + y, .25) && Math.abs(cx - (x*T+T/2)) < 22 && cy > y*T - 6 && cy < y*T + T + 4){ p.vy = JUMP * 1.55; springs.set(x*ROWS + y, t); hoverT = 0; sfx('spring'); }
         if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
           taken.add(x*ROWS + y); sfx('power');
           if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
@@ -1069,8 +1089,9 @@ function makeGame(canvas, rows, hooks){
     get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
 }
 
+if (window.__hamuTest) Object.assign(window, {__makeGame: makeGame, __endless: endlessCourse, __toPiece: toPiece});
 /* ---------- social state ---------- */
-const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], people: new Map(), board: [], ownerId: null, names: {}, sort: 'new', ready: false };
+const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], allCourses: [], pieces: [], people: new Map(), board: [], ownerId: null, names: {}, sort: 'new', ready: false };
 const me = () => (social.uid && social.people.get(social.uid)) || null;
 const myLook = () => cleanLook((me() && me().look) || store.get('hi-look'));
 const myClears = () => { const m = me(); return (m && m.clears) || store.get('hi-clears') || {}; };
@@ -1141,7 +1162,7 @@ function openPlayer(course, mode){
   }
   if (mode === 'endless'){
     const best = myEndless();
-    game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
+    game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
   game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
@@ -1333,6 +1354,13 @@ function composer(target, placeholder, key){
   return el('div', {class: 'col', style: 'gap:6px'}, ta, el('div', {class: 'row'}, btn));
 }
 const drafts = {};
+// only the operator's own posts count as official courses or endless pieces
+function markOfficial(){
+  const op = c => !!social.ownerId && c.author === social.ownerId;
+  for (const c of social.allCourses) c.official = c.wantOfficial && op(c);
+  social.courses = social.allCourses.filter(c => c.kind !== 'piece');
+  social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows)})).filter(c => c.piece);
+}
 function courseById(id){ return social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
 function renderSheet(first){
   if (!sheet) return;
@@ -1531,11 +1559,29 @@ function validate(){
   const all = editor.rows.join('');
   if (!all.includes('S')) return 'スタートを置いてください';
   if (!all.includes('G')) return 'ゴールラインを置いてください';
+  if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
 function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = 0; saveDraft(); setTab('make'); }
 $('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
+// the operator can publish a course as an official one, or as a piece that endless mode mixes in
+const edKind = () => social.isOwner ? $('ed-kind').value : '';
+function renderEdOp(){
+  $('ed-op').hidden = !social.isOwner;
+  if (!social.isOwner) return;
+  const k = edKind();
+  $('ed-pub').textContent = k === 'official' ? '公式コースとして公開' : k === 'piece' ? 'エンドレスに追加' : '公開する';
+  $('ed-kind-note').textContent = k === 'official' ? '公式バッジつきで、みんなのコースの一覧に並びます。'
+    : k === 'piece' ? 'スタートの列からゴールラインの列までを切り出して、エンドレスの150マス以降にときどき混ぜます。ゴールラインを置いた高さが、パーツを抜けたあとのイガグリのすき間の高さになります。'
+    : '運営アカウントなので、公式コースやエンドレス用パーツとしても公開できます。';
+  const box = $('ed-pieces'); box.replaceChildren();
+  if (k !== 'piece') return;
+  box.append(el('b', {text: `エンドレス用パーツ ${social.pieces.length}個`}));
+  for (const c of social.pieces) box.append(el('div', {class: 'row', style: 'gap:8px'}, thumb(c.rows), el('span', {style: 'flex:1', text: `${c.title || '名前なし'}（${c.piece.rows[0].length}マス）`}), deleteBtn(c)));
+}
+$('ed-kind').onchange = () => updatePubBtn();
 function updatePubBtn(){
+  renderEdOp();
   const err = validate();
   const ok = !err && editor.cleared && $('ed-title').value.trim() && social.canWrite && social.uid;
   $('ed-pub').disabled = !ok;
@@ -1550,8 +1596,13 @@ $('ed-pub').onclick = async () => {
   if ($('ed-pub').disabled) return;
   $('ed-pub').disabled = true;
   try {
-    await social.db.collection('courses').add({ title: $('ed-title').value.trim().slice(0, 30), rows: editor.rows.slice(), author: social.uid, createdAt: Date.now() });
-    toast('公開しました'); editor.cleared = false; updatePubBtn(); setTab('play'); setSort('new');
+    const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows: editor.rows.slice(), author: social.uid, createdAt: Date.now() };
+    if (kind === 'official') doc.official = true;
+    if (kind === 'piece') doc.kind = 'piece';
+    await social.db.collection('courses').add(doc);
+    editor.cleared = false; updatePubBtn();
+    if (kind === 'piece'){ toast('エンドレスに追加しました'); return; }
+    toast(kind === 'official' ? '公式コースとして公開しました' : '公開しました'); setTab('play'); setSort('new');
   } catch (e) {
     toast(e && e.code === 'quota_exceeded' ? '保存できるコース数がいっぱいです' : '公開できませんでした。もう一度ためしてください');
     updatePubBtn();
@@ -2089,7 +2140,8 @@ $('db-state').textContent = '公式コースを表示中';
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
     social.coursesLoaded = true;
-    social.courses = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, official: false}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    const all = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, wantOfficial: !!v.official, kind: v.kind === 'piece' ? 'piece' : ''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    social.allCourses = all; markOfficial(); updatePubBtn();
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();
   }, fail);
@@ -2103,7 +2155,7 @@ $('db-state').textContent = '公式コースを表示中';
   }, fail);
   const site = db.doc('meta/site'); let claimed = false;
   site.onSnapshot(s => {
-    social.ownerId = s.exists ? (s.data().ownerId || null) : null;
+    social.ownerId = s.exists ? (s.data().ownerId || null) : null; markOfficial();
     social.hidden = s.exists ? (s.data().hidden || {}) : {};
     // the operator registers themselves so everyone can see the 運営 badge
     if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; (s.exists ? site.update({ownerId: social.uid}) : site.set({ownerId: social.uid})).catch(() => {}); }
