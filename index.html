@@ -1151,11 +1151,11 @@ function openPlayer(course, mode){
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
   if (game) game.stop();
   if (mode === 'battle'){
-    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => banner(name, true),
+    game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), onZone: name => { battle.zone = name; },
       battle: {me: String(social.uid || 'm').slice(0, 6), rival: battle.rival, onFire: s => battleSend('shot', {id: s.id, x: Math.round(s.x), y: Math.round(s.y), vy: s.vy, pw: s.pw, dir: s.dir, t: game.time}), onHit: id => battleSend('hit', {id}),
         onDown: (why, left) => battleSend('down', {left}),
         onWeapon: (x, y, t, lv) => { battleSend('wpn', {x, y, t}); if (lv >= 0) banner(lv >= 2 ? '武器ゲット！黒どんぐり3連発' : '武器ゲット！黒どんぐりが大きくなった', true); }},
-      hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` });
+      hud: n => $('pl-hud').textContent = `あなた ${n}マス　あいて ${(battle.rival && battle.rival.dist) || 0}マス` + (battle.zone ? `　${battle.zone}` : '') });
     $('pl-ctrl').hidden = false; fitPlayer();
     if (window.__hamuTest) window.__hamu = {game, battle};
     return;
@@ -2044,7 +2044,7 @@ function battleBegin(){
 }
 function battleStart(seed, round){
   if (round <= battle.round) return;
-  Object.assign(battle, {round, seed, myDead: null, rivalDead: null, result: '', reason: ''});
+  Object.assign(battle, {round, seed, myDead: null, rivalDead: null, result: '', reason: '', zone: ''});
   const r = battle.rivalInfo || {};
   battle.rival = {name: (r.name || 'あいて') + (r.uid && r.uid === social.ownerId ? '（運営）' : ''), look: cleanLook(r.look), x: null};
   closeSheet(); openPlayer({title: 'フレンド対戦'}, 'battle');
