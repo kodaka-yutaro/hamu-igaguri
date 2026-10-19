@@ -1091,7 +1091,7 @@ function makeGame(canvas, rows, hooks){
 
 if (window.__hamuTest) Object.assign(window, {__makeGame: makeGame, __endless: endlessCourse, __toPiece: toPiece});
 /* ---------- social state ---------- */
-const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], allCourses: [], pieces: [], people: new Map(), board: [], ownerId: null, names: {}, sort: 'new', ready: false };
+const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], allCourses: [], pieces: [], people: new Map(), board: [], ownerId: null, ops: new Set(), names: {}, sort: 'new', ready: false };
 const me = () => (social.uid && social.people.get(social.uid)) || null;
 const myLook = () => cleanLook((me() && me().look) || store.get('hi-look'));
 const myClears = () => { const m = me(); return (m && m.clears) || store.get('hi-clears') || {}; };
@@ -1310,7 +1310,9 @@ $('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) c
 const openCourse = (id, toComments) => { openSheet('course', id); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
 const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
 // the operator gets this badge everywhere their name shows up
-const opBadge = (uid, inline) => uid && uid === social.ownerId ? el('span', {class: 'badge op', style: inline ? 'margin:0 4px' : null, text: '運営'}) : null;
+// operators: everyone in the admins table, plus the one registered in meta/site from before
+const isOp = uid => !!uid && (social.ops.has(uid) || uid === social.ownerId);
+const opBadge = (uid, inline) => isOp(uid) ? el('span', {class: 'badge op', style: inline ? 'margin:0 4px' : null, text: '運営'}) : null;
 function whoChip(uid, px = 24){
   const t = titleFor(clearCount((personOf(uid) || {}).clears));
   return el('button', {class: 'linkbtn who', onclick: (e) => { e.stopPropagation(); openProfile(uid); }},
@@ -1358,7 +1360,7 @@ function composer(target, placeholder, key){
 const drafts = {};
 // only the operator's own posts count as official courses or endless pieces
 function markOfficial(){
-  const op = c => !!social.ownerId && c.author === social.ownerId;
+  const op = c => isOp(c.author);
   for (const c of social.allCourses) c.official = c.wantOfficial && op(c);
   social.courses = social.allCourses.filter(c => c.kind !== 'piece');
   social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows)})).filter(c => c.piece);
@@ -2046,7 +2048,7 @@ function battleStart(seed, round){
   if (round <= battle.round) return;
   Object.assign(battle, {round, seed, myDead: null, rivalDead: null, result: '', reason: ''});
   const r = battle.rivalInfo || {};
-  battle.rival = {name: (r.name || 'あいて') + (r.uid && r.uid === social.ownerId ? '（運営）' : ''), look: cleanLook(r.look), x: null};
+  battle.rival = {name: (r.name || 'あいて') + (isOp(r.uid) ? '（運営）' : ''), look: cleanLook(r.look), x: null};
   closeSheet(); openPlayer({title: 'フレンド対戦'}, 'battle');
   let n = 3; showMsg('3', 'もうすぐスタート', []); sfx('jump');
   const tick = setInterval(() => {
@@ -2144,6 +2146,7 @@ $('db-state').textContent = '公式コースを表示中';
     social.canWrite = cw !== false && !!social.uid;
   }
   battle.rt = be.realtime || null;
+  if (be.admins) be.admins().then(ids => { social.ops = new Set(ids); markOfficial(); renderHeader(); renderAll(); });
   // an invite link (?battle=CODE) drops you into that room
   const invite = new URLSearchParams(location.search).get('battle');
   if (invite && battle.rt) setTimeout(() => battleJoin(invite, false), 600);
@@ -2175,7 +2178,7 @@ $('db-state').textContent = '公式コースを表示中';
     social.ownerId = s.exists ? (s.data().ownerId || null) : null; markOfficial(); renderHeader();
     social.hidden = s.exists ? (s.data().hidden || {}) : {};
     // the operator registers themselves so everyone can see the 運営 badge
-    if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; (s.exists ? site.update({ownerId: social.uid}) : site.set({ownerId: social.uid})).catch(() => {}); }
+    if (social.isOwner && social.uid && !social.ownerId && !claimed){ claimed = true; (s.exists ? site.update({ownerId: social.uid}) : site.set({ownerId: social.uid})).catch(() => {}); }
     renderAll();
   }, () => {});
 })();

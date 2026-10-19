@@ -113,6 +113,8 @@
       join(name, key) { return sb.channel(name, { config: { broadcast: { self: false }, presence: { key } } }); },
       leave(ch) { return sb.removeChannel(ch); },
     };
-    return { db: { doc, collection }, user, account, realtime };
+    // everyone on the operator team, so their names can carry the 運営 badge
+    async function admins() { const { data, error } = await sb.from('admins').select('user_id'); return error ? [] : (data || []).map(r => r.user_id); }
+    return { db: { doc, collection }, user, account, realtime, admins };
   };
 })();
