@@ -1217,7 +1217,7 @@ function recordEndless(n){
 const endlessRanking = () => [...social.people.entries()].filter(([, p]) => +p.endless > 0).map(([uid, p]) => ({uid, n: Math.floor(+p.endless)})).sort((a, b) => b.n - a.n);
 function rankRow(r, i){
   return el('div', {class: 'rank click' + (r.uid === social.uid ? ' me' : ''), onclick: (e) => { e.stopPropagation(); openProfile(r.uid); }},
-    el('span', {class: 'pos', text: i + 1}), avatar(lookOf(r.uid), 28), el('span', {class: 'nm', text: nameOf(r.uid)}), el('b', {text: `${r.n}マス`}));
+    el('span', {class: 'pos', text: i + 1}), avatar(lookOf(r.uid), 28), el('span', {style: 'flex:1;min-width:0;display:flex;align-items:center;gap:6px'}, el('span', {class: 'nm', style: 'flex:0 1 auto', text: nameOf(r.uid)}), opBadge(r.uid)), el('b', {text: `${r.n}マス`}));
 }
 function renderEndless(){
   renderBattleCard();
@@ -1309,11 +1309,13 @@ function closeSheet(){ sheet = null; $('sheet-bg').hidden = true; $('sheet').rep
 $('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) closeSheet(); });
 const openCourse = (id, toComments) => { openSheet('course', id); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
 const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
+// the operator gets this badge everywhere their name shows up
+const opBadge = (uid, inline) => uid && uid === social.ownerId ? el('span', {class: 'badge op', style: inline ? 'margin:0 4px' : null, text: '運営'}) : null;
 function whoChip(uid, px = 24){
   const t = titleFor(clearCount((personOf(uid) || {}).clears));
   return el('button', {class: 'linkbtn who', onclick: (e) => { e.stopPropagation(); openProfile(uid); }},
     avatar(lookOf(uid), px), el('span', {text: nameOf(uid)}),
-    uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null,
+    opBadge(uid),
     social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
     t ? el('span', {class: 'title-tag', text: t.name}) : null);
 }
@@ -1410,7 +1412,7 @@ function profileHeader(uid){
   const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n), lk = likesReceived(uid), mt = makerTitleFor(lk);
   return el('div', {class: 'prof'}, avatar(lookOf(uid), 96),
     el('div', {class: 'info'},
-      el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null, social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
+      el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), opBadge(uid), social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
       t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null, mt ? el('span', {class: 'title-tag maker', style: 'font-size:13px', text: mt.name}) : null) : null,
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
@@ -1700,7 +1702,7 @@ function renderPeople(){
         el('span', {class: 'muted', text: `フォロワー ${followers(uid).length}・クリア ${clearCount(p.clears)}`}),
         el('span', {class: 'muted code', text: codeOf(uid)}))),
       el('div', {class: 'row'},
-        uid === social.ownerId ? el('span', {class: 'badge op', text: '運営'}) : null,
+        opBadge(uid),
         social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null,
         social.uid && uid !== social.uid && social.canWrite ? el('button', {class: 'btn sm' + (on ? ' on' : ''), text: on ? 'フォロー中' : 'フォロー', onclick: (e) => { e.stopPropagation(); toggleFollow(uid); }}) : null)));
   }
@@ -1801,7 +1803,7 @@ function renderMe(){
     ids.length ? el('div', {class: 'row'}, ...ids.map(u => whoChip(u, 26))) : el('span', {class: 'muted', text: 'まだいません'}));
   links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
 }
-function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').textContent = (m && m.name) || store.get('hi-name') || 'マイページ'; renderBell(); }
+function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').replaceChildren((m && m.name) || store.get('hi-name') || 'マイページ', opBadge(social.uid, true) || ''); renderBell(); }
 /* ---------- title celebration: confetti of acorns and a big card ---------- */
 function celebrate(t, kind){
   const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
@@ -1885,7 +1887,7 @@ function renderNoti(box){
       box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: () => { if (n.newCourse) return openCourse(n.newCourse.id); closeSheet(); setTab('board'); }},
         avatar(lookOf(n.who), 34),
         el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
-          n.post ? el('span', {}, el('b', {text: '運営からのお知らせ'}), `「${n.post.title || '（無題）'}」`) : el('span', {}, el('b', {text: nameOf(n.who)}), `さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`),
+          n.post ? el('span', {}, el('b', {text: '運営からのお知らせ'}), `「${n.post.title || '（無題）'}」`) : el('span', {}, el('b', {text: nameOf(n.who)}), opBadge(n.who, true), `さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`),
           el('span', {class: 'muted', style: 'font-size:12px', text: ago(n.at)}))));
       continue;
     }
@@ -1899,7 +1901,7 @@ function renderNoti(box){
     box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
       avatar(lookOf(n.who), 34),
       el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
-        el('span', {}, el('b', {text: nameOf(n.who)}), `さんがあなたの${what}にいいねしました`),
+        el('span', {}, el('b', {text: nameOf(n.who)}), opBadge(n.who, true), `さんがあなたの${what}にいいねしました`),
         el('span', {class: 'muted', style: 'font-size:12px', text: n.at ? ago(n.at) : '以前'})),
       el('span', {class: 'nut', 'aria-hidden': 'true'})));
   }
@@ -2044,7 +2046,7 @@ function battleStart(seed, round){
   if (round <= battle.round) return;
   Object.assign(battle, {round, seed, myDead: null, rivalDead: null, result: '', reason: ''});
   const r = battle.rivalInfo || {};
-  battle.rival = {name: r.name || 'あいて', look: cleanLook(r.look), x: null};
+  battle.rival = {name: (r.name || 'あいて') + (r.uid && r.uid === social.ownerId ? '（運営）' : ''), look: cleanLook(r.look), x: null};
   closeSheet(); openPlayer({title: 'フレンド対戦'}, 'battle');
   let n = 3; showMsg('3', 'もうすぐスタート', []); sfx('jump');
   const tick = setInterval(() => {
@@ -2109,15 +2111,15 @@ function renderBattleCard(){
 }
 function renderBattleLobby(box){
   const r = battle.rivalInfo, link = location.origin + location.pathname + '?battle=' + battle.code;
-  const who = (look, name, sub) => el('div', {class: 'col', style: 'align-items:center;gap:4px;flex:1'}, avatar(look, 72), el('b', {text: name, style: 'overflow-wrap:anywhere;text-align:center'}), el('span', {class: 'muted', text: sub}));
+  const who = (look, name, sub, uid) => el('div', {class: 'col', style: 'align-items:center;gap:4px;flex:1'}, avatar(look, 72), el('b', {text: name, style: 'overflow-wrap:anywhere;text-align:center'}), opBadge(uid), el('span', {class: 'muted', text: sub}));
   box.append(el('h2', {style: 'margin:0', text: 'フレンド対戦'}));
   if (!battle.code){ box.append(el('p', {class: 'muted', text: '部屋から出ています。'})); return; }
   box.append(
     el('div', {class: 'row'}, el('span', {class: 'muted', text: '部屋コード'}), el('span', {class: 'code', style: 'font-size:28px;letter-spacing:.15em', text: battle.code}),
       el('button', {class: 'btn sm', text: '招待リンクをコピー', onclick: () => navigator.clipboard.writeText(link).then(() => toast('コピーしました。LINEなどで友達に送ってね'), () => toast('コピーできませんでした'))})),
     el('p', {class: 'muted', style: 'margin:0', text: '友達にコードかリンクを送って、同じ部屋に入ってもらいます。'}),
-    el('div', {class: 'row', style: 'align-items:center;gap:10px'}, who(myLook(), nameOf(social.uid), battle.host ? 'ホスト' : 'あなた'), el('b', {text: 'VS', style: 'font-family:var(--display);font-size:22px'}),
-      r ? who(cleanLook(r.look), r.name || 'あいて', battle.host ? '' : 'ホスト') : el('div', {class: 'col', style: 'align-items:center;flex:1'}, el('span', {class: 'muted', text: '相手を待っています…'}))),
+    el('div', {class: 'row', style: 'align-items:center;gap:10px'}, who(myLook(), nameOf(social.uid), battle.host ? 'ホスト' : 'あなた', social.uid), el('b', {text: 'VS', style: 'font-family:var(--display);font-size:22px'}),
+      r ? who(cleanLook(r.look), r.name || 'あいて', battle.host ? '' : 'ホスト', r.uid) : el('div', {class: 'col', style: 'align-items:center;flex:1'}, el('span', {class: 'muted', text: '相手を待っています…'}))),
     battle.host ? el('button', {class: 'btn primary', text: r ? 'スタート！' : '相手がそろったら押せます', disabled: r ? false : 'disabled', onclick: battleBegin})
       : el('p', {class: 'muted', style: 'margin:0', text: r ? 'ホストがスタートを押すのを待っています' : 'ホストを待っています'}),
     el('div', {class: 'how'}, el('b', {text: 'あそびかた'}), el('br'),
@@ -2170,7 +2172,7 @@ $('db-state').textContent = '公式コースを表示中';
   }, fail);
   const site = db.doc('meta/site'); let claimed = false;
   site.onSnapshot(s => {
-    social.ownerId = s.exists ? (s.data().ownerId || null) : null; markOfficial();
+    social.ownerId = s.exists ? (s.data().ownerId || null) : null; markOfficial(); renderHeader();
     social.hidden = s.exists ? (s.data().hidden || {}) : {};
     // the operator registers themselves so everyone can see the 運営 badge
     if (social.isOwner && social.uid && social.ownerId !== social.uid && !claimed){ claimed = true; (s.exists ? site.update({ownerId: social.uid}) : site.set({ownerId: social.uid})).catch(() => {}); }
