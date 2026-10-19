@@ -650,7 +650,7 @@ function endlessCourse(seed, startAt = 0, opts = {}){
   const empty = () => Array(ROWS).fill('.');
   const len = () => rows[0].length + startAt;
   for (let x = 0; x < 12; x++){ const c = empty(); if (x === 2) c[7] = 'S'; put(c); }
-  let gap = 7, sinceAcorn = 6, pieceAt = 0, lastPiece = -1;
+  let gap = 7, sinceAcorn = 6, pieceAt = 0, lastPiece = -1, calm = false;
   const pieces = opts.pieces || [];
   const clampGap = size => { gap = Math.max(1 + size / 2, Math.min(ROWS - 2 - size / 2, gap)); };
   function pillar(size, acorn){
@@ -681,7 +681,7 @@ function endlessCourse(seed, startAt = 0, opts = {}){
         const pc = pieces[i]; lastPiece = i;
         open(4, 0);
         for (let x = 0; x < pc.rows[0].length; x++) put(pc.rows.map(r => r[x]));
-        gap = pc.exit; clampGap(5); open(3, 0); pieceAt = len();
+        gap = pc.exit; clampGap(5); open(4, 0); pieceAt = len(); calm = true;
         if (pc.rows.some(r => r.includes('A'))) sinceAcorn = 0; else sinceAcorn += pc.rows[0].length + 7;
         continue;
       }
@@ -701,7 +701,7 @@ function endlessCourse(seed, startAt = 0, opts = {}){
       if (h > 0 && rnd() < .2 + .3 * h) size = 3;             // the really tight ones
       const reach = Math.min(Math.round(3 + 2 * k + h), 2 * space);
       gap += ri(-reach, reach); clampGap(size);
-      open(space, k);
+      open(space, calm ? 0 : k); calm = false;
       const thick = k >= 1 && rnd() < .3 ? 2 : 1;
       for (let j = 0; j < thick; j++) pillar(size, acornDue && j === 0);
       if (acornDue) sinceAcorn = 0; else sinceAcorn += space + thick;
