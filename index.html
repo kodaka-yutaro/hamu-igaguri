@@ -1369,6 +1369,7 @@ function renderSheet(first){
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
   if (sheet.kind === 'battle'){ renderBattleLobby(box); return; }
   if (sheet.kind === 'noti'){ renderNoti(box); return; }
+  if (sheet.kind === 'pub'){ renderPubConfirm(box); return; }
   if (sheet.kind === 'rank'){
     box.append(el('h2', {style: 'margin:0', text: 'エンドレス ランキング'}), el('div', {class: 'col', style: 'gap:4px'}, ...endlessRanking().slice(0, 100).map(rankRow)));
     return;
@@ -1592,7 +1593,21 @@ function updatePubBtn(){
     : !$('ed-title').value.trim() ? 'コースの名前を入れてください。'
     : 'クリア確認ずみ。公開できます！';
 }
-$('ed-pub').onclick = async () => {
+// the course name can't be changed after publishing, so show it once more before it goes out
+$('ed-pub').onclick = () => { if (!$('ed-pub').disabled) openSheet('pub'); };
+function renderPubConfirm(box){
+  const kind = edKind(), title = $('ed-title').value.trim().slice(0, 30);
+  const go = el('button', {class: 'btn primary', text: kind === 'piece' ? 'この名前で追加' : 'この名前で公開'});
+  go.onclick = () => { closeSheet(); publishCourse(); };
+  box.append(
+    el('h2', {style: 'padding-right:70px', text: kind === 'piece' ? 'エンドレス用パーツとして追加します' : kind === 'official' ? '公式コースとして公開します' : 'この名前で公開しますか？'}),
+    el('p', {class: 'muted', style: 'margin:0', text: 'コース名'}),
+    el('p', {style: 'margin:0;font-size:22px;font-weight:800;overflow-wrap:anywhere', text: `「${title}」`}),
+    thumb(editor.rows),
+    el('p', {class: 'muted', style: 'margin:0', text: '公開したあとはコース名を変えられません。'}),
+    el('div', {class: 'row'}, go, el('button', {class: 'btn', text: '名前を変える', onclick: () => { closeSheet(); const t = $('ed-title'); t.focus(); t.select(); }})));
+}
+async function publishCourse(){
   if ($('ed-pub').disabled) return;
   $('ed-pub').disabled = true;
   try {
@@ -1607,7 +1622,7 @@ $('ed-pub').onclick = async () => {
     toast(e && e.code === 'quota_exceeded' ? '保存できるコース数がいっぱいです' : '公開できませんでした。もう一度ためしてください');
     updatePubBtn();
   }
-};
+}
 
 /* ---------- course list ---------- */
 function thumb(rows){
