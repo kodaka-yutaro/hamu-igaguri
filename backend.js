@@ -3,13 +3,37 @@
 // on top of one `docs` table. Access rules live in supabase/schema.sql (row level security).
 (() => {
   const cfg = window.HAMU_CONFIG || {};
+  const AUTH_INTENT = 'hi-auth-intent';
+  const readIntent = () => { try { const v = JSON.parse(sessionStorage.getItem(AUTH_INTENT)); return v && Date.now() - v.at < 15 * 60 * 1000 ? v : null; } catch { return null; } };
+  const clearIntent = () => { try { sessionStorage.removeItem(AUTH_INTENT); } catch {} };
+  const authErrorText = e => {
+    const s = `${e && e.code || ''} ${e && e.message || e || ''}`;
+    if (/identity_already_exists|identity_already_linked|already linked|already been linked/i.test(s)) return 'このGoogleアカウントは別のハムと連携済みです。そのハムを使う場合は「登録済みのハムでログイン」を選んでください。今のハムはそのままです。';
+    if (/manual.*link.*disabled|manual_linking_disabled/i.test(s)) return 'Googleとの連携は準備中です。メールでの登録・ログインを利用できます。';
+    if (/provider.*not.*enabled|unsupported provider|provider_disabled/i.test(s)) return 'Googleログインは現在利用できません。メールでの登録・ログインを利用できます。';
+    if (/access_denied|cancel|拒否/i.test(s)) return 'Googleでの操作をキャンセルしました。今のハムでそのまま遊べます。';
+    if (/email_exists|email.*already|already.*registered/i.test(s)) return 'このメールアドレスは登録済みです。登録済みのハムでログインするか、別のメールアドレスを使ってください。';
+    if (/rate.limit|too many|over_email_send_rate_limit/i.test(s)) return '少し時間をおいてから、もう一度お試しください。';
+    if (/network|fetch|timeout|timed out/i.test(s)) return '通信できませんでした。接続を確認して、もう一度お試しください。';
+    return 'ログインの操作を完了できませんでした。今のハムを確認してから、もう一度お試しください。';
+  };
   window.hamuBackend = async function connect() {
     if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase) return null;
+    const callbackUrl = new URL(location.href), hash = new URLSearchParams(callbackUrl.hash.slice(1));
+    const callbackError = callbackUrl.searchParams.get('error_code') || hash.get('error_code') || callbackUrl.searchParams.get('error') || hash.get('error');
+    const hasAuthCallback = callbackUrl.searchParams.has('code') || hash.has('access_token');
+    const intent = readIntent();
     const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
 
-    // every visitor gets an account: a guest (anonymous) one unless they signed in by email
+    // getSession waits for the SDK to finish the OAuth/email callback before creating a guest.
     let signInProblem = '';
     let { data: { session } } = await sb.auth.getSession();
+    if (callbackError) {
+      const clean = new URL(location.href), cleanHash = new URLSearchParams(clean.hash.slice(1));
+      for (const key of ['error', 'error_code', 'error_description']) { clean.searchParams.delete(key); cleanHash.delete(key); }
+      clean.hash = cleanHash.toString();
+      history.replaceState(history.state, '', clean.pathname + clean.search + clean.hash);
+    }
     if (!session) {
       const r = await sb.auth.signInAnonymously();
       if (r.error) { console.warn('anonymous sign-in failed', r.error.message); signInProblem = r.error.message; }
@@ -17,6 +41,14 @@
     }
     const authUser = session && session.user;
     const uid = authUser ? authUser.id : null;
+    const hasGoogle = !!(authUser && (authUser.identities || []).some(i => i.provider === 'google'));
+    let authNotice = callbackError ? authErrorText({code: callbackError}) : '';
+    if (intent && !callbackError) {
+      if (intent.kind === 'link' && uid === intent.uid && hasGoogle) authNotice = 'Googleと連携しました。記録や作ったコースは、今までと同じハムで使えます。';
+      else if (intent.kind === 'signin' && hasAuthCallback && hasGoogle && authUser && !authUser.is_anonymous) authNotice = 'ログインしました。このハムで遊べます。';
+      else authNotice = 'Googleでの操作は完了していません。今のハムでそのまま遊べます。';
+    }
+    clearIntent();
     let isAdmin = false;
     if (uid) {
       const { data } = await sb.from('admins').select('user_id').eq('user_id', uid).maybeSingle();
@@ -91,6 +123,13 @@
       signInProblem,
       email: authUser && authUser.email || '',
       uid,
+      hasGoogle,
+      googleStatus: 'loading',
+      authNotice,
+      returnToAccount: !!(intent || callbackError),
+      errorText: authErrorText,
+      async attachGoogle() { return googleAuth('link'); },
+      async signInGoogle() { return googleAuth('signin'); },
       // keep this hamster and attach an email so it can be used on other devices
       async attachEmail(email) { const r = await sb.auth.updateUser({ email }, { emailRedirectTo: location.origin + location.pathname }); if (r.error) throw r.error; },
       // sign in to an existing hamster from another device
@@ -108,6 +147,43 @@
       async useTransferCode(code) { const r = await sb.auth.refreshSession({ refresh_token: code.trim() }); if (r.error || !r.data.session) throw r.error || new Error('invalid'); location.reload(); },
       async signOut() { await sb.auth.signOut(); location.reload(); },
     };
+    // A disabled provider must not appear as a working sign-in option.
+    let googleCheck = null;
+    account.checkGoogle = () => {
+      if (googleCheck) return googleCheck;
+      googleCheck = (async () => {
+        const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5000);
+        try {
+          const response = await fetch(cfg.supabaseUrl.replace(/\/$/, '') + '/auth/v1/settings', {headers: {apikey: cfg.supabaseAnonKey}, signal: controller.signal});
+          if (!response.ok) throw new Error('settings unavailable');
+          const settings = await response.json();
+          account.googleStatus = settings.external && settings.external.google === true ? 'enabled' : 'disabled';
+        } catch { account.googleStatus = 'unavailable'; }
+        finally { clearTimeout(timer); }
+        return account.googleStatus === 'enabled';
+      })();
+      return googleCheck;
+    };
+    async function googleAuth(kind) {
+      if (!await account.checkGoogle()) throw new Error('provider not enabled');
+      if (kind === 'link' && !uid) throw new Error('no current user');
+      try { sessionStorage.setItem(AUTH_INTENT, JSON.stringify({kind, uid, at: Date.now()})); } catch {}
+      const options = {redirectTo: location.origin + location.pathname, queryParams: {prompt: 'select_account'}};
+      try {
+        const r = kind === 'link' ? await sb.auth.linkIdentity({provider: 'google', options}) : await sb.auth.signInWithOAuth({provider: 'google', options});
+        if (r.error) throw r.error;
+      } catch (e) { clearIntent(); throw e; }
+    }
+    // A different tab may complete a login. Reload once to rebuild UID-bound data access.
+    const authStamp = u => u ? `${u.id}:${!!u.is_anonymous}:${(u.identities || []).some(i => i.provider === 'google')}` : '';
+    const initialStamp = authStamp(authUser);
+    let reloadQueued = false;
+    sb.auth.onAuthStateChange((_event, nextSession) => {
+      if (!reloadQueued && authStamp(nextSession && nextSession.user) !== initialStamp) {
+        reloadQueued = true;
+        setTimeout(() => location.reload(), 0);
+      }
+    });
     // live rooms for friend battles: broadcast messages + who is in the room (nothing is stored)
     const realtime = {
       join(name, key) { return sb.channel(name, { config: { broadcast: { self: false }, presence: { key } } }); },

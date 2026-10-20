@@ -84,6 +84,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .btn.on{background:var(--fg);color:var(--bg)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .btn.sm{padding:4px 10px;font-size:13px}
+.google-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:40px;padding:9px 12px;border:1px solid #747775;border-radius:6px;background:#fff;color:#1f1f1f;font:500 14px Arial,sans-serif;cursor:pointer}
+.google-btn svg{width:18px;height:18px;flex:none}
+.google-btn:disabled{opacity:.5;cursor:wait}
+.account-section{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.account-details{border-top:1px solid var(--line);padding-top:10px}
+.account-details summary{cursor:pointer;font-weight:800}
+.account-details[open] summary{margin-bottom:10px}
+.account-note{margin:0;white-space:pre-line;overflow-wrap:anywhere;color:var(--accent)}
+.account-hint{position:relative;max-width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 38px 10px 12px;background:var(--panel);color:var(--fg);text-align:left;font-size:12px;line-height:1.5;pointer-events:auto}
+.account-hint p{margin:2px 0 6px}
+.account-hint .hint-close{position:absolute;right:6px;top:5px;width:28px;height:28px;text-align:center;font-size:20px}
+.msg .account-hint{width:300px}
 .linkbtn{font:inherit;background:none;border:0;padding:0;color:inherit;font-weight:800;cursor:pointer;text-align:left}
 .linkbtn:hover{text-decoration:underline}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -222,6 +234,7 @@ input[type=range]{width:100%}
 
   <section id="view-play" class="col" style="gap:14px">
     <div class="card endless" id="endless"></div>
+    <div id="play-account-hint" class="account-hint" hidden></div>
     <div class="card battle" id="battle-card"></div>
     <div class="row" style="justify-content:space-between">
       <div class="row" role="group" aria-label="並べ替え" style="gap:6px">
@@ -308,7 +321,7 @@ input[type=range]{width:100%}
       </div>
     </div>
     <h2>アカウント</h2>
-    <div id="account" class="post" style="gap:8px"></div>
+    <div id="account" class="post" style="gap:12px" tabindex="-1"></div>
     <div class="row" id="my-code" hidden><span class="muted">あなたのともだちコード</span><span class="code" id="my-code-v"></span><button class="btn sm" id="my-code-copy">コピー</button><span class="muted">友達に教えると「みんな」でさがしてもらえます</span></div>
     <h2>称号</h2>
     <p class="muted" id="ttl-note" style="margin:0"></p>
@@ -335,11 +348,11 @@ input[type=range]{width:100%}
 <div class="overlay" id="overlay" hidden>
   <div class="player">
     <div class="bar"><b id="pl-title"></b><span class="row" style="gap:6px;flex:none"><button class="btn sm" id="pl-mute" aria-label="音を消す">🔊</button><button class="btn sm" id="pl-close">とじる</button></span></div>
-    <div class="stage tall" id="pl-stage">
+    <div class="stage tall" id="pl-stage" tabindex="-1">
       <canvas id="pl-canvas" width="640" height="1024"></canvas>
       <div class="hud" id="pl-hud"></div>
       <div class="banner" id="pl-banner" hidden></div>
-      <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div></div>
+      <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div><div id="pl-account-hint" class="account-hint" hidden></div></div>
     </div>
     <div class="ctrl" id="pl-ctrl" hidden>
       <button id="ct-back" aria-label="うしろにダッシュ">◀</button><button id="ct-fwd" aria-label="まえにダッシュ">▶</button>
@@ -359,7 +372,44 @@ const T = 32, ROWS = 16, VIEW_W = 320, VIEW_H = ROWS * T, PX = 2;
 const $ = id => document.getElementById(id);
 const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)){ if (k === 'text') e.textContent = v; else if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== false && v != null) e.setAttribute(k, v); } e.append(...kids.filter(Boolean)); return e; };
 const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); };
-const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } }, set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+// Keep each hamster's local records and drafts separate, including across tabs.
+const localMemory = new Map();
+const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
+const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
+const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-look', 'hi-name', 'hi-draft', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+let localOwner = readLocal('hi-local-owner');
+if (!localOwner) {
+  try {
+    const ref = new URL(window.HAMU_CONFIG.supabaseUrl).hostname.split('.')[0];
+    const saved = readLocal(`sb-${ref}-auth-token`);
+    localOwner = saved && saved.user && saved.user.id || null;
+  } catch {}
+}
+const hamsterKey = (uid, key) => `hi-user:${uid}:${key}`;
+function adoptLegacy(uid){
+  if (!uid || readLocal('hi-local-migrated')) return;
+  // A quota failure may leave migration unfinished. Its owner must survive an account switch.
+  const owner = readLocal('hi-legacy-owner') || uid;
+  let persisted = writeLocal('hi-legacy-owner', owner);
+  for (const key of hamsterKeys){
+    const value = readLocal(key), target = hamsterKey(owner, key);
+    if (value !== null && readLocal(target) === null && !writeLocal(target, value)) persisted = false;
+  }
+  if (persisted) writeLocal('hi-local-migrated', true);
+}
+if (localOwner) { adoptLegacy(localOwner); writeLocal('hi-local-owner', localOwner); }
+const store = {
+  get(k){ return readLocal(localOwner && hamsterKeys.has(k) ? hamsterKey(localOwner, k) : k); },
+  set(k,v){ writeLocal(localOwner && hamsterKeys.has(k) ? hamsterKey(localOwner, k) : k, v); },
+  useUser(uid){
+    if (!uid) return false;
+    const changed = !!localOwner && localOwner !== uid;
+    if (!localOwner) adoptLegacy(uid);
+    localOwner = uid; writeLocal('hi-local-owner', uid);
+    return changed;
+  },
+};
+if (window.__hamuTest) window.__accountStore = store;
 const ago = (ms) => { const s = (Date.now() - ms) / 1000; if (s < 60) return 'たった今'; if (s < 3600) return Math.floor(s/60) + '分前'; if (s < 86400) return Math.floor(s/3600) + '時間前'; const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()}`; };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -1148,7 +1198,7 @@ let game = null, current = null, lastClear = {sec: 0, deaths: 0};
 function openPlayer(course, mode){
   current = {course, mode};
   $('pl-title').textContent = course.title || '名前のないコース';
-  $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer();
+  $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer(); $('pl-stage').focus({preventScroll: true});
   if (game) game.stop();
   if (mode === 'battle'){
     game = makeGame($('pl-canvas'), null, { onState: battleState, look: myLook(), endless: () => battleCourse(battle.seed), banner: t => banner(t), 
@@ -1182,6 +1232,7 @@ addEventListener('resize', fitPlayer);
 if (window.visualViewport) visualViewport.addEventListener('resize', fitPlayer);
 addEventListener('orientationchange', () => setTimeout(fitPlayer, 250));
 function showMsg(big, sub, btns, gain){
+  $('pl-account-hint').hidden = true;
   $('pl-big').textContent = big; $('pl-sub').textContent = sub || '';
   $('pl-gain').hidden = !gain; $('pl-gain').textContent = gain || '';
   const b = $('pl-btns'); b.replaceChildren();
@@ -1248,8 +1299,8 @@ function onState(s, info){
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
-    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [['Xで自慢する', () => shareX(`エンドレスで${n}マス進んだ！🐹🌰 きみはどこまで行ける？`)]], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
-    if (n > prev) recordEndless(n);
+    showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [['もう一回', () => game.reset(), true], ['Xで自慢する', () => shareX(`エンドレスで${n}マス進んだ！🐹🌰 きみはどこまで行ける？`)]], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
+    if (n > prev){ recordEndless(n); if (prev > 0) showAccountHint('pl-account-hint'); }
     return;
   }
   if (s === 'dead') showMsg('ミス！', `${info.why}・タップでもう一回`, []);
@@ -1293,9 +1344,11 @@ $('overlay').addEventListener('touchstart', e => {
   }
 }, {passive: false});
 $('pl-close').onclick = closePlayer;
-$('pl-mute').onclick = () => setMute(!muted); setMute(muted);
+$('pl-mute').onclick = () => { setMute(!muted); $('pl-stage').focus({preventScroll: true}); }; setMute(muted);
 addEventListener('keydown', e => {
   if (!$('overlay').hidden){
+    if (e.target.closest && e.target.closest('input, textarea, select') && e.code !== 'Escape') return;
+    if (e.code === 'Space' && e.target.closest && e.target.closest('#overlay button')) return;
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
     if (inBattle() && game && !e.repeat){ if (e.code === 'ArrowLeft') game.dash(-1); if (e.code === 'ArrowRight') game.dash(1); if (e.code === 'KeyX' || e.code === 'KeyF') game.fire(); }
     if (e.code === 'Escape') closePlayer();
@@ -1622,6 +1675,7 @@ async function publishCourse(){
     editor.cleared = false; updatePubBtn();
     if (kind === 'piece'){ toast('エンドレスに追加しました'); return; }
     toast(kind === 'official' ? '公式コースとして公開しました' : '公開しました'); setTab('play'); setSort('new');
+    showAccountHint('play-account-hint');
   } catch (e) {
     toast(e && e.code === 'quota_exceeded' ? '保存できるコース数がいっぱいです' : '公開できませんでした。もう一度ためしてください');
     updatePubBtn();
@@ -1917,41 +1971,146 @@ function markNotiSeen(){
 // the list keeps highlighting what was new when it was opened
 let notiShownFrom = 0;
 $('bell-btn').onclick = () => { notiShownFrom = notiSeen(); openSheet('noti'); markNotiSeen(); };
+let accountBusy = false, accountMessage = '', accountHintShown = false;
+function openAccount(){
+  closePlayer(); closeSheet(); setTab('me');
+  $('account').scrollIntoView({block: 'center'}); $('account').focus({preventScroll: true});
+}
+function showAccountHint(id){
+  const a = social.account, box = $(id);
+  if (!a || !a.uid || !a.isGuest || accountHintShown || +store.get('hi-auth-nudge-after') > Date.now()) return;
+  if (id === 'pl-account-hint' && $('pl-stage').getBoundingClientRect().height < 420) return;
+  accountHintShown = true; store.set('hi-auth-nudge-after', Date.now() + 86400000);
+  box.onpointerdown = e => e.stopPropagation();
+  box.replaceChildren(el('b', {text: 'このハムを、ほかの端末でも'}),
+    el('p', {text: `${a.googleStatus === 'enabled' ? 'Googleやメールを連携' : 'メールを登録'}すると、同じハムで遊べます。`}),
+    el('button', {class: 'btn sm', text: '引き継ぎ設定', onclick: e => { e.stopPropagation(); box.hidden = true; openAccount(); }}),
+    el('button', {class: 'linkbtn hint-close', text: '×', 'aria-label': '引き継ぎの案内を閉じる', onclick: e => {
+      e.stopPropagation(); box.hidden = true; store.set('hi-auth-nudge-after', Date.now() + 7 * 86400000);
+    }}));
+  box.hidden = false;
+}
+function setAccountMessage(text){
+  accountMessage = text;
+  const note = $('acct-note'); if (note) { note.textContent = text; note.hidden = !text; }
+}
+function setAccountBusy(busy){
+  accountBusy = busy; $('account').setAttribute('aria-busy', String(busy));
+  $('account').querySelectorAll('button, input').forEach(e => e.disabled = busy);
+}
+async function prepareAccountChange(){
+  saveDraft();
+  if (formDirty) throw {userMessage: 'プロフィールに未保存の変更があります。先にプロフィールの「保存する」を押してください。'};
+  await writeChain;
+  if (!social.uid || !social.db || !social.canWrite) return;
+  if (!social.peopleLoaded) throw {userMessage: '記録を読み込み中です。少し待ってから、もう一度お試しください。'};
+  // Retry local progress that could have been earned before the online profile finished loading.
+  const p = me() || {}, patch = {}, endless = +store.get('hi-endless') || 0, wins = +store.get('hi-wins') || 0;
+  if (endless > (+p.endless || 0)) patch.endless = endless;
+  if (wins > (+(p.battle && p.battle.wins) || 0)) patch.battle = {wins};
+  for (const [key, value] of Object.entries(store.get('hi-items') || {})) if (value === true && !(p.items && p.items[key])) (patch.items ||= {})[key] = true;
+  for (const [key, value] of Object.entries(store.get('hi-clears') || {})) {
+    const old = p.clears && p.clears[key];
+    if (typeof value === 'number' && isFinite(value) && value >= 0 && (old == null || value < old)) (patch.clears ||= {})[key] = value;
+  }
+  if (!me()) {
+    if (store.get('hi-name')) patch.name = String(store.get('hi-name')).slice(0, 12);
+    if (store.get('hi-look')) patch.look = myLook();
+  }
+  if (Object.keys(patch).length && !await patchMe(patch)) throw {userMessage: '記録を保存できませんでした。通信を確認してから、もう一度お試しください。'};
+}
+async function runAccountAction(fn, success){
+  if (accountBusy) return;
+  setAccountBusy(true); setAccountMessage('記録を確認しています…');
+  try { await prepareAccountChange(); await fn(); setAccountMessage(success || ''); }
+  catch (e) { setAccountMessage(e.userMessage || social.account.errorText(e)); }
+  finally { setAccountBusy(false); }
+}
+function confirmAccountSwitch(){
+  if (!social.account.uid) return true;
+  return confirm(social.account.isGuest
+    ? '別のハムにログインします。今のハムの記録は自動では移りません。今のハムをあとでも使いたい場合は、先にGoogle連携かメール登録を済ませてください。ログインに進みますか？'
+    : '別のハムにログインします。記録やコースは自動ではまとめられません。ログインに進みますか？');
+}
+function googleButton(label, action){
+  const button = el('button', {class: 'google-btn', type: 'button', onclick: action});
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 48 48'); icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>';
+  button.append(icon, el('span', {text: label})); return button;
+}
 function renderAccount(){
   const box = $('account'), a = social.account;
-  if (!a || !a.uid){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
-  const input = el('input', {type: 'email', id: 'acct-email', placeholder: 'メールアドレス', style: 'flex:1 1 200px', autocomplete: 'email'});
-  input.className = 'txt';
-  const note = el('span', {class: 'muted'});
-  const run = (fn, ok) => async () => { const v = input.value.trim(); if (!/^\S+@\S+\.\S+$/.test(v)) return toast('メールアドレスを入れてください'); try { await fn(v); note.textContent = ok; } catch (e) { note.textContent = '送れませんでした: ' + (e.message || e); } };
+  if (!a){ box.replaceChildren(el('p', {class: 'muted', style: 'margin:0', text: 'オンライン機能につながっていません。この端末だけで遊べます。'})); return; }
+  box.setAttribute('data-google-status', a.googleStatus);
+  const focused = document.activeElement && document.activeElement.id;
+  const values = new Map([...box.querySelectorAll('input[id]')].map(e => [e.id, e.value]));
+  const expanded = new Map([...box.querySelectorAll('details[id]')].map(e => [e.id, e.open]));
+  const details = (id, label, ...children) => el('details', {id, class: 'account-details', open: expanded.get(id) || false}, el('summary', {text: label}), ...children);
+  const input = id => {
+    const e = el('input', {type: 'email', id, placeholder: 'メールアドレス', 'aria-label': id === 'acct-link-email' ? 'このハムに登録するメールアドレス' : '登録済みのメールアドレス', style: 'flex:1 1 200px;max-width:100%', autocomplete: 'email'});
+    e.value = values.get(id) || ''; return e;
+  };
+  const note = el('p', {id: 'acct-note', class: 'account-note', role: 'status', 'aria-live': 'polite', hidden: !accountMessage, text: accountMessage});
+  const runEmail = (field, fn, ok, switching = false) => () => {
+    const v = field.value.trim();
+    if (!v || !field.checkValidity()) { field.reportValidity(); setAccountMessage('メールアドレスを入れてください。'); return; }
+    if (switching && !confirmAccountSwitch()) return;
+    runAccountAction(() => fn(v), ok);
+  };
   const idLine = el('div', {class: 'row'}, el('span', {class: 'muted', text: 'ユーザーID: '}), el('code', {text: a.uid, style: 'font-size:12px;overflow-wrap:anywhere'}),
     el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(a.uid).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}));
   // moving this hamster to another browser or the home-screen app without email
-  const moveBox = el('div', {class: 'col', style: 'gap:6px;border-top:1.5px solid var(--line);padding-top:10px'});
+  // Keep an entered or issued transfer code visible when the provider check rerenders this section.
+  const previousMove = $('acct-move-box');
+  const moveBox = previousMove || el('div', {id: 'acct-move-box', class: 'col', style: 'gap:6px;border-top:1.5px solid var(--line);padding-top:10px'});
+  if (!previousMove){
   const codeOut = el('div', {class: 'row', hidden: 'hidden'});
   const moveIn = el('input', {type: 'text', placeholder: '引き継ぎコード', autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', style: 'flex:1 1 160px'}); moveIn.className = 'txt';
   moveBox.append(el('b', {text: 'ほかの端末・ホーム画面アプリに引っ越す'}),
     el('p', {class: 'muted', style: 'margin:0', text: '引っ越し元で「引き継ぎコードを出す」を押し、出たコードを引っ越し先のこの欄に入れます。iPhoneのホーム画面アプリはSafariとログインが別なので、Safariでログインしてからこれでアプリに移せます。'}),
     el('div', {class: 'row'}, el('button', {class: 'btn sm', text: '引き継ぎコードを出す', onclick: async () => {
       if (!a.transferCode) return toast('古い版が残っています。アプリを閉じて開き直してください');
-      try { const c = await a.transferCode(); codeOut.replaceChildren(el('code', {text: c, style: 'font-size:15px;overflow-wrap:anywhere'}), el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(c).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}),
-        el('span', {class: 'muted', text: 'だれにも教えないでください。コードを出したので、この端末は次に開くとログアウトしています。'})); codeOut.hidden = false; } catch (e) { toast('コードを出せませんでした: ' + ((e && e.message) || e)); } }})),
+      try { await prepareAccountChange(); const c = await a.transferCode(); codeOut.replaceChildren(el('code', {text: c, style: 'font-size:15px;overflow-wrap:anywhere'}), el('button', {class: 'btn sm', text: 'コピー', onclick: () => navigator.clipboard.writeText(c).then(() => toast('コピーしました'), () => toast('コピーできませんでした'))}),
+        el('span', {class: 'muted', text: 'だれにも教えないでください。コードを出したので、この端末は次に開くとログアウトしています。'})); codeOut.hidden = false; } catch (e) { setAccountMessage(e.userMessage || '引き継ぎコードを出せませんでした。もう一度お試しください。'); } }})),
     codeOut,
     el('div', {class: 'row'}, moveIn, el('button', {class: 'btn primary sm', text: 'このコードで引っ越す', onclick: async () => {
       const v = moveIn.value.trim(); if (v.length < 8) return toast('引き継ぎコードを入れてください');
-      if (a.isGuest && !confirm('いまこの端末で遊んでいるゲストのハムからは離れます。よろしいですか？')) return;
+      if (!confirmAccountSwitch()) return;
       if (!a.useTransferCode) return toast('古い版が残っています。アプリを閉じて開き直してください');
-      try { await a.useTransferCode(v); } catch { toast('コードが違うか、もう使われています。引っ越し元でもう一度出してください'); } }})));
-  if (a.isGuest){
-    box.replaceChildren(
-      el('b', {text: 'ゲストとして遊んでいます'}),
-      el('p', {class: 'muted', style: 'margin:0', text: 'このハムはこの端末のブラウザに結びついています。メールを登録すると、ほかの端末でも同じハムで遊べます。'}),
-      el('div', {class: 'row'}, input, el('button', {class: 'btn primary sm', text: 'メールを登録', onclick: run(a.attachEmail, '確認メールを送りました。メールのリンクを押すと登録が完了します。')}),
-        el('button', {class: 'btn sm', text: '登録済みのハムでログイン', onclick: run(a.signInEmail, 'ログイン用のメールを送りました。メールのリンクを押すとログインできます。')})),
-      note, idLine, moveBox);
-  } else {
-    box.replaceChildren(el('b', {text: `${a.email} でログイン中`}), el('div', {class: 'row'}, el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => a.signOut()})), idLine, moveBox);
+      runAccountAction(() => a.useTransferCode(v), 'このハムに切り替えています…'); }})));
   }
+  const main = el('div', {class: 'account-section'}), googleReady = a.googleStatus === 'enabled';
+  if (a.uid){
+    main.append(el('b', {text: a.isGuest ? 'このハムを引き継ぐ' : a.hasGoogle ? 'Googleと連携済みです' : 'メールで登録済みです'}),
+      el('p', {class: 'muted', style: 'margin:0', text: a.isGuest
+        ? `${googleReady ? 'Googleやメールを連携' : 'メールを登録'}すると、ほかの端末でもこのハムを呼び出せます。登録せずに遊び続けることもできます。`
+        : `${a.email ? a.email + '・' : ''}このハムでログインしています。`}));
+    if (googleReady && !a.hasGoogle){
+      main.append(el('span', {class: 'muted', text: 'このハムをGoogleと連携します。記録や公開したコースも同じハムで使えます。'}),
+        googleButton('Googleで続行', () => runAccountAction(() => a.attachGoogle(), 'Googleの画面で連携を続けてください。')));
+    }
+    if (a.isGuest){
+      const mail = input('acct-link-email');
+      const row = el('div', {class: 'row'}, mail, el('button', {class: 'btn sm', text: 'メールを登録', onclick: runEmail(mail, a.attachEmail, '確認メールを送りました。メールのリンクを押すと、今のハムへの登録が完了します。')}));
+      if (googleReady){
+        const emailOptions = details('acct-email-options', 'メールで登録する', row);
+        if (mail.value || focused === mail.id) emailOptions.open = true;
+        main.append(emailOptions);
+      } else main.append(row);
+    } else main.append(el('button', {class: 'btn sm', text: 'ログアウト', onclick: () => runAccountAction(() => a.signOut(), 'ログアウトしています…')}));
+  } else main.append(el('p', {class: 'muted', style: 'margin:0', text: 'ゲスト参加につながっていません。この端末で遊ぶか、登録済みのハムでログインできます。'}));
+  const loginMail = input('acct-login-email');
+  const login = details('acct-login-options', '登録済みのハムでログイン',
+    el('p', {class: 'muted', style: 'margin:0 0 8px', text: '以前使っていたハムを呼び出します。今のハムの記録やコースは、自動ではまとめられません。'}),
+    el('div', {class: 'col', style: 'align-items:flex-start;gap:8px'},
+      googleReady ? googleButton('Googleでログイン', () => { if (confirmAccountSwitch()) runAccountAction(() => a.signInGoogle(), 'Googleの画面でログインを続けてください。'); }) : null,
+      googleReady ? el('span', {class: 'muted', text: '以前このゲームで使ったGoogleアカウントを選んでください。初めて使うアカウントでは、新しいハムが作られる場合があります。'}) : null,
+      el('div', {class: 'row'}, loginMail, el('button', {class: 'btn sm', text: 'ログインメールを送る', onclick: runEmail(loginMail, a.signInEmail, 'ログイン用のメールを送りました。メールのリンクを押すと、そのハムに切り替わります。', true)}))));
+  if (!a.uid) login.open = true;
+  box.replaceChildren(main, note, login, a.uid ? details('acct-move-options', '引き継ぎコード・ユーザーID', idLine, moveBox) : '');
+  setAccountBusy(accountBusy);
+  if (focused && box.querySelector('#' + focused)) $(focused).focus({preventScroll: true});
 }
 
 /* ---------- tabs & render ---------- */
@@ -1961,7 +2120,7 @@ function setTab(name){
   tab = name;
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
   if (name === 'make'){ syncWidth(); drawEditor(); updatePubBtn(); }
-  if (name === 'me') syncForm();
+  if (name === 'me'){ syncForm(); renderAccount(); }
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
@@ -2137,13 +2296,24 @@ $('db-state').textContent = '公式コースを表示中';
   try { be = window.hamuBackend ? await window.hamuBackend() : null; } catch (e) { console.warn(e); }
   if (!be){ $('db-state').textContent = 'オフラインで遊んでいます'; return; }
   const {db, user} = be;
-  social.user = null; social.account = be.account; renderAccount();
+  social.user = null; social.account = be.account;
   social.db = db;
   if (user){
     social.uid = await user.id();
+    if (store.useUser(social.uid)){
+      closePlayer(); closeSheet(); formDirty = false; editor.cleared = false; loadDraft();
+      if (tab === 'make') drawEditor();
+      accountHintShown = false; $('play-account-hint').hidden = true;
+    }
     social.isOwner = await user.isOwner();
     const cw = await user.can('data.write');
     social.canWrite = cw !== false && !!social.uid;
+  }
+  renderAccount(); renderHeader(); renderAll();
+  if (be.account){
+    setAccountMessage(be.account.authNotice || '');
+    if (be.account.returnToAccount) openAccount();
+    if (be.account.checkGoogle) be.account.checkGoogle().then(() => renderAccount());
   }
   battle.rt = be.realtime || null;
   if (be.admins) be.admins().then(ids => { social.ops = new Set(ids); markOfficial(); renderHeader(); renderAll(); });
