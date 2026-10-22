@@ -376,7 +376,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-look', 'hi-name', 'hi-draft', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -1160,6 +1160,70 @@ function clearStats(cid){
   for (const p of social.people.values()){ const v = p.clears && p.clears[cid]; if (v != null && isFinite(+v)){ n++; best = Math.min(best, +v); } }
   return {n, best: n ? best : null};
 }
+// Each page owns a counter shard; retries sync absolute totals without double counting.
+const runSource = Array.from(crypto.getRandomValues(new Uint32Array(4)), n => n.toString(16).padStart(8, '0')).join('');
+const runCount = n => Number.isSafeInteger(n) && n >= 0 ? n : 0;
+function mergeCourseRuns(a, b){
+  const out = {};
+  for (const src of [a, b]) for (const [cid, shards] of Object.entries(src || {})){
+    if (!shards || typeof shards !== 'object') continue;
+    for (const [key, value] of Object.entries(shards)){
+      if (!value || typeof value !== 'object') continue;
+      const old = out[cid]?.[key];
+      const attempts = Math.max(runCount(old?.attempts), runCount(value.attempts));
+      const clears = Math.min(attempts, Math.max(runCount(old?.clears), runCount(value.clears)));
+      (out[cid] ||= {})[key] = {attempts, clears};
+    }
+  }
+  return out;
+}
+function courseRate(cid){
+  let attempts = 0, clears = 0;
+  const add = runs => { for (const v of Object.values(runs?.[cid] || {})){
+    const n = runCount(v?.attempts); attempts += n; clears += Math.min(n, runCount(v?.clears));
+  }};
+  for (const [uid, p] of social.people) if (uid !== social.uid) add(p.courseRuns);
+  add(mergeCourseRuns(me()?.courseRuns, store.get('hi-course-runs')));
+  return {attempts, clears, rate: attempts ? clears / attempts * 100 : null};
+}
+const rateLabel = r => r.rate == null ? 'クリア率 —' : `クリア率 ${r.rate.toFixed(1)}%`;
+function rateDisplay(cid, detail = false){
+  const r = courseRate(cid), ready = !social.db || social.peopleLoaded;
+  return el('div', {class: 'col', style: 'gap:3px'},
+    el('div', {class: 'meta'}, el('b', {text: ready ? rateLabel(r) : 'クリア率 読み込み中…'}),
+      ready ? el('span', {class: 'muted', text: r.attempts ? `${r.clears}回クリア / ${r.attempts}回挑戦` : 'まだ挑戦の記録がありません'}) : null),
+    detail ? el('small', {class: 'muted', text: '2026年10月22日の更新後から集計。クリア回数 ÷ 挑戦回数（リトライ・途中終了も含む）。テストプレイは対象外。'}) : null);
+}
+let runsSyncing = false;
+async function syncCourseRuns(){
+  if (runsSyncing || !social.db || !social.uid || !social.peopleLoaded) return;
+  const local = store.get('hi-course-runs') || {}, pending = {};
+  for (const [cid, shards] of Object.entries(local)) for (const [key, value] of Object.entries(shards)){
+    const saved = me()?.courseRuns?.[cid]?.[key];
+    if (runCount(value.attempts) > runCount(saved?.attempts) || runCount(value.clears) > runCount(saved?.clears)) (pending[cid] ||= {})[key] = value;
+  }
+  if (!Object.keys(pending).length) return;
+  runsSyncing = true;
+  let saved = false;
+  try {
+    saved = await patchMe({courseRuns: pending});
+    if (saved){ const p = me(); if (p) p.courseRuns = mergeCourseRuns(p.courseRuns, pending); }
+  } finally { runsSyncing = false; }
+  if (saved) return syncCourseRuns();
+}
+function trackCourseRun(state){
+  if (!current || current.mode !== 'play' || !current.course.id) return;
+  if (state === 'ready'){ current.countedRun = false; return; }
+  if (state !== 'run' && state !== 'clear') return;
+  if (state === 'run' && current.countedRun || state === 'clear' && !current.countedRun) return;
+  current.countedRun = state === 'run';
+  const cid = current.course.id, runs = store.get('hi-course-runs') || {};
+  const prev = runs[cid]?.[runSource] || {attempts: 0, clears: 0};
+  (runs[cid] ||= {})[runSource] = {attempts: prev.attempts + (state === 'run' ? 1 : 0), clears: prev.clears + (state === 'clear' ? 1 : 0)};
+  store.set('hi-course-runs', runs);
+  syncCourseRuns(); renderAll();
+}
+window.addEventListener('online', () => syncCourseRuns());
 function likeCount(cid){ let n = 0; for (const p of social.people.values()) if (p.likes && p.likes[cid] === true) n++; return n; }
 function likesReceived(uid){
   if (!uid) return 0;
@@ -1295,6 +1359,7 @@ async function recordClear(course, sec){
   return t && (!titleFor(before) || titleFor(before).n !== t.n) ? t : null;
 }
 function onState(s, info){
+  trackCourseRun(s);
   if (s === 'ready') showMsg('タップでスタート', 'スペース / ↑ / タップで跳ねる');
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'dead' && current && current.mode === 'endless'){
@@ -1439,6 +1504,7 @@ function renderSheet(first){
       el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
       el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
       (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
+      rateDisplay(c.id, true),
       thumb(c.rows),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
@@ -1709,6 +1775,7 @@ function courseCard(c){
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
       el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
+    rateDisplay(c.id),
     el('div', {class: 'row'}, likeButton(c),
       el('button', {class: 'like', onclick: (e) => { e.stopPropagation(); openCourse(c.id, true); }}, el('span', {text: `コメント ${commentsFor('c:' + c.id).length}`}))));
   return card;
@@ -2006,6 +2073,8 @@ async function prepareAccountChange(){
   if (!social.peopleLoaded) throw {userMessage: '記録を読み込み中です。少し待ってから、もう一度お試しください。'};
   // Retry local progress that could have been earned before the online profile finished loading.
   const p = me() || {}, patch = {}, endless = +store.get('hi-endless') || 0, wins = +store.get('hi-wins') || 0;
+  const runs = store.get('hi-course-runs');
+  if (runs && Object.keys(runs).length) patch.courseRuns = mergeCourseRuns(p.courseRuns, runs);
   if (endless > (+p.endless || 0)) patch.endless = endless;
   if (wins > (+(p.battle && p.battle.wins) || 0)) patch.battle = {wins};
   for (const [key, value] of Object.entries(store.get('hi-items') || {})) if (value === true && !(p.items && p.items[key])) (patch.items ||= {})[key] = true;
@@ -2335,8 +2404,9 @@ $('db-state').textContent = '公式コースを表示中';
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();
   }, fail);
-  db.collection('people').limit(1000).onSnapshot(snap => {
+  db.collection('people').onSnapshot(snap => {
     social.people = new Map(snap.docs.map(d => [d.id, d.data()])); social.peopleLoaded = true;
+    syncCourseRuns();
     renderAll();
   }, fail);
   db.collection('board').orderBy('at', 'desc').limit(100).onSnapshot(snap => {

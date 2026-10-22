@@ -18,6 +18,7 @@ const record = {
   'hi-wins': 7,
   'hi-items': { pan: true, hashi: true },
   'hi-clears': { 'my-course': 12.3 },
+  'hi-course-runs': { 'my-course': { device: {attempts: 4, clears: 1} } },
   'hi-look': { body: '#f0b56a', hat: 'pan' },
   'hi-name': 'もとのハム',
   'hi-draft': { title: '作りかけ', rows: ['S..G'] },

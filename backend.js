@@ -71,9 +71,13 @@
     const bump = col => { const set = listeners.get(col); if (set) set.forEach(f => f()); };
 
     async function readCol(col) {
-      const { data, error } = await sb.from('docs').select('id,data').eq('col', col).limit(2000);
-      if (error) throw err(error);
-      return data;
+      const rows = [];
+      for (let offset = 0; ; offset += 1000){
+        const { data, error } = await sb.from('docs').select('id,data').eq('col', col).order('id').range(offset, offset + 999);
+        if (error) throw err(error);
+        rows.push(...data);
+        if (data.length < 1000) return rows;
+      }
     }
     function query(col, ord, lim) {
       async function run() {
@@ -92,14 +96,25 @@
     }
     function doc(path) {
       const [col, id] = split(path);
-      const getRow = async () => { const { data, error } = await sb.from('docs').select('id,data').eq('col', col).eq('id', id).maybeSingle(); if (error) throw err(error); return data; };
+      const getRow = async () => { const { data, error } = await sb.from('docs').select('id,data,updated_at').eq('col', col).eq('id', id).maybeSingle(); if (error) throw err(error); return data; };
       return {
         id, path,
         get: async () => snapDoc(id, await getRow()),
         async set(v) { const { error } = await sb.from('docs').upsert({ col, id, data: v, owner: uid }); if (error) throw err(error); bump(col); },
         async update(v) {
-          const row = await getRow(); if (!row) throw { code: 'invalid_argument', message: 'missing document' };
-          const { error } = await sb.from('docs').update({ data: merge(clone(row.data), v) }).eq('col', col).eq('id', id); if (error) throw err(error); bump(col);
+          // Keep simultaneous tabs/devices from replacing each other's counters or profile edits.
+          for (let attempt = 0; attempt < 5; attempt++){
+            const row = await getRow(); if (!row) throw { code: 'invalid_argument', message: 'missing document' };
+            const next = merge(clone(row.data), v);
+            for (const [cid, shards] of Object.entries(v.courseRuns || {})) for (const [source, counts] of Object.entries(shards)){
+              const old = row.data.courseRuns?.[cid]?.[source];
+              next.courseRuns[cid][source] = {attempts: Math.max(old?.attempts || 0, counts.attempts), clears: Math.max(old?.clears || 0, counts.clears)};
+            }
+            const { data, error } = await sb.from('docs').update({ data: next }).eq('col', col).eq('id', id).eq('updated_at', row.updated_at).select('id');
+            if (error) throw err(error);
+            if (data.length){ bump(col); return; }
+          }
+          throw { code: 'conflict', message: 'Concurrent update; please retry' };
         },
         async delete() { const { error } = await sb.from('docs').delete().eq('col', col).eq('id', id); if (error) throw err(error); bump(col); },
         onSnapshot(next, onErr) { return listen(col, () => getRow().then(r => next(snapDoc(id, r)), e => onErr && onErr(e))); },
