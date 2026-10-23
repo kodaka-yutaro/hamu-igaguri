@@ -274,7 +274,10 @@ input[type=range]{width:100%}
         <button class="btn" id="ed-test">テストプレイ</button>
         <button class="btn primary" id="ed-pub" disabled>公開する</button>
       </div>
-      <button class="btn sm" id="ed-new">まっさらにする</button>
+      <div class="row" style="gap:6px">
+        <button class="btn sm" id="ed-undo" disabled aria-label="直前の編集を1つ戻す">↶ 1つ戻る</button>
+        <button class="btn sm" id="ed-new">まっさらにする</button>
+      </div>
     </div>
     <p class="muted" id="ed-hint"></p>
     <div class="card col" id="ed-op" hidden style="gap:8px">
@@ -1568,7 +1571,7 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, tool: '#', cam: 0, cleared: false, cols: 10 }; // cols: how many columns fit across the editor (10 = same as play)
+const editor = { rows: null, tool: '#', cam: 0, cleared: false, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -1580,8 +1583,28 @@ function loadDraft(){
   else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
   syncWidth();
   editor.cam = 0;
+  editor.undo = [];
+  updateUndoBtn();
 }
 function saveDraft(){ store.set('hi-draft', {rows: editor.rows, title: $('ed-title').value}); }
+function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, cam: editor.cam}; }
+function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
+function pushUndo(s){
+  if (!s || s.rows.join('\n') === editor.rows.join('\n')) return;
+  editor.undo.push(s);
+  if (editor.undo.length > 50) editor.undo.shift();
+  updateUndoBtn();
+}
+function undoEditor(){
+  const s = editor.undo.pop();
+  if (!s) return;
+  editor.rows = s.rows.slice();
+  editor.cleared = s.cleared;
+  syncWidth();
+  editor.cols = Math.min(editor.cols, maxCols());
+  editor.cam = s.cam;
+  updatePubBtn(); drawEditor(); saveDraft(); updateUndoBtn();
+}
 const edCtx = $('ed-canvas').getContext('2d');
 const MIN_COLS = 10;
 const maxCols = () => Math.max(MIN_COLS, Math.min(60, editor.rows[0].length));
@@ -1638,7 +1661,7 @@ edCv.addEventListener('pointerdown', e => {
     const st = pinchState(); pinch = {...st, cols: editor.cols, world: editor.cam + st.f * viewW()}; return;
   }
   if (touches.size > 2) return;
-  painting = true; before = {rows: editor.rows.slice(), cleared: editor.cleared};
+  painting = true; before = editorSnapshot();
   const [x,y] = cellFrom(e); setCell(x, y, editor.tool);
 });
 edCv.addEventListener('pointermove', e => {
@@ -1653,7 +1676,7 @@ edCv.addEventListener('pointermove', e => {
 });
 const lift = e => {
   touches.delete(e.pointerId);
-  if (painting){ painting = false; before = null; saveDraft(); }
+  if (painting){ pushUndo(before); painting = false; before = null; saveDraft(); }
   if (touches.size < 2) pinch = null;
 };
 edCv.addEventListener('pointerup', lift); edCv.addEventListener('pointercancel', lift);
@@ -1671,14 +1694,21 @@ const SIZES = [40, 80, 150];
 const sizeName = c => { const len = c.rows[0].length; return len <= 50 ? 'ショート' : len <= 110 ? 'ミドル' : 'ロング'; };
 function syncWidth(){ const w = editor.rows[0].length; $('ed-width').value = SIZES.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a); }
 $('ed-width').addEventListener('change', e => {
+  const beforeChange = editorSnapshot();
   const nw = +e.target.value, ow = editor.rows[0].length, d = nw - ow;
   // keep both ends: add/remove empty columns just before the goal area on the right
   editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, ow - 4) + '.'.repeat(d) + r.slice(ow - 4) : r.slice(0, ow - 4 + d) + r.slice(ow - 4));
   if (!editor.rows.join('').includes('G')){ const r = editor.rows[7].split(''); r[nw-3] = 'G'; editor.rows[7] = r.join(''); }
-  editor.cols = Math.min(editor.cols, maxCols()); editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft();
+  editor.cols = Math.min(editor.cols, maxCols()); editor.cleared = false; pushUndo(beforeChange); updatePubBtn(); drawEditor(); saveDraft();
 });
 $('ed-title').addEventListener('input', () => { saveDraft(); updatePubBtn(); });
-$('ed-new').onclick = () => { editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = 0; editor.cleared = false; updatePubBtn(); drawEditor(); saveDraft(); };
+$('ed-undo').onclick = undoEditor;
+$('ed-new').onclick = () => {
+  if (!confirm('コースをまっさらにします。\n今までの編集は「1つ戻る」で元に戻せます。\n\n本当にまっさらにしますか？')) return;
+  const beforeClear = editorSnapshot();
+  editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = 0; editor.cleared = false;
+  pushUndo(beforeClear); updatePubBtn(); drawEditor(); saveDraft();
+};
 function validate(){
   const all = editor.rows.join('');
   if (!all.includes('S')) return 'スタートを置いてください';
@@ -1686,7 +1716,7 @@ function validate(){
   if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
-function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = 0; saveDraft(); setTab('make'); }
+function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = 0; editor.undo = []; updateUndoBtn(); saveDraft(); setTab('make'); }
 $('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
 // the operator can publish a course as an official one, or as a piece that endless mode mixes in
 const edKind = () => social.isOwner ? $('ed-kind').value : '';
