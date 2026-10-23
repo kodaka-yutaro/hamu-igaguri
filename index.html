@@ -931,6 +931,31 @@ function makeGame(canvas, rows, hooks){
   const goalX = gen ? Infinity : G.x * T;
   const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : rows[ty][tx] === '#');
+  // Bounce balls may overlap each other, but their knock-back must never push the hamster through ground blocks.
+  function pushAgainstBlocks(dx, dy){
+    if (dx){
+      p.x += dx;
+      const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T);
+      if (dx > 0){
+        const tx = Math.floor((p.x + PW - 0.01) / T);
+        for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)){ p.x = tx*T - PW; kvx = Math.min(0, kvx); break; }
+      } else {
+        const tx = Math.floor(p.x / T);
+        for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)){ p.x = (tx+1)*T; kvx = Math.max(0, kvx); break; }
+      }
+    }
+    if (dy){
+      p.y += dy;
+      const tx0 = Math.floor(p.x / T), tx1 = Math.floor((p.x + PW - 0.01) / T);
+      if (dy > 0){
+        const ty = Math.floor((p.y + PH - 0.01) / T);
+        for (let x = tx0; x <= tx1; x++) if (solid(x, ty)){ p.y = ty*T - PH; if (p.vy > 0) p.vy = 0; break; }
+      } else {
+        const ty = Math.floor(p.y / T);
+        for (let x = tx0; x <= tx1; x++) if (solid(x, ty)){ p.y = (ty+1)*T; if (p.vy < 0) p.vy = 0; break; }
+      }
+    }
+  }
   function reset(){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
@@ -1061,7 +1086,8 @@ function makeGame(canvas, rows, hooks){
           if (d < 26){
             const nx = d ? dx / d : 0, ny = d ? dy / d : -1;
             p.vy = ny > .45 ? 650 : Math.min(-720, ny * 1000 - 420); kvx = nx * 520;
-            p.x += nx * (26 - d); p.y += ny * (26 - d);
+            const push = 26 - d;
+            pushAgainstBlocks(nx * push, ny * push);
             springs.set(x*ROWS + y, t); hoverT = 0; shake = .15; sfx('boing');
             for (let i = 0; i < 8; i++){ const a = Math.atan2(ny, nx) + (Math.random() - .5) * 1.6; fx.push({k: 'star', x: bx + nx * 14, y: by + ny * 14, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, age: 0, life: .4}); }
           }
