@@ -382,7 +382,7 @@ input[type=range]{width:100%}
       <div class="col" style="gap:10px">
         <div class="row"><input type="text" id="mk-name" maxlength="12" placeholder="なまえ（12文字まで）" style="flex:1 1 160px"><button class="btn sm" id="mk-random">おまかせ</button></div>
         <input type="text" id="mk-bio" maxlength="60" placeholder="ひとこと（60文字まで）">
-        <div class="dress-guide">パーツを選んでタップで試着。果物の衣装はクリア数で解放！</div>
+        <div class="dress-guide">パーツを選んでタップで試着。果物の帽子はクリア数で解放！</div>
         <div id="mk-categories" class="dress-tabs" role="tablist" aria-label="着せ替えカテゴリ"></div>
         <div id="mk-parts" class="col" style="gap:8px"></div>
         <div class="row"><button class="btn primary" id="mk-save">保存する</button><span class="muted" id="mk-state"></span></div>
@@ -516,7 +516,7 @@ const DECOR = [[1,'a','🌼','お花'],[3,'b','🍄','きのこ'],[5,'c','🌿',
 const decorByKey=Object.fromEntries(DECOR.map(d=>[d.key,d]));
 const WIN_TITLES = [[1,'初勝利'],[3,'勝負師のたまご'],[5,'かけだしファイター'],[10,'十勝ハム'],[20,'バトル上手'],[30,'連戦の勇者'],[50,'五十勝の猛者'],[75,'森のファイター'],[100,'百勝の英雄'],[150,'熟練の勝負師'],[200,'二百勝の覇者'],[300,'歴戦の戦士'],[500,'五百勝の伝説'],[750,'無敵のハム'],[1000,'千勝の王者']].map(([n,name]) => ({n,name,note:`フレンド対戦で${n}勝`}));
 const winTitleFor = n => WIN_TITLES.filter(t => n >= t.n).pop() || null;
-const FRUITS = [[1,'banana','ばなな','🍌'],[3,'apple','りんご','🍎'],[5,'grape','ぶどう','🍇'],[10,'strawberry','いちご','🍓'],[20,'orange','みかん','🍊'],[30,'lemon','れもん','🍋'],[50,'peach','もも','🍑'],[75,'cherry','さくらんぼ','🍒'],[100,'pineapple','ぱいなっぷる','🍍'],[150,'melon','めろん','🍈'],[200,'watermelon','すいか','🍉'],[300,'kiwi','きうい','🥝'],[500,'mango','まんごー','🥭'],[750,'pear','なし','🍐'],[1000,'coconut','ここなっつ','🥥']].map(([n,key,name,emoji]) => ({n,key,name,emoji}));
+const FRUITS = [[1,'banana','バナナ','🍌'],[3,'apple','リンゴ','🍎'],[5,'grape','ブドウ','🍇'],[10,'strawberry','イチゴ','🍓'],[20,'orange','ミカン','🍊'],[30,'lemon','レモン','🍋'],[50,'peach','モモ','🍑'],[75,'cherry','サクランボ','🍒'],[100,'pineapple','パイナップル','🍍'],[150,'melon','メロン','🍈'],[200,'watermelon','スイカ','🍉'],[300,'kiwi','キウイ','🥝'],[500,'mango','マンゴー','🥭'],[750,'pear','ナシ','🍐'],[1000,'coconut','ココナッツ','🥥']].map(([n,key,name,emoji]) => ({n,key,name,emoji}));
 const fruitByKey = Object.fromEntries(FRUITS.map(f => [f.key,f]));
 
 /* ---------- hamster look ---------- */
@@ -554,13 +554,21 @@ const PARTS = {
   belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
-  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}]] },
-  outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき'],...FRUITS.map(f => [f.key,`${f.emoji} ${f.name}`,{clear:f.n}]),['kangaroo','🦘 カンガルーに変身',{clear:200}]] },
+  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}],...FRUITS.map(f => [f.key,`${f.name}`,{clear:f.n}])] },
+  outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき'],['kangaroo','🦘 カンガルーに変身',{clear:200}]] },
   color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
   acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう'],['hashi','おはし',{item: 'hashi'}],['fork','フォーク',{item: 'fork'}]] },
 };
 const DEFAULT_LOOK = { body:'#f0b56a', belly:'#fff4e2', eyes:'dot', cheek:'pink', hat:'none', outfit:'none', color:'#d9412b', acc:'none' };
-const cleanLook = l => { const o = {...DEFAULT_LOOK}; if (l && typeof l === 'object') for (const k in PARTS) if (PARTS[k].opts.some(x => x[0] === l[k])) o[k] = l[k]; return o; };
+const cleanLook = l => {
+  const o={...DEFAULT_LOOK};
+  if(l && typeof l==='object'){
+    for(const k in PARTS) if(PARTS[k].opts.some(x=>x[0]===l[k])) o[k]=l[k];
+    // Preserve fruit costumes saved before they became hats.
+    if(fruitByKey[l.outfit]){o.hat=l.outfit;o.outfit='none';}
+  }
+  return o;
+};
 const randomLook = () => { const o = {}; for (const k in PARTS){ const a = PARTS[k].opts.filter(x => !x[2]); o[k] = a[Math.floor(Math.random()*a.length)][0]; } return o; };
 function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const m = c => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f))); return `rgb(${m(r)},${m(g)},${m(b)})`; }
 
@@ -594,18 +602,42 @@ function paintKangaroo(ctx, dead){
   ctx.restore();
 }
 
+function paintFruitHat(ctx,key){
+  const fruit=fruitByKey[key];if(!fruit)return;
+  const colors={banana:'#f6d751',apple:'#df5246',grape:'#8555ad',strawberry:'#eb5069',orange:'#f59b34',lemon:'#f4dc57',peach:'#f29aae',cherry:'#d92f4a',pineapple:'#dda634',melon:'#9fca6e',watermelon:'#54ad62',kiwi:'#89a74f',mango:'#f4b64b',pear:'#b6c65c',coconut:'#96704b'};
+  ctx.save();ctx.translate(0,-18);ctx.strokeStyle='#885b33';ctx.lineWidth=.9;
+  if(key==='banana'){
+    ctx.fillStyle=colors[key];ctx.beginPath();ctx.moveTo(-11,-1);ctx.quadraticCurveTo(-5,11,11,-1);ctx.quadraticCurveTo(6,7,-8,-7);ctx.closePath();ctx.fill();ctx.stroke();
+  }else if(key==='grape'){
+    ctx.fillStyle=colors[key];
+    for(const [x,y] of [[0,-7],[-4,-4],[4,-4],[-7,0],[0,0],[7,0],[-4,4],[4,4],[0,8]]){ctx.beginPath();ctx.arc(x,y,3.4,0,7);ctx.fill();}
+  }else if(key==='cherry'){
+    ctx.fillStyle=colors[key];
+    for(const x of [-5,5]){ctx.beginPath();ctx.arc(x,3,5,0,7);ctx.fill();}
+    ctx.strokeStyle='#4c8b43';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-5,-2);ctx.lineTo(0,-11);ctx.lineTo(5,-2);ctx.stroke();
+  }else if(key==='watermelon'){
+    ctx.fillStyle='#e94d55';ctx.beginPath();ctx.moveTo(-11,5);ctx.lineTo(11,5);ctx.arc(0,5,11,0,Math.PI,true);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#4d9b51';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-11,5);ctx.quadraticCurveTo(0,9,11,5);ctx.stroke();
+    ctx.fillStyle='#2f3027';for(const x of [-5,0,5]){ctx.beginPath();ctx.arc(x,-1,1,0,7);ctx.fill();}
+  }else{
+    ctx.fillStyle=colors[key];ctx.beginPath();
+    const ry=key==='pineapple'?11:key==='lemon'?6:9;
+    ctx.ellipse(0,0,key==='lemon'?12:9,ry,key==='mango'?-.35:0,0,7);ctx.fill();ctx.stroke();
+    if(key==='strawberry'||key==='kiwi'){ctx.fillStyle='#f5e5b2';for(const [x,y] of [[-4,-3],[3,-4],[-2,3],[5,3]]){ctx.beginPath();ctx.arc(x,y,.9,0,7);ctx.fill();}}
+    if(key==='coconut'){ctx.fillStyle='#5c3e29';for(const x of [-3,0,3]){ctx.beginPath();ctx.arc(x,-2,1.3,0,7);ctx.fill();}}
+  }
+  if(key!=='banana'&&key!=='grape'&&key!=='cherry'&&key!=='watermelon'){
+    ctx.fillStyle='#4f9a48';ctx.beginPath();ctx.ellipse(4,-9,5,key==='pineapple'?7:2,-.5,0,7);ctx.fill();
+    if(key==='pineapple'){ctx.beginPath();ctx.moveTo(-5,-8);ctx.lineTo(0,-18);ctx.lineTo(3,-8);ctx.fill();}
+  }
+  ctx.restore();
+}
+
 // draws the hamster centered at (0,0), facing left, body ~30x24
 function paintHam(ctx, look, dead){
   const L = look || DEFAULT_LOOK, C = L.color;
   if (L.outfit === 'kangaroo') { paintKangaroo(ctx, dead); return; }
   const bodyPath = () => { ctx.beginPath(); ctx.ellipse(0, 1, 15, 12, 0, 0, 7); };
-  if (fruitByKey[L.outfit]){
-    const fruit = fruitByKey[L.outfit], colors = {banana:'#f6d751',apple:'#dd3f38',grape:'#8555ad',strawberry:'#eb5069',orange:'#f59b34',lemon:'#f4dc57',peach:'#f29aae',cherry:'#d92f4a',pineapple:'#dda634',melon:'#9fca6e',watermelon:'#54ad62',kiwi:'#89a74f',mango:'#f4b64b',pear:'#b6c65c',coconut:'#96704b'};
-    ctx.fillStyle = colors[fruit.key]; ctx.beginPath(); ctx.ellipse(1,3,17,14,0,0,7); ctx.fill();
-    ctx.fillStyle='#498443'; ctx.beginPath(); ctx.ellipse(4,-12,6,3,-.45,0,7); ctx.fill();
-    if (fruit.key === 'grape' || fruit.key === 'watermelon' || fruit.key === 'strawberry') { ctx.fillStyle=fruit.key==='grape'?'#af84d3':'#382b24'; for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(-10+i*5,8+(i%2)*4,1,0,7);ctx.fill();} }
-    if (fruit.key === 'banana'){ctx.strokeStyle='#b78b25';ctx.lineWidth=4;ctx.beginPath();ctx.arc(-3,1,14,-.7,1.1);ctx.stroke();}
-  }
   if (L.outfit === 'cape'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(0, -4); ctx.quadraticCurveTo(22, 0, 20, 14); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill(); }
   ctx.fillStyle = L.body; bodyPath(); ctx.fill();
   ctx.fillStyle = L.belly; ctx.beginPath(); ctx.ellipse(-4, 5, 9, 7, 0, 0, 7); ctx.fill();
@@ -639,6 +671,7 @@ function paintHam(ctx, look, dead){
   if (L.acc === 'bandage'){ ctx.save(); ctx.translate(3, -5); ctx.rotate(-0.5); ctx.fillStyle = '#f2c79a'; ctx.fillRect(-5, -2, 10, 4); ctx.fillStyle = '#e0a874'; ctx.fillRect(-1.5, -2, 3, 4); ctx.restore(); }
   if (itemByKey[L.acc]) paintGear(ctx, L.acc);
   // hats
+  if (fruitByKey[L.hat]) paintFruitHat(ctx,L.hat);
   if (L.hat === 'acorn'){ ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(1, -11, 11, 6, 0, Math.PI, 0); ctx.lineTo(12, -10); ctx.lineTo(-10, -10); ctx.fill(); ctx.fillRect(0, -20, 2, 4); }
   if (L.hat === 'crown'){ ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.moveTo(-7, -11); ctx.lineTo(-8, -21); ctx.lineTo(-3, -16); ctx.lineTo(1, -23); ctx.lineTo(5, -16); ctx.lineTo(10, -21); ctx.lineTo(9, -11); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.arc(1, -14, 1.6, 0, 7); ctx.fill(); }
   if (L.hat === 'beret'){ ctx.fillStyle = C; ctx.beginPath(); ctx.ellipse(2, -13, 12, 5, -0.15, 0, 7); ctx.fill(); ctx.fillRect(1, -20, 2, 3); }
@@ -1879,7 +1912,7 @@ function giftMark(size='sm'){
   return svg;
 }
 function titleGrid(n, compact, list = TITLES){
-  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: list === TITLES && n < t.n ? '？？？' : t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{},giftMark(),` ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装${t.n===200?' ＋ 🦘 カンガルー変身':''}`) : list === MAKER_TITLES && DECOR.find(d=>d.n===t.n) ? el('span',{text:`🎨 ${DECOR.find(d=>d.n===t.n).emoji} ${DECOR.find(d=>d.n===t.n).name}を解放`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: list === TITLES && n < t.n ? '？？？' : t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{},giftMark(),` ${FRUITS.find(f=>f.n===t.n).name}帽子${t.n===200?' ＋ 🦘 カンガルー変身':''}`) : list === MAKER_TITLES && DECOR.find(d=>d.n===t.n) ? el('span',{text:`🎨 ${DECOR.find(d=>d.n===t.n).emoji} ${DECOR.find(d=>d.n===t.n).name}を解放`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -2406,7 +2439,7 @@ $('bd-post').onclick = async () => {
 };
 
 /* ---------- my page ---------- */
-let draftLook = null, formDirty = false, dressCategory = 'outfit';
+let draftLook = null, formDirty = false, dressCategory = 'hat';
 function buildParts(){
   const box = $('mk-parts'), tabs = $('mk-categories'); box.replaceChildren(); tabs.replaceChildren();
   const groups = [['body','体'],['belly','おなか'],['eyes','目'],['cheek','ほっぺ'],['hat','ぼうし'],['outfit','いしょう'],['color','衣装色'],['acc','こもの']];
@@ -2420,10 +2453,10 @@ function buildParts(){
     const b = el('button',{class:'opt'+(part.swatch?' swatch':'')+(locked?' locked':''),'aria-pressed':String(draftLook[key]===val),'aria-label':label+(locked?' 未解放 '+hint:''),title:locked?hint:label,
       onclick:()=>{if(locked)return toast(hint);draftLook={...draftLook,[key]:val};formDirty=true;buildParts();paintAvatar($('mk-preview'),draftLook);$('mk-state').textContent='未保存の変更があります';}});
     if(part.swatch){b.style.background=val;b.title=label;}
-    else {b.append(el('span',{text:(fruitByKey[val]?.emoji||'')+(locked?' 🔒':'') ,style:'font-size:18px'}),el('span',{text:label}));if(locked)b.append(el('small',{class:'muted',text:need?.clear?`${clears}/${need.clear} クリア`:'エンドレスで入手'}));}
+    else {b.append(el('span',{text:locked?'🔒':'' ,style:'font-size:18px'}),el('span',{text:label}));if(locked)b.append(el('small',{class:'muted',text:need?.clear?`${clears}/${need.clear} クリア`:'エンドレスで入手'}));}
     opts.append(b);
   }
-  box.append(el('div',{class:'part'},el('b',{text:part.label}),key==='outfit'?el('span',{class:'dress-progress',text:`🍎 果物コスチューム ${FRUITS.filter(f=>clears>=f.n).length}/${FRUITS.length} 解放済み`}):null,opts));
+  box.append(el('div',{class:'part'},el('b',{text:part.label}),opts));
 }
 function syncForm(){
   if (formDirty) return;
@@ -2492,7 +2525,7 @@ function awardNotice(item, at){
   const fruit=kind==='クリア' && FRUITS.find(f=>f.n===title.n);
   const decor=kind==='コース職人' && DECOR.find(d=>d.n===title.n);
   const rewards=[];
-  if(fruit){rewards.push(`${fruit.emoji} ${fruit.name}衣装`);if(title.n===200)rewards.push('🦘 カンガルー変身');}
+  if(fruit){rewards.push(`${fruit.name}帽子`);if(title.n===200)rewards.push('🦘 カンガルー変身');}
   if(decor)rewards.push(`${decor.emoji} ${decor.name}の飾り`);
   return {id:`${kind}:${title.n}`,kind,name:title.name,at,rewards};
 }
@@ -2594,7 +2627,7 @@ function renderNoti(box){
         n.rewards.length?giftMark('big'):el('span',{style:'font-size:26px',text:'🏅'}),
         el('span',{class:'col',style:'gap:3px;min-width:0;text-align:left'},
           el('b',{text:`${n.kind}称号「${n.name}」を獲得！`}),
-          ...n.rewards.map(reward=>el('span',{},giftMark(),` ${reward}をGET！`)),
+          ...n.rewards.map(reward=>el('span',{},giftMark(),` ${reward.replace('衣装','帽子')}をGET！`)),
           el('span',{class:'muted',style:'font-size:12px',text:n.at?ago(n.at):'獲得済み'}))));
       continue;
     }
