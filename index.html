@@ -203,6 +203,9 @@ input[type=range]{width:100%}
 .owned-title-list{display:flex;flex-wrap:wrap;gap:5px;max-height:140px;overflow-y:auto}
 .owned-title-chip{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:4px 8px;font-weight:800;background:var(--panel)}
 @media(max-width:550px){.owned-title-summary{grid-template-columns:1fr}.owned-title-card{flex-direction:row;align-items:center;justify-content:space-between}}
+.hand-gift{display:inline-block;width:24px;height:24px;vertical-align:middle;flex:none;filter:drop-shadow(1px 2px 0 #8a5d2922);transform:rotate(-4deg)}
+.hand-gift.sm{width:17px;height:17px;margin-right:3px}
+.hand-gift.big{width:34px;height:34px}
 .cel-gifts{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;border:2px solid #e6a92a;border-radius:12px;background:color-mix(in srgb,#ffe08a 30%,var(--panel));padding:9px;color:var(--fg);font-size:14px;font-weight:800;animation:gift-pop .65s cubic-bezier(.2,1.5,.4,1)}
 @keyframes gift-pop{0%{transform:scale(.2) rotate(-7deg);opacity:0}55%{transform:scale(1.13) rotate(3deg)}100%{transform:scale(1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.cel-gifts{animation:none}}
@@ -439,9 +442,7 @@ input[type=range]{width:100%}
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
-<div class="celebrate" id="celebrate" hidden><canvas id="cel-cv"></canvas>
-  <div class="cel-card"><div class="cel-rays"></div><div class="cel-kind" id="cel-kind"></div><div class="cel-name" id="cel-name"></div><div class="cel-gifts" id="cel-gifts" hidden></div><div class="muted" id="cel-note"></div><div class="cel-tap">タップでとじる</div></div>
-</div>
+
 
 <script>
 (() => {
@@ -454,7 +455,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-title-awards', 'hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-award-notices', 'hi-title-awards', 'hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -1688,7 +1689,7 @@ function onState(s, info){
     btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
-    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」と報酬をゲット！`; } checkTitleAwards(); renderMe(); if(!formDirty)syncForm(); });
+    recordClear(c, info.sec).then(() => { checkTitleAwards(); renderMe(); if(!formDirty)syncForm(); });
   }
 }
 async function finishRewindTest(played, attempt, info){
@@ -1863,8 +1864,22 @@ function profileHeader(uid){
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
       el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
+function giftMark(size='sm'){
+  const ns='http://www.w3.org/2000/svg', svg=document.createElementNS(ns,'svg');
+  svg.setAttribute('viewBox','0 0 40 40');svg.setAttribute('class','hand-gift '+size);
+  svg.setAttribute('role','img');svg.setAttribute('aria-label','プレゼント');
+  const shapes=[
+    ['path',{d:'M7 17 L31 15 Q33 16 34 19 L33 33 Q30 35 8 34 Z',fill:'#f9c9a3',stroke:'#98623f','stroke-width':'2.5'}],
+    ['path',{d:'M5 15 Q13 13 32 13 L35 18 L5 20 Z',fill:'#e69a86',stroke:'#98623f','stroke-width':'2.2'}],
+    ['path',{d:'M18 16 L22 15 L23 34 L19 35 Z',fill:'#f6db77',stroke:'#98623f','stroke-width':'1.6'}],
+    ['path',{d:'M20 14 C12 12 8 6 13 5 C17 4 20 9 20 14 M21 14 C28 10 32 6 29 5 C25 3 22 9 21 14',fill:'none',stroke:'#98623f','stroke-width':'2.6'}],
+    ['path',{d:'M10 24 L10 29 M30 23 L30 27',fill:'none',stroke:'#ffffff99','stroke-width':'1.5'}]
+  ];
+  for(const [tag,attrs] of shapes){const n=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);n.setAttribute('stroke-linecap','round');n.setAttribute('stroke-linejoin','round');svg.append(n);}
+  return svg;
+}
 function titleGrid(n, compact, list = TITLES){
-  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: list === TITLES && n < t.n ? '？？？' : t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{text:`🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装${t.n===200?' ＋ 🦘 カンガルー変身':''}`}) : list === MAKER_TITLES && DECOR.find(d=>d.n===t.n) ? el('span',{text:`🎨 ${DECOR.find(d=>d.n===t.n).emoji} ${DECOR.find(d=>d.n===t.n).name}を解放`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: list === TITLES && n < t.n ? '？？？' : t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{},giftMark(),` ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装${t.n===200?' ＋ 🦘 カンガルー変身':''}`) : list === MAKER_TITLES && DECOR.find(d=>d.n===t.n) ? el('span',{text:`🎨 ${DECOR.find(d=>d.n===t.n).emoji} ${DECOR.find(d=>d.n===t.n).name}を解放`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -2472,62 +2487,22 @@ function renderMe(){
 }
 function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').replaceChildren((m && m.name) || store.get('hi-name') || 'マイページ', opBadge(social.uid, true) || ''); renderBell(); }
 /* ---------- title celebration: confetti of acorns and a big card ---------- */
-function celebrate(t, kind){
-  const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
-  $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : kind === 'バトル' ? 'バトルの称号' : '新しい称号・果物コスチューム';
-  $('celebrate').querySelector('.cel-card').classList.remove('bulk');
-  $('cel-name').textContent = t.name; $('cel-note').textContent = t.note || '';
-  const fruit = kind === 'クリア' && FRUITS.find(f=>f.n===t.n);
-  const decor = kind === 'コース職人' && DECOR.find(d=>d.n===t.n);
-  const gifts = $('cel-gifts');
-  gifts.hidden = !fruit && !decor;
-  gifts.replaceChildren();
-  if(fruit) gifts.append(el('span',{text:`🎁 プレゼントGET！ ${fruit.emoji} ${fruit.name}衣装${t.n===200?' ＋ 🦘 カンガルー変身':''}`}));
-  if(decor) gifts.append(el('span',{text:`🎁 プレゼントGET！ ${decor.emoji} ${decor.name}の飾り`}));
-  // Restart the reward pop animation for every new achievement.
-  gifts.style.animation='none';void gifts.offsetWidth;gifts.style.animation='';
-  box.hidden = false; box.classList.remove('go'); void box.offsetWidth; box.classList.add('go');
-  sfx('fanfare');
-  const dpr = Math.min(2, devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
-  const bits = Array.from({length: 70}, (_, i) => ({x: W / 2, y: H * .42, vx: (Math.random() - .5) * 18 * dpr, vy: (-6 - Math.random() * 14) * dpr, r: Math.random() * 6, vr: (Math.random() - .5) * .3, k: i % 3, s: (.6 + Math.random() * .7) * dpr}));
-  const colors = ['#ffd23c', '#e5533c', '#7bc34f', '#5aa9e6', '#fff'];
-  let f = 0; cancelAnimationFrame(celebrate.raf);
-  const tick = () => {
-    ctx.clearRect(0, 0, W, H);
-    for (const b of bits){
-      b.vy += .45 * dpr; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.r += b.vr;
-      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r); ctx.scale(b.s * (b.k ? 1.4 : .7), b.s * (b.k ? 1.4 : .7));
-      if (b.k === 0) drawAcorn(ctx, 0, 0, 0);
-      else { ctx.fillStyle = colors[(b.k + Math.floor(b.r)) % colors.length]; ctx.fillRect(-4, -2, 8, 4); }
-      ctx.restore();
-    }
-    if (++f < 240 && !box.hidden) celebrate.raf = requestAnimationFrame(tick);
-  };
-  tick();
-  clearTimeout(celebrate.h); celebrate.h = setTimeout(() => box.hidden = true, 4500);
+function awardNotice(item, at){
+  const title=item.title, kind=item.kind;
+  const fruit=kind==='クリア' && FRUITS.find(f=>f.n===title.n);
+  const decor=kind==='コース職人' && DECOR.find(d=>d.n===title.n);
+  const rewards=[];
+  if(fruit){rewards.push(`${fruit.emoji} ${fruit.name}衣装`);if(title.n===200)rewards.push('🦘 カンガルー変身');}
+  if(decor)rewards.push(`${decor.emoji} ${decor.name}の飾り`);
+  return {id:`${kind}:${title.n}`,kind,name:title.name,at,rewards};
 }
-function celebrateMany(items){
-  if(!items.length)return;
-  if(items.length===1){celebrate(items[0].title,items[0].kind);return;}
-  celebrate(items[items.length-1].title,items[items.length-1].kind);
-  clearTimeout(celebrate.h);
-  $('celebrate').querySelector('.cel-card').classList.add('bulk');
-  $('cel-kind').textContent='🎉 獲得済みの称号をまとめて解放！';
-  $('cel-name').textContent=`${items.length}個の称号をゲット！`;
-  const giftCount=items.filter(item=>item.kind==='クリア'&&FRUITS.some(f=>f.n===item.title.n)||item.kind==='コース職人'&&DECOR.some(d=>d.n===item.title.n)).length;
-  $('cel-gifts').hidden=!giftCount;
-  $('cel-gifts').replaceChildren(el('span',{text:`🎁 プレゼントも${giftCount}個まとめてGET！`}));
-  const box=el('div',{class:'cel-awards'});
-  for(const item of items){
-    const reward=item.kind==='クリア' && FRUITS.find(f=>f.n===item.title.n);
-    const decor=item.kind==='コース職人' && DECOR.find(d=>d.n===item.title.n);
-    box.append(el('div',{class:'cel-award'},
-      el('span',{text:item.kind==='クリア'?'🏅':item.kind==='コース職人'?'🎨':'⚔️'}),
-      el('span',{},el('b',{text:item.title.name}),
-        el('small',{text:reward?`🎁 ${reward.emoji} ${reward.name}衣装${item.title.n===200?'＋🦘カンガルー変身':''}`:decor?`🎁 ${decor.emoji} ${decor.name}の飾り`:item.title.note}))));
-  }
-  $('cel-note').replaceChildren(box);
-  $('celebrate').querySelector('.cel-tap').textContent='タップでまとめて受け取る';
+function awardNotices(){return Array.isArray(store.get('hi-award-notices'))?store.get('hi-award-notices'):[];}
+function saveAwardNotices(items){
+  const existing=awardNotices(), known=new Set(existing.map(n=>n.id));
+  const additions=items.filter(n=>!known.has(n.id));
+  if(!additions.length)return [];
+  store.set('hi-award-notices',[...additions,...existing].slice(0,150));
+  return additions;
 }
 let titleAwardCheckBusy=false;
 function checkTitleAwards(){
@@ -2545,13 +2520,23 @@ function checkTitleAwards(){
       const previous=Math.max(0,Number(prior[key])||0);
       for(const title of list) if(title.n>previous && title.n<=current[key])acquired.push({title,kind});
     }
-    if(acquired.length){
+    const existing=awardNotices();
+    const hadNotices=store.get('hi-award-notices')!==null;
+    // On the first visit after this update, recover all previously earned titles into the notification inbox.
+    const toNotify=hadNotices?acquired:lists.flatMap(([key,list,kind])=>list.filter(t=>t.n<=current[key]).map(title=>({title,kind})));
+    if(acquired.length || toNotify.length){
       store.set('hi-title-awards',{clear:Math.max(current.clear,+prior.clear||0),maker:Math.max(current.maker,+prior.maker||0),win:Math.max(current.win,+prior.win||0)});
-      celebrateMany(acquired);
+      const at=Math.max(Date.now(),notiSeen()+1);
+      const added=saveAwardNotices(toNotify.map((item,i)=>awardNotice(item,at+i)));
+      if(added.length){
+        const gifts=added.reduce((n,a)=>n+a.rewards.length,0);
+        toast(added.length===1?`称号「${added[0].name}」獲得！${gifts?' プレゼントもGET！':''}`:`🏅 称号${added.length}個${gifts?'・プレゼント'+gifts+'個':''}が届きました！ 🔔`);
+        setTimeout(renderBell,0);
+      }
     }
   }finally{titleAwardCheckBusy=false;}
 }
-$('celebrate').addEventListener('pointerdown', e => { e.stopPropagation(); $('celebrate').hidden = true; });
+
 
 /* ---------- notifications: likes on my courses and comments ---------- */
 function notifications(){
@@ -2573,6 +2558,7 @@ function notifications(){
   for (const b of social.board) if (b.author !== uid && b.at) out.push({who: b.author, at: b.at, post: b});
   const f = new Set(following(uid));
   for (const c of social.courses) if (f.has(c.author) && c.createdAt) out.push({who: c.author, at: c.createdAt, newCourse: c});
+  out.push(...awardNotices().map(n=>({...n,award:true})));
   return out.sort((a, b) => b.at - a.at);
 }
 const notiSeen = () => {
@@ -2587,11 +2573,12 @@ function renderBell(){
   const b = $('bell-n'); b.hidden = !unread; b.textContent = unread > 99 ? '99+' : String(unread);
   $('bell-btn').setAttribute('aria-label', unread ? `お知らせ ${unread}件` : 'お知らせ');
   // a like arriving while the page is open gets a toast
-  if (notiTop !== null && top > notiTop) toast(notiText(list[0]));
+  if (notiTop !== null && top > notiTop && !list[0].award) toast(notiText(list[0]));
   notiTop = top;
   checkTitleAwards();
 }
 function notiText(n){
+  if (n.award) return `称号「${n.name}」を獲得！`;
   if (n.post) return `運営からのお知らせ「${n.post.title || '（無題）'}」`;
   if (n.newCourse) return `${nameOf(n.who)}さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`;
   return `${nameOf(n.who)}さんが${n.course ? 'あなたのコース' : 'あなたのコメント'}にいいねしました`;
@@ -2602,6 +2589,15 @@ function renderNoti(box){
   if (!social.uid) { box.append(el('p', {class: 'muted', text: 'オンライン機能につながると、いいねのお知らせが届きます。'})); return; }
   if (!list.length) { box.append(el('p', {class: 'muted', text: 'まだお知らせはありません。いいね、運営からのお知らせ、フォロー中の人の新しいコースがここに届きます。'})); return; }
   for (const n of list){
+    if(n.award){
+      box.append(el('button',{class:'noti'+(n.at>seen?' new':''),onclick:()=>{closeSheet();setTab('me');$('owned-title-summary').scrollIntoView({block:'center'});}},
+        n.rewards.length?giftMark('big'):el('span',{style:'font-size:26px',text:'🏅'}),
+        el('span',{class:'col',style:'gap:3px;min-width:0;text-align:left'},
+          el('b',{text:`${n.kind}称号「${n.name}」を獲得！`}),
+          ...n.rewards.map(reward=>el('span',{},giftMark(),` ${reward}をGET！`)),
+          el('span',{class:'muted',style:'font-size:12px',text:n.at?ago(n.at):'獲得済み'}))));
+      continue;
+    }
     if (n.post || n.newCourse){
       box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: () => { if (n.newCourse) return openCourse(n.newCourse.id); closeSheet(); setTab('board'); }},
         avatar(lookOf(n.who), 34),
