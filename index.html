@@ -253,6 +253,8 @@ input[type=range]{width:100%}
       <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" style="flex:1 1 220px">
       <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
     </div>
+    <div id="ed-draft-state" class="row muted" role="status" aria-live="polite">下書きはこの端末に保存されます</div>
+    <div id="ed-draft-backup" class="row" hidden></div>
     <div class="tools" role="group" aria-label="置くもの">
       <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
       <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
@@ -379,7 +381,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -1612,7 +1614,54 @@ function loadDraft(){
   editor.undo = [];
   updateUndoBtn();
 }
-function saveDraft(){ store.set('hi-draft', {rows: editor.rows, title: $('ed-title').value}); }
+let draftSync = null;
+function saveDraft(){ store.set('hi-draft', {rows: editor.rows.slice(), title: $('ed-title').value}); if (draftSync) draftSync.changed(); }
+function applyCloudDraft(value){
+  if (current && current.mode === 'test') closePlayer();
+  store.set('hi-draft', value); editor.cleared = false; loadDraft();
+  editor.cols = Math.min(editor.cols, maxCols());
+  updatePubBtn(); if (tab === 'make') drawEditor();
+}
+function renderDraftBackup(){
+  const box = $('ed-draft-backup'), backup = store.get('hi-draft-backup');
+  box.hidden = !backup;
+  box.replaceChildren();
+  if (backup) box.append(el('button', {class: 'btn sm', text: '切り替え前の下書きに戻す', onclick: () => {
+    const current = store.get('hi-draft');
+    store.set('hi-draft-backup', current); applyCloudDraft(backup);
+    renderDraftBackup(); if (draftSync) draftSync.changed();
+  }}));
+}
+function startDraftSync(api){
+  if (!api || !window.HamuDraftSync) return;
+  let draftMeta = store.get('hi-draft-sync');
+  draftSync = new window.HamuDraftSync({
+    api: {read: async () => { const v = await api.read(); if (painting) throw new Error('editing'); return v; }, write: api.write},
+    get: () => store.get('hi-draft'), apply: applyCloudDraft,
+    getMeta: () => draftMeta, setMeta: v => { draftMeta = v; store.set('hi-draft-sync', v); },
+    backup: v => { store.set('hi-draft-backup', v); renderDraftBackup(); },
+    status: (state, choose) => {
+      const box = $('ed-draft-state'); box.replaceChildren();
+      const messages = {pending: '下書きを保存待ち…', syncing: '下書きを同期中…', saved: social.account && social.account.isGuest ? '下書きを保存しました。別の端末で使うには、このハムを連携してください。' : '下書きは同じハムのスマホ・PCで共有されます', offline: 'この端末に保存済み。通信できるときに同期します。', conflict: '別の端末にも異なる下書きがあります。続ける方を選んでください。'};
+      box.append(el('span', {text: messages[state]}));
+      if (state === 'conflict') for (const [kind, label] of [['remote', '別の端末の下書きを開く'], ['local', 'この端末の下書きを使う']]) box.append(el('button', {class: 'btn sm', text: label, onclick: () => choose(kind)}));
+      if (state === 'offline') box.append(el('button', {class: 'btn sm', text: '再試行', onclick: () => draftSync.sync()}));
+    },
+  });
+  renderDraftBackup(); draftSync.sync();
+  window.addEventListener('storage', e => {
+    if (e.key !== hamsterKey(localOwner, 'hi-draft') || painting) return;
+    editor.cleared = false; loadDraft(); editor.cols = Math.min(editor.cols, maxCols());
+    updatePubBtn(); if (tab === 'make') drawEditor(); draftSync.sync();
+  });
+  window.addEventListener('focus', () => draftSync.sync());
+  window.addEventListener('online', () => draftSync.sync());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') draftSync.sync();
+    else if (painting) saveDraft();
+  });
+  setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
+}
 function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, cam: editor.cam}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
@@ -2244,7 +2293,7 @@ let tab = 'play';
 function setTab(name){
   tab = name;
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
-  if (name === 'make'){ syncWidth(); drawEditor(); updatePubBtn(); }
+  if (name === 'make'){ syncWidth(); drawEditor(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
   renderAll();
 }
@@ -2435,6 +2484,7 @@ $('db-state').textContent = '公式コースを表示中';
     social.canWrite = cw !== false && !!social.uid;
   }
   renderAccount(); renderHeader(); renderAll();
+  startDraftSync(be.drafts);
   if (be.account){
     setAccountMessage(be.account.authNotice || '');
     if (be.account.returnToAccount) openAccount();

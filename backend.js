@@ -1,3 +1,65 @@
+// Private, revision-checked draft synchronization. Local storage remains the offline copy.
+(() => {
+  const signature = v => v ? JSON.stringify({rows: v.rows, title: v.title || ''}) : '';
+  const valid = v => v && Array.isArray(v.rows) && v.rows.length === 16 &&
+    v.rows.every(r => typeof r === 'string' && r.length >= 10 && r.length <= 150 && r.length === v.rows[0].length) &&
+    typeof v.title === 'string' && v.title.length <= 30;
+  class DraftSync {
+    constructor({api, get, apply, getMeta, setMeta, status, backup}) {
+      Object.assign(this, {api, get, apply, getMeta, setMeta, status, backup});
+      this.choice = null;
+    }
+    changed() { clearTimeout(this.timer); this.status('pending'); this.timer = setTimeout(() => this.sync(), 700); }
+    sync() {
+      clearTimeout(this.timer);
+      if (this.running) { this.again = true; return this.running; }
+      this.running = this.run().catch(() => this.status('offline')).finally(() => {
+        this.running = null;
+        if (this.again) { this.again = false; this.sync(); }
+      });
+      return this.running;
+    }
+    async run() {
+      this.status('syncing');
+      const remote = await this.api.read();
+      if (remote && !valid(remote.value)) throw new Error('invalid cloud draft');
+      const local = this.get(), meta = this.getMeta() || {};
+      if (local && !valid(local)) throw new Error('invalid local draft');
+      const here = signature(local), there = signature(remote && remote.value);
+      const version = remote ? remote.version : 0;
+      if (here === there) {
+        this.setMeta({version, signature: here}); this.choice = null; this.status('saved'); return;
+      }
+      // A choice is valid only for the exact two copies shown to the user.
+      const choice = this.choice && this.choice.here === here && this.choice.there === there && this.choice.version === version ? this.choice.kind : null;
+      this.choice = null;
+      if (remote && (choice === 'remote' || !local || here === meta.signature)) {
+        if (local) this.backup(local);
+        this.apply(remote.value);
+        this.setMeta({version, signature: there}); this.status('saved'); return;
+      }
+      if (local && (choice === 'local' || !remote || version === meta.version)) {
+        if (choice === 'local' && remote) this.backup(remote.value);
+        try {
+          const next = await this.api.write(local, version);
+          this.setMeta({version: next, signature: here});
+          if (signature(this.get()) !== here) { this.again = true; this.status('pending'); }
+          else this.status('saved');
+        } catch (e) {
+          if (e && e.code === 'conflict') { this.again = true; return; }
+          throw e;
+        }
+        return;
+      }
+      this.status('conflict', kind => {
+        this.choice = {kind, here, there, version};
+        return this.sync();
+      });
+    }
+  }
+  window.HamuDraftSync = DraftSync;
+})();
+
 // Supabase backend for ハムとイガグリ.
 // Exposes the same small document API the page uses (collection/doc, onSnapshot, set/update/delete/add)
 // on top of one `docs` table. Access rules live in supabase/schema.sql (row level security).
@@ -206,6 +268,22 @@
     };
     // everyone on the operator team, so their names can carry the 運営 badge
     async function admins() { const { data, error } = await sb.from('admins').select('user_id'); return error ? [] : (data || []).map(r => r.user_id); }
-    return { db: { doc, collection }, user, account, realtime, admins };
+    // Drafts are deliberately separate from publicly readable profile/course documents.
+    const drafts = uid ? {
+      async read() {
+        const {data, error} = await sb.from('course_drafts').select('data,version').eq('user_id', uid).maybeSingle();
+        if (error) throw err(error);
+        return data ? {value: data.data, version: data.version} : null;
+      },
+      async write(value, version) {
+        const row = {user_id: uid, data: value, version: version + 1};
+        const q = version === 0 ? sb.from('course_drafts').insert(row) : sb.from('course_drafts').update(row).eq('user_id', uid).eq('version', version);
+        const {data, error} = await q.select('version');
+        if (error && error.code !== '23505') throw err(error);
+        if (error || !data.length) throw {code: 'conflict'};
+        return data[0].version;
+      },
+    } : null;
+    return { db: { doc, collection }, user, account, realtime, admins, drafts };
   };
 })();
