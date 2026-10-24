@@ -99,6 +99,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .linkbtn{font:inherit;background:none;border:0;padding:0;color:inherit;font-weight:800;cursor:pointer;text-align:left}
 .linkbtn:hover{text-decoration:underline}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.course-files{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
+.course-file{overflow:hidden;border:1.5px solid var(--line);border-radius:14px;background:var(--panel);display:flex;flex-direction:column}
+.course-file-preview{display:block;width:100%;height:100px;background:#d7e9ef;image-rendering:pixelated}
+.course-file-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.course-file-title{font:inherit;font-size:17px;font-weight:800;color:var(--fg);background:none;border:0;padding:0;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.course-file-title:hover{text-decoration:underline}
+.course-library-empty{padding:32px 20px;text-align:center;border:2px dashed var(--line);border-radius:14px;background:var(--panel)}
 .col{display:flex;flex-direction:column;gap:12px}
 .muted{color:var(--muted);font-size:13px}
 .chip{font:inherit;font-size:13px;font-weight:800;border:1.5px solid var(--line);background:none;color:var(--muted);border-radius:99px;padding:3px 12px;cursor:pointer}
@@ -249,12 +256,23 @@ input[type=range]{width:100%}
   </section>
 
   <section id="view-make" class="col" hidden>
-    <div class="row">
-      <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" style="flex:1 1 220px">
-      <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
-    </div>
     <div id="ed-draft-state" class="row muted" role="status" aria-live="polite">下書きはこの端末に保存されます</div>
     <div id="ed-draft-backup" class="row" hidden></div>
+    <div id="course-library" class="col">
+      <div class="row" style="justify-content:space-between;gap:12px">
+        <div><h2>作成中のコース <span id="course-file-count" class="muted"></span></h2><p class="muted" style="margin:4px 0 0">作りかけを並べて、好きなコースから続きを。</p></div>
+        <button id="course-file-new" class="btn primary">＋ 新しく作る</button>
+      </div>
+      <div id="course-file-list" class="course-files"></div>
+      <div id="course-file-empty" class="course-library-empty" hidden><h2>どんなコースを作ろう？</h2><p class="muted">コースは自動で保存されます。いくつか作りかけにしても大丈夫。</p><button id="course-file-first" class="btn primary">はじめてのコースを作る</button></div>
+      <details id="course-file-trash"><summary class="muted" style="cursor:pointer">ゴミ箱 <span id="course-file-trash-count"></span></summary><div id="course-file-trash-list" class="col" style="margin-top:12px"></div></details>
+    </div>
+    <div id="course-editor" class="col" hidden>
+    <div class="row" style="justify-content:space-between"><button id="course-file-back" class="btn sm">← コース一覧</button><span class="muted">編集内容は自動保存されます</span></div>
+    <div class="row">
+      <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" aria-label="コースの名前" style="flex:1 1 220px">
+      <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
+    </div>
     <div class="tools" role="group" aria-label="置くもの">
       <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
       <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
@@ -286,6 +304,7 @@ input[type=range]{width:100%}
       <div class="row"><span class="badge op">運営</span><label class="row" for="ed-kind">公開先 <select id="ed-kind"><option value="">みんなのコース</option><option value="official">公式コース</option><option value="piece">エンドレス用パーツ</option></select></label></div>
       <p class="muted" id="ed-kind-note" style="margin:0"></p>
       <div class="col" id="ed-pieces" style="gap:6px"></div>
+    </div>
     </div>
   </section>
 
@@ -381,7 +400,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -1605,63 +1624,158 @@ function blankCourse(w){
   g[7][2] = 'S'; g[7][w-3] = 'G';
   return g.map(r => r.join(''));
 }
-function loadDraft(){
-  const d = store.get('hi-draft');
-  if (d && Array.isArray(d.rows) && d.rows.length === ROWS){ editor.rows = d.rows; $('ed-title').value = d.title || ''; }
-  else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
-  syncWidth();
-  editor.cam = 0;
-  editor.undo = [];
-  updateUndoBtn();
+let activeDraftId = null, draftSync = null;
+function courseLibrary(){
+  const saved = store.get('hi-course-library');
+  if (saved) return window.HamuCourseLibrary.normalize(saved);
+  let library;
+  try { library = window.HamuCourseLibrary.normalize(store.get('hi-draft')); }
+  catch { library = window.HamuCourseLibrary.normalize(null); }
+  store.set('hi-course-library', library);
+  const oldBackup = store.get('hi-draft-backup');
+  if (oldBackup && !store.get('hi-course-library-backup')) {
+    try { store.set('hi-course-library-backup', window.HamuCourseLibrary.normalize(oldBackup)); } catch {}
+  }
+  return library;
 }
-let draftSync = null;
-function saveDraft(){ store.set('hi-draft', {rows: editor.rows.slice(), title: $('ed-title').value}); if (draftSync) draftSync.changed(); }
+function loadDraft(){
+  const files = courseLibrary().files, selected = store.get('hi-course-active');
+  if (!activeDraftId || !files[activeDraftId] || files[activeDraftId].deleted) activeDraftId = selected && files[selected] && !files[selected].deleted ? selected : Object.keys(files).find(id => !files[id].deleted) || null;
+  const d = activeDraftId && files[activeDraftId];
+  store.set('hi-course-active', activeDraftId);
+  if (d){ editor.rows = d.rows.slice(); $('ed-title').value = d.title; }
+  else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
+  syncWidth(); editor.cam = 0; editor.undo = []; updateUndoBtn();
+}
+function saveDraft(){
+  if (!activeDraftId) return;
+  const library = courseLibrary(), previous = library.files[activeDraftId];
+  if (!previous || previous.deleted) return;
+  const value = {rows: editor.rows.slice(), title: $('ed-title').value.slice(0, 30)};
+  if (previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n')) return;
+  library.files[activeDraftId] = {...value, updatedAt: Date.now()};
+  store.set('hi-draft', value); store.set('hi-course-library', library);
+  if (draftSync) draftSync.changed();
+}
+function showCourseFiles(save = true){
+  if (save) saveDraft();
+  $('course-editor').hidden = true; $('course-library').hidden = false;
+  renderCourseFiles();
+}
+function openCourseFile(id){
+  saveDraft();
+  const file = courseLibrary().files[id]; if (!file || file.deleted) return;
+  activeDraftId = id; store.set('hi-course-active', id);
+  editor.cleared = false; loadDraft(); editor.cols = Math.min(editor.cols, maxCols());
+  $('course-library').hidden = true; $('course-editor').hidden = false;
+  syncWidth(); drawEditor(); updatePubBtn();
+}
+function addCourseFile(value){
+  saveDraft(); const library = courseLibrary(), id = newId();
+  library.files[id] = {rows: value.rows.slice(), title: value.title.slice(0, 30), updatedAt: Date.now()};
+  if (new TextEncoder().encode(JSON.stringify(library)).length > 220000) return toast('下書きの保存容量がいっぱいです。新しいコースを追加できません。');
+  store.set('hi-course-library', library);
+  if (draftSync) draftSync.changed();
+  openCourseFile(id); return id;
+}
+function createCourseFile(){
+  const files = Object.values(courseLibrary().files).filter(f => !f.deleted);
+  let title = 'わたしのコース', n = 2;
+  while (files.some(f => f.title === title)) title = 'わたしのコース ' + n++;
+  if (addCourseFile({rows: blankCourse(40), title})) { $('ed-title').focus(); $('ed-title').select(); }
+}
+function moveCourseFile(id, deleted){
+  const library = courseLibrary(), file = library.files[id]; if (!file) return;
+  if (deleted && !confirm(`「${file.title || '名前のないコース'}」をゴミ箱に移しますか？ あとから戻せます。`)) return;
+  library.files[id] = {...file, deleted, updatedAt: Date.now()};
+  store.set('hi-course-library', library);
+  if (draftSync) draftSync.changed();
+  if (id === activeDraftId && deleted) { activeDraftId = null; loadDraft(); }
+  renderCourseFiles();
+}
+function courseFilePreview(file){
+  const cv = el('canvas', {width: 600, height: 200, class: 'course-file-preview', 'aria-hidden': 'true'}), ctx = cv.getContext('2d');
+  const colors = {'#': '#785438', '*': '#965b20', A: '#d89926', O: '#ed70a3', C: '#39484b', S: '#db8f44', G: '#cd4030'};
+  ctx.fillStyle = '#dcecf0'; ctx.fillRect(0, 0, 600, 200);
+  const w = file.rows[0].length, scale = Math.min(600 / w, 200 / ROWS), left = (600 - w * scale) / 2;
+  file.rows.forEach((row, y) => [...row].forEach((c, x) => { if (colors[c]) { ctx.fillStyle = colors[c]; ctx.fillRect(left + x * scale, y * scale, Math.max(2, scale), scale); } }));
+  return cv;
+}
+function renderCourseFiles(){
+  const entries = Object.entries(courseLibrary().files).sort((a,b) => (+b[1].updatedAt || 0) - (+a[1].updatedAt || 0));
+  const live = entries.filter(([,f]) => !f.deleted), trash = entries.filter(([,f]) => f.deleted);
+  $('course-file-count').textContent = `${live.length}件`;
+  $('course-file-empty').hidden = !!live.length;
+  const list = $('course-file-list'); list.replaceChildren();
+  for (const [id, file] of live){
+    const title = file.title || '名前のないコース';
+    list.append(el('article', {class: 'course-file'}, courseFilePreview(file), el('div', {class: 'course-file-body'},
+      el('button', {class: 'course-file-title', text: title, onclick: () => openCourseFile(id)}),
+      el('span', {class: 'muted', text: `${file.rows[0].length}マス · ${file.updatedAt ? ago(file.updatedAt) + ' 更新' : '引き継いだ下書き'}`}),
+      el('div', {class: 'row'},
+        el('button', {class: 'btn primary sm', text: '編集する', 'aria-label': `${title}を編集`, onclick: () => openCourseFile(id)}),
+        el('button', {class: 'btn sm', text: '複製', 'aria-label': `${title}を複製`, onclick: () => addCourseFile({rows: file.rows, title: title.slice(0, 26) + ' コピー'})}),
+        el('button', {class: 'btn sm', text: 'ゴミ箱へ', 'aria-label': `${title}をゴミ箱へ`, onclick: () => moveCourseFile(id, true)})))));
+  }
+  $('course-file-trash-count').textContent = `（${trash.length}件）`;
+  const bin = $('course-file-trash-list'); bin.replaceChildren();
+  for (const [id, file] of trash) bin.append(el('div', {class: 'row', style: 'justify-content:space-between'}, el('span', {text: file.title || '名前のないコース'}), el('button', {class: 'btn sm', text: '元に戻す', 'aria-label': `${file.title || '名前のないコース'}を元に戻す`, onclick: () => moveCourseFile(id, false)})));
+  if (!trash.length) bin.append(el('span', {class: 'muted', text: 'ゴミ箱は空です'}));
+}
+$('course-file-new').onclick = createCourseFile;
+$('course-file-first').onclick = createCourseFile;
+$('course-file-back').onclick = () => { showCourseFiles(); if (draftSync) draftSync.sync(); };
 function applyCloudDraft(value){
-  if (current && current.mode === 'test') closePlayer();
-  store.set('hi-draft', value); editor.cleared = false; loadDraft();
-  editor.cols = Math.min(editor.cols, maxCols());
-  updatePubBtn(); if (tab === 'make') drawEditor();
+  const before = activeDraftId && courseLibrary().files[activeDraftId];
+  store.set('hi-course-library', window.HamuCourseLibrary.normalize(value));
+  const after = activeDraftId && courseLibrary().files[activeDraftId];
+  if (window.HamuCourseLibrary.fileSignature(before) !== window.HamuCourseLibrary.fileSignature(after)) {
+    if (current && current.mode === 'test') closePlayer();
+    editor.cleared = false; loadDraft(); editor.cols = Math.min(editor.cols, maxCols());
+    if (!after || after.deleted) showCourseFiles(false);
+    updatePubBtn(); if (tab === 'make' && !$('course-editor').hidden) drawEditor();
+  }
+  renderCourseFiles();
 }
 function renderDraftBackup(){
-  const box = $('ed-draft-backup'), backup = store.get('hi-draft-backup');
-  box.hidden = !backup;
-  box.replaceChildren();
-  if (backup) box.append(el('button', {class: 'btn sm', text: '切り替え前の下書きに戻す', onclick: () => {
-    const current = store.get('hi-draft');
-    store.set('hi-draft-backup', current); applyCloudDraft(backup);
+  const box = $('ed-draft-backup'), backup = store.get('hi-course-library-backup');
+  box.hidden = !backup; box.replaceChildren();
+  if (backup) box.append(el('button', {class: 'btn sm', text: '切り替え前の下書きを復元', onclick: () => {
+    const previous = courseLibrary();
+    const restored = window.HamuCourseLibrary.merge(null, previous, backup, 'remote').value;
+    store.set('hi-course-library-backup', previous); applyCloudDraft(restored);
     renderDraftBackup(); if (draftSync) draftSync.changed();
   }}));
 }
 function startDraftSync(api){
-  if (!api || !window.HamuDraftSync) return;
-  let draftMeta = store.get('hi-draft-sync');
-  draftSync = new window.HamuDraftSync({
+  if (!api || !window.HamuCourseLibrary) return;
+  let draftMeta = store.get('hi-course-library-sync');
+  draftSync = new window.HamuCourseLibrary.LibrarySync({
     api: {read: async () => { const v = await api.read(); if (painting) throw new Error('editing'); return v; }, write: api.write},
-    get: () => store.get('hi-draft'), apply: applyCloudDraft,
-    getMeta: () => draftMeta, setMeta: v => { draftMeta = v; store.set('hi-draft-sync', v); },
-    backup: v => { store.set('hi-draft-backup', v); renderDraftBackup(); },
-    status: (state, choose) => {
+    get: courseLibrary, apply: applyCloudDraft,
+    getMeta: () => draftMeta, setMeta: v => { draftMeta = v; store.set('hi-course-library-sync', v); },
+    backup: v => { store.set('hi-course-library-backup', v); renderDraftBackup(); },
+    status: (state, choose, conflicts) => {
       const box = $('ed-draft-state'); box.replaceChildren();
-      const messages = {pending: '下書きを保存待ち…', syncing: '下書きを同期中…', saved: social.account && social.account.isGuest ? '下書きを保存しました。別の端末で使うには、このハムを連携してください。' : '下書きは同じハムのスマホ・PCで共有されます', offline: 'この端末に保存済み。通信できるときに同期します。', conflict: '別の端末にも異なる下書きがあります。続ける方を選んでください。'};
+      const messages = {pending: '下書きを保存待ち…', syncing: '下書きを同期中…', saved: social.account && social.account.isGuest ? '下書きを保存しました。スマホ・PCで共有するには、このハムを連携してください。' : '下書きは同じハムのスマホ・PCで共有されます', offline: 'この端末に保存済み。通信できるときに同期します。', conflict: `同じコースが別の端末でも編集されています（${conflicts ? conflicts.length : 0}件）。続ける方を選んでください。ほかのコースは両方残ります。`};
       box.append(el('span', {text: messages[state]}));
-      if (state === 'conflict') for (const [kind, label] of [['remote', '別の端末の下書きを開く'], ['local', 'この端末の下書きを使う']]) box.append(el('button', {class: 'btn sm', text: label, onclick: () => choose(kind)}));
+      if (state === 'conflict') for (const [kind, label] of [['remote', '別の端末の編集を使う'], ['local', 'この端末の編集を使う']]) box.append(el('button', {class: 'btn sm', text: label, onclick: () => choose(kind)}));
       if (state === 'offline') box.append(el('button', {class: 'btn sm', text: '再試行', onclick: () => draftSync.sync()}));
     },
   });
   renderDraftBackup(); draftSync.sync();
   window.addEventListener('storage', e => {
-    if (e.key !== hamsterKey(localOwner, 'hi-draft') || painting) return;
+    if (e.key !== hamsterKey(localOwner, 'hi-course-library') || painting) return;
+    if (current && current.mode === 'test') closePlayer();
     editor.cleared = false; loadDraft(); editor.cols = Math.min(editor.cols, maxCols());
-    updatePubBtn(); if (tab === 'make') drawEditor(); draftSync.sync();
+    updatePubBtn(); renderCourseFiles(); if (tab === 'make' && !$('course-editor').hidden) drawEditor(); draftSync.sync();
   });
   window.addEventListener('focus', () => draftSync.sync());
   window.addEventListener('online', () => draftSync.sync());
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') draftSync.sync();
-    else if (painting) saveDraft();
-  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') draftSync.sync(); else if (painting) saveDraft(); });
   setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
 }
+
 function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, cam: editor.cam}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
@@ -1791,7 +1905,7 @@ function validate(){
   if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
-function remix(c){ editor.rows = c.rows.slice(); $('ed-title').value = ((c.title || '') + ' アレンジ').slice(0, 30); syncWidth(); editor.cleared = false; editor.cam = 0; editor.undo = []; updateUndoBtn(); saveDraft(); setTab('make'); }
+function remix(c){ saveDraft(); setTab('make'); addCourseFile({rows: c.rows, title: ((c.title || '') + ' アレンジ').slice(0, 30)}); }
 $('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
 // the operator can publish a course as an official one, or as a piece that endless mode mixes in
 const edKind = () => social.isOwner ? $('ed-kind').value : '';
@@ -2293,7 +2407,7 @@ let tab = 'play';
 function setTab(name){
   tab = name;
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
-  if (name === 'make'){ syncWidth(); drawEditor(); updatePubBtn(); if (draftSync) draftSync.sync(); }
+  if (name === 'make'){ showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
   renderAll();
 }
@@ -2463,7 +2577,7 @@ function renderBattleLobby(box){
 }
 
 /* ---------- boot ---------- */
-loadDraft(); renderHeader(); renderAll(); updatePubBtn();
+loadDraft(); renderCourseFiles(); renderHeader(); renderAll(); updatePubBtn();
 $('db-state').textContent = '公式コースを表示中';
 (async () => {
   let be = null;
@@ -2475,8 +2589,7 @@ $('db-state').textContent = '公式コースを表示中';
   if (user){
     social.uid = await user.id();
     if (store.useUser(social.uid)){
-      closePlayer(); closeSheet(); formDirty = false; editor.cleared = false; loadDraft();
-      if (tab === 'make') drawEditor();
+      closePlayer(); closeSheet(); formDirty = false; editor.cleared = false; activeDraftId = null; loadDraft(); showCourseFiles(false);
       accountHintShown = false; $('play-account-hint').hidden = true;
     }
     social.isOwner = await user.isOwner();

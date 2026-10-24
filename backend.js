@@ -1,3 +1,81 @@
+// A library keeps each course independent when two devices edit different files.
+(() => {
+  const copy = v => JSON.parse(JSON.stringify(v));
+  const courseValid = v => v && Array.isArray(v.rows) && v.rows.length === 16 &&
+    v.rows.every(r => typeof r === 'string' && r.length >= 10 && r.length <= 150 && r.length === v.rows[0].length) &&
+    typeof v.title === 'string' && v.title.length <= 30;
+  const empty = () => ({format: 2, files: {}});
+  function normalize(v) {
+    if (!v) return empty();
+    if (v.format === 2 && v.files && !Array.isArray(v.files) && typeof v.files === 'object' &&
+      Object.entries(v.files).every(([id, f]) => /^[a-zA-Z0-9_-]{1,64}$/.test(id) && courseValid(f))) return copy(v);
+    if (courseValid(v)) return {format: 2, files: {legacy: {...copy(v), updatedAt: 0}}};
+    throw new Error('Invalid course library');
+  }
+  const fileSignature = f => f ? JSON.stringify({title: f.title, rows: f.rows, deleted: !!f.deleted}) : '';
+  const signature = v => JSON.stringify(Object.entries(normalize(v).files).sort(([a], [b]) => a.localeCompare(b)).map(([id, f]) => [id, fileSignature(f)]));
+  function merge(base, local, remote, choice) {
+    const b = normalize(base).files, l = normalize(local).files, r = normalize(remote).files;
+    const value = empty(), conflicts = [];
+    for (const id of new Set([...Object.keys(l), ...Object.keys(r)])) {
+      const bs = fileSignature(b[id]), ls = fileSignature(l[id]), rs = fileSignature(r[id]);
+      let f;
+      // Removal is always a tombstone; a missing file means this device has not seen it yet.
+      if (!l[id]) f = r[id];
+      else if (!r[id]) f = l[id];
+      else if (ls === rs) f = (+l[id].updatedAt || 0) > (+r[id].updatedAt || 0) ? l[id] : r[id];
+      else if (ls === bs) f = r[id];
+      else if (rs === bs) f = l[id];
+      else { conflicts.push(id); f = choice === 'remote' ? r[id] : l[id]; }
+      value.files[id] = copy(f);
+    }
+    return {value, conflicts};
+  }
+  class LibrarySync {
+    constructor(options) { Object.assign(this, options); }
+    changed() { clearTimeout(this.timer); this.status('pending'); this.timer = setTimeout(() => this.sync(), 700); }
+    sync() {
+      clearTimeout(this.timer);
+      if (this.running) { this.again = true; return this.running; }
+      this.running = this.run().catch(() => this.status('offline')).finally(() => {
+        this.running = null;
+        if (this.again) { this.again = false; this.sync(); }
+      });
+      return this.running;
+    }
+    async run() {
+      this.status('syncing');
+      const row = await this.api.read(), remote = normalize(row && row.value);
+      const local = normalize(this.get()), meta = this.getMeta() || {}, version = row ? row.version : 0;
+      const here = signature(local), there = signature(remote);
+      const choice = this.choice && this.choice.here === here && this.choice.there === there && this.choice.version === version ? this.choice.kind : null;
+      this.choice = null;
+      const result = merge(meta.value, local, remote, choice);
+      if (result.conflicts.length && !choice) {
+        this.status('conflict', kind => { this.choice = {kind, here, there, version}; return this.sync(); }, result.conflicts);
+        return;
+      }
+      if (choice) this.backup(choice === 'remote' ? local : remote);
+      const merged = result.value, mergedSignature = signature(merged);
+      if (mergedSignature === there) {
+        if (here !== there) this.apply(merged);
+        this.setMeta({version, value: merged}); this.status('saved'); return;
+      }
+      try {
+        const next = await this.api.write(merged, version);
+        this.setMeta({version: next, value: merged});
+        // Edits made during the request must be merged again, never replaced by its earlier snapshot.
+        if (signature(this.get()) !== here) { this.again = true; this.status('pending'); }
+        else { if (here !== mergedSignature) this.apply(merged); this.status('saved'); }
+      } catch (e) {
+        if (e && e.code === 'conflict') { this.again = true; return; }
+        throw e;
+      }
+    }
+  }
+  window.HamuCourseLibrary = {normalize, signature, fileSignature, merge, LibrarySync};
+})();
+
 // Private, revision-checked draft synchronization. Local storage remains the offline copy.
 (() => {
   const signature = v => v ? JSON.stringify({rows: v.rows, title: v.title || ''}) : '';
