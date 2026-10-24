@@ -407,7 +407,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -992,7 +992,7 @@ function makeGame(canvas, rows, hooks){
   }
   function reset(){
     paused = false; elapsed = 0;
-    if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; checkpoint = null; rewindCount = 0; overflow = false; hasStarted = false; }
+    if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
@@ -1215,9 +1215,9 @@ function makeGame(canvas, rows, hooks){
     }
     draw(); raf = requestAnimationFrame(loop);
   }
-  function restoreAt(point){
-    if (!canRewind || overflow || !point) return false;
-    const prefix = trace.slice(0, point.index), saved = checkpoint, attempts = deaths;
+  function restoreAt(point, savedRoute){
+    if (!canRewind || (!savedRoute && overflow) || !point) return false;
+    const prefix = savedRoute ? savedRoute.map(e => ({...e})) : trace.slice(0, point.index), attempts = deaths;
     replaying = true;
     try {
       reset(); history = [{index: 0, time: 0}];
@@ -1227,7 +1227,7 @@ function makeGame(canvas, rows, hooks){
         if (state === 'dead' || state === 'clear') return false;
         if (state === 'run') history.push({index: i + 1, time: elapsed});
       }
-      trace = prefix; checkpoint = saved && saved.index <= prefix.length ? saved : null;
+      trace = prefix; overflow = false; hasStarted = prefix.some(e => e.type === 'jump');
       rewindCount++; deaths = attempts; paused = state === 'run'; last = null;
       startedAt = performance.now() - elapsed * 1000;
     } finally { replaying = false; }
@@ -1241,8 +1241,20 @@ function makeGame(canvas, rows, hooks){
   }
   function mark(){
     if (!canRewind || state !== 'run' || overflow) return false;
-    checkpoint = {index: trace.length, time: elapsed, dist: dist()};
+    const next = {index: trace.length, time: elapsed, dist: dist(), rows: rows.join('\n'), route: trace.map(e => ({...e}))};
+    if (hooks.onSaveCheckpoint && hooks.onSaveCheckpoint(next) === false) return false;
+    checkpoint = next;
     hooks.onRewindInfo && hooks.onRewindInfo(); return true;
+  }
+  function loadCheckpoint(saved){
+    if (!canRewind || !saved || saved.rows !== rows.join('\n') || !Array.isArray(saved.route) || !saved.route.length || saved.route.length > MAX_TRACE) return false;
+    const check = makeGame(null, rows.slice(), {manual:true, headless:true, silent:true});
+    try {
+      for (const event of saved.route) if (!check.replayEvent(event)) return false;
+      if (check.state !== 'run') return false;
+      checkpoint = {index: saved.route.length, time: check.time, dist: check.snap.dist, rows: saved.rows, route: saved.route.map(e => ({...e}))};
+      return true;
+    } finally { check.stop(); }
   }
   function resume(){ if (canRewind && paused){ paused = false; last = null; notify('run'); } }
   function replayEvent(event){
@@ -1254,10 +1266,10 @@ function makeGame(canvas, rows, hooks){
   }
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
-  reset(); if (!hooks.manual) raf = requestAnimationFrame(loop);
+  reset(); if (hooks.checkpoint) loadCheckpoint(hooks.checkpoint); if (!hooks.manual) raf = requestAnimationFrame(loop);
   return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
-    rewind, mark, resume, restoreCheckpoint(){ return restoreAt(checkpoint); }, replayEvent,
-    get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {...checkpoint}, count: rewindCount, overflow}; },
+    rewind, mark, resume, restoreCheckpoint(){ return checkpoint ? restoreAt(checkpoint, checkpoint.route) : false; }, replayEvent,
+    get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {index: checkpoint.index, time: checkpoint.time, dist: checkpoint.dist}, count: rewindCount, overflow}; },
     get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
     get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : canRewind || hooks.manual ? elapsed : (performance.now() - startedAt) / 1000; } };
 }
@@ -1418,8 +1430,20 @@ function openPlayer(course, mode){
     game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
-  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), rewind: mode === 'test' && social.isOwner === true, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  const savedPoint = mode === 'test' && social.isOwner === true ? savedTestCheckpoint(current.draftId) : null;
+  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
+}
+function savedTestCheckpoint(id){
+  return id ? (store.get('hi-test-checkpoints') || {})[id] || null : null;
+}
+function saveTestCheckpoint(point){
+  if (!current || current.mode !== 'test' || !social.isOwner || !current.draftId) return false;
+  const points = {...(store.get('hi-test-checkpoints') || {}), [current.draftId]: point};
+  const key = localOwner ? hamsterKey(localOwner, 'hi-test-checkpoints') : 'hi-test-checkpoints';
+  try { localStorage.setItem(key, JSON.stringify(points)); localMemory.delete(key); }
+  catch { toast('保存容量が足りません。前の再開地点を残しました'); return false; }
+  toast('再開地点を保存しました。次のプレイでも使えます'); return true;
 }
 function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
 function renderRewindControls(){
@@ -1428,9 +1452,9 @@ function renderRewindControls(){
   if (!allowed) return;
   const r = game.rewindInfo;
   $('pl-mark').disabled = !['run', 'paused'].includes(game.state) || r.overflow;
-  $('pl-restore').disabled = !r.checkpoint || !r.available;
+  $('pl-restore').disabled = !r.checkpoint;
   $('pl-back2').disabled = $('pl-back5').disabled = !r.available;
-  $('pl-rewind-note').textContent = r.overflow ? '記録の上限です。最初からテストし直してください。' : `${r.checkpoint ? '保存地点 ' + r.checkpoint.dist + 'マス' : '再開地点はまだありません'} · 巻き戻し ${r.count}回`;
+  $('pl-rewind-note').textContent = r.overflow ? '記録の上限です。最初からテストし直してください。' : `${r.checkpoint ? '保存地点 ' + r.checkpoint.dist + 'マス' : (savedTestCheckpoint(current.draftId) ? '保存地点は保持中（コースが変わったため再保存が必要です）' : '再開地点はまだありません')} · 巻き戻し ${r.count}回`;
   fitPlayer();
 }
 function rewindTest(seconds){

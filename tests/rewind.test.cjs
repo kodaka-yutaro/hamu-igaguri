@@ -64,13 +64,13 @@ test('2-second rewind goes back along the actual run and freezes until resumed',
   const before=plain(g.inspect());h.tick(100);assert.deepEqual(plain(g.inspect()),before);
   g.resume();h.tick(2);assert.equal(g.state,'run');assert.ok(g.time>before.elapsed);
 });
-test('rewinding past a later saved point removes that unreachable checkpoint', () => {
+test('rewinding past a saved point keeps its independent legal path', () => {
   const h=setup(),g=h.game;g.jump();h.tick(180);g.mark();h.tick(10);g.rewind(2);
-  assert.equal(g.rewindInfo.checkpoint,null);assert.equal(g.restoreCheckpoint(),false);
+  assert.ok(g.rewindInfo.checkpoint);assert.equal(g.restoreCheckpoint(),true);assert.equal(g.state,'paused');
 });
-test('restart removes checkpoint, successful path and rewind count', () => {
+test('restart keeps checkpoint while clearing current path and rewind count', () => {
   const h=setup(),g=h.game;g.jump();h.tick(80);g.mark();g.rewind(1);g.reset();
-  assert.equal(g.state,'ready');assert.equal(g.rewindInfo.count,0);assert.equal(g.rewindInfo.checkpoint,null);assert.equal(g.route.length,0);
+  assert.equal(g.state,'ready');assert.equal(g.rewindInfo.count,0);assert.ok(g.rewindInfo.checkpoint);assert.equal(g.route.length,0);assert.equal(g.restoreCheckpoint(),true);
 });
 test('ordinary play does not expose usable checkpoint or rewind controls', () => {
   const h=setup(course(),{rewind:false}),g=h.game;g.jump();h.tick(100);
@@ -113,10 +113,10 @@ function openHooks(isOwner, mode){
   const nodes = new Map();
   const ctx = {social:{isOwner}, activeDraftId:'draft-a', game:null, current:null,
     $:id=>{if(!nodes.has(id))nodes.set(id,{style:{},focus(){}});return nodes.get(id);},
-    document:{body:{style:{}}}, fitPlayer(){},renderRewindControls(){},myLook:()=>({}),onState(){},
+    document:{body:{style:{}}}, fitPlayer(){},renderRewindControls(){},savedTestCheckpoint(){return null;},saveTestCheckpoint(){},myLook:()=>({}),onState(){},
     makeGame(_cv,_rows,hooks){captured=hooks;return {stop(){}};}};
   vm.createContext(ctx);
-  vm.runInContext(html.slice(html.indexOf('function openPlayer('),html.indexOf('function closePlayer()')),ctx);
+  vm.runInContext(html.slice(html.indexOf('function openPlayer('),html.indexOf('function savedTestCheckpoint(')),ctx);
   ctx.openPlayer({rows:course(),title:'確認用'},mode);return captured;
 }
 test('the actual player enables rewind only for an operator editing their test course', () => {
@@ -149,4 +149,49 @@ test('a course edit, account switch or role loss during publication cancels it',
     let p; p=publisher(course(),[{type:'jump'}],async (_r,_log,stale)=>{change(p);return !stale();});
     await p.ctx.publishCourse();assert.equal(p.added.length,0);
   }
+});
+
+test('saved checkpoint survives a fresh engine and completes a legal ordinary route', async () => {
+  let saved;const rows=course(),h=setup(rows,{onSaveCheckpoint:p=>{saved=plain(p);}}),g=h.game;
+  g.jump();h.tick(80);g.jump();g.mark();const expected=plain(g.inspect());
+  const next=setup(rows,{checkpoint:JSON.parse(JSON.stringify(saved))});
+  assert.equal(next.game.state,'ready');assert.ok(next.game.rewindInfo.checkpoint);
+  assert.equal(next.game.restoreCheckpoint(),true);assert.deepEqual(plain(next.game.inspect()),expected);
+  next.game.resume();next.until(()=>next.game.state==='clear');
+  assert.equal(await next.verify(rows,next.game.route),true);
+  next.game.reset();assert.equal(next.game.restoreCheckpoint(),true);
+});
+test('only a successful explicit save replaces the saved checkpoint', () => {
+  let allow=true;const h=setup(course(),{onSaveCheckpoint:()=>allow}),g=h.game;
+  g.jump();h.tick(40);g.mark();const first=plain(g.inspect());
+  h.tick(50);allow=false;assert.equal(g.mark(),false);g.restoreCheckpoint();assert.deepEqual(plain(g.inspect()),first);
+  g.resume();h.tick(30);allow=true;assert.equal(g.mark(),true);const second=plain(g.inspect());
+  g.reset();g.restoreCheckpoint();assert.deepEqual(plain(g.inspect()),second);
+});
+test('changed courses and corrupt saved routes cannot restore a checkpoint', () => {
+  let saved;const rows=course(),h=setup(rows,{onSaveCheckpoint:p=>saved=plain(p)});
+  h.game.jump();h.tick(40);h.game.mark();
+  const changed=rows.slice();changed[0]='#'.repeat(40);
+  assert.equal(setup(changed,{checkpoint:saved}).game.restoreCheckpoint(),false);
+  for(const route of [[{type:'frame',dt:100}], [{type:'warp'}], []]){
+    assert.equal(setup(rows,{checkpoint:{...saved,route}}).game.restoreCheckpoint(),false);
+  }
+});
+
+test('saved points persist per course and account, and quota errors keep the previous point', () => {
+  const values=new Map(), messages=[];
+  let fail=false;
+  const ctx={current:{mode:'test',draftId:'a'},social:{isOwner:true},localOwner:'owner',localMemory:new Map(),
+    hamsterKey:(uid,key)=>`${uid}:${key}`,toast:m=>messages.push(m),
+    localStorage:{setItem(k,v){if(fail)throw Error('quota');values.set(k,v);}},
+    store:{get(k){return JSON.parse(values.get(`${ctx.localOwner}:${k}`)||'null');}}};
+  vm.createContext(ctx);vm.runInContext(html.slice(html.indexOf('function savedTestCheckpoint('),html.indexOf('function closePlayer()')),ctx);
+  assert.equal(ctx.saveTestCheckpoint({dist:12}),true);
+  ctx.current.draftId='b';assert.equal(ctx.saveTestCheckpoint({dist:24}),true);
+  assert.equal(ctx.savedTestCheckpoint('a').dist,12);assert.equal(ctx.savedTestCheckpoint('b').dist,24);
+  ctx.localOwner='other';assert.equal(ctx.savedTestCheckpoint('a'),null);ctx.localOwner='owner';
+  ctx.current.draftId='a';fail=true;assert.equal(ctx.saveTestCheckpoint({dist:99}),false);
+  assert.equal(ctx.savedTestCheckpoint('a').dist,12);
+  fail=false;assert.equal(ctx.saveTestCheckpoint({dist:99}),true);assert.equal(ctx.savedTestCheckpoint('a').dist,99);
+  ctx.social.isOwner=false;assert.equal(ctx.saveTestCheckpoint({dist:100}),false);
 });
