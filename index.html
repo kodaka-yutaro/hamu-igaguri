@@ -197,6 +197,12 @@ input[type=range]{width:100%}
 .title-fold>summary{padding:12px 14px;font-weight:800;cursor:pointer}
 .title-fold[open]>summary{border-bottom:1px solid var(--line)}
 .title-fold>.titles{padding:12px}
+.owned-title-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.owned-title-card{border:1.5px solid var(--line);background:var(--soft);border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.owned-title-card b{font-size:13px;overflow-wrap:anywhere}
+.owned-title-list{display:flex;flex-wrap:wrap;gap:5px;max-height:140px;overflow-y:auto}
+.owned-title-chip{font-size:11px;border:1px solid var(--line);border-radius:99px;padding:4px 8px;font-weight:800;background:var(--panel)}
+@media(max-width:550px){.owned-title-summary{grid-template-columns:1fr}.owned-title-card{flex-direction:row;align-items:center;justify-content:space-between}}
 .cel-gifts{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;border:2px solid #e6a92a;border-radius:12px;background:color-mix(in srgb,#ffe08a 30%,var(--panel));padding:9px;color:var(--fg);font-size:14px;font-weight:800;animation:gift-pop .65s cubic-bezier(.2,1.5,.4,1)}
 @keyframes gift-pop{0%{transform:scale(.2) rotate(-7deg);opacity:0}55%{transform:scale(1.13) rotate(3deg)}100%{transform:scale(1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.cel-gifts{animation:none}}
@@ -383,6 +389,11 @@ input[type=range]{width:100%}
     <div id="account" class="post" style="gap:12px" tabindex="-1"></div>
     <div class="row" id="my-code" hidden><span class="muted">あなたのともだちコード</span><span class="code" id="my-code-v"></span><button class="btn sm" id="my-code-copy">コピー</button><span class="muted">友達に教えると「みんな」でさがしてもらえます</span></div>
     <h2>称号</h2>
+    <div class="owned-titles card col" style="gap:8px">
+      <b>🏅 今持っている称号</b>
+      <div id="owned-title-summary" class="owned-title-summary"></div>
+      <div id="owned-title-list" class="owned-title-list" aria-label="獲得済みの称号"></div>
+    </div>
     <p class="muted" id="ttl-note" style="margin:0"></p>
     <p class="muted" id="my-endless" style="margin:0"></p>
     <details class="title-fold"><summary>クリア称号の一覧をひらく</summary><div id="my-titles" class="titles"></div></details>
@@ -2421,6 +2432,23 @@ $('mk-save').onclick = async () => {
   renderHeader(); renderAll();
 };
 $('my-code-copy').onclick = () => navigator.clipboard.writeText(codeOf(social.uid)).then(() => toast('コピーしました'), () => toast('コピーできませんでした'));
+function renderOwnedTitles(clears,likes,wins){
+  const categories=[
+    {label:'🏁 クリア',count:clears,list:TITLES,color:'var(--accent)'},
+    {label:'🎨 コース職人',count:likes,list:MAKER_TITLES,color:'var(--leaf)'},
+    {label:'⚔️ バトル',count:wins,list:WIN_TITLES,color:'var(--gold)'}
+  ];
+  const summary=$('owned-title-summary'), list=$('owned-title-list');
+  summary.replaceChildren(...categories.map(c=>{
+    const owned=c.list.filter(t=>c.count>=t.n),latest=owned[owned.length-1];
+    return el('div',{class:'owned-title-card'},
+      el('span',{class:'muted',text:`${c.label} · ${owned.length}個`}),
+      el('b',{text:latest?latest.name:'まだなし'}));
+  }));
+  const chips=categories.flatMap(c=>c.list.filter(t=>c.count>=t.n).map(t=>
+    el('span',{class:'owned-title-chip',text:`${c.label.split(' ')[0]} ${t.name}`,title:t.note})));
+  list.replaceChildren(...(chips.length?chips:[el('span',{class:'muted',text:'コースクリアや対戦で称号を集めよう！'})]));
+}
 function renderMe(){
   $('my-code').hidden = !social.uid; if (social.uid) $('my-code-v').textContent = codeOf(social.uid);
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
@@ -2432,6 +2460,7 @@ function renderMe(){
   const wins = battleWins(), wt = winTitleFor(wins), wn = WIN_TITLES.find(x => wins < x.n);
   $('win-note').textContent = `フレンド対戦 ${wins}勝` + (wt ? `・いまの称号「${wt.name}」` : '') + (wn ? `・次の称号まであと${wn.n-wins}勝` : '・全称号達成！');
   $('win-titles').replaceChildren(...titleGrid(wins,false,WIN_TITLES).children);
+  renderOwnedTitles(n,lk,wins);
   const eb = myEndless(), ep = endlessRanking().findIndex(r => r.uid === social.uid);
   $('my-endless').textContent = eb ? `エンドレスのベスト ${eb}マス` + (ep >= 0 ? `（ランキング${ep + 1}位）` : '') : 'エンドレスの記録はまだありません';
   const links = $('my-links');
