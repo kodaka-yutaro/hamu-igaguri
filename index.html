@@ -196,6 +196,18 @@ input[type=range]{width:100%}
 .opt[aria-pressed="true"]{border-color:var(--accent)}
 .opt.swatch{width:28px;height:28px;padding:0;border-radius:50%}
 .opt.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--accent);border-color:transparent}
+.dress-guide{font-size:12px;color:var(--muted)}
+.dress-tabs{display:flex;gap:6px;overflow-x:auto;padding:3px 0 9px;scrollbar-width:thin}
+.dress-tabs button{font:inherit;font-weight:800;font-size:12px;white-space:nowrap;padding:9px 12px;border:1.5px solid var(--line);border-radius:99px;color:var(--fg);background:var(--panel);cursor:pointer}
+.dress-tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.dress-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));gap:8px}
+.dress-grid .opt{min-height:62px;padding:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center;line-height:1.3}
+.dress-grid .opt[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 12%,var(--panel));box-shadow:inset 0 0 0 1px var(--accent)}
+.dress-grid .opt.locked{opacity:.65;border-style:dashed}
+.dress-grid .opt.swatch{width:44px;height:44px;min-height:44px}
+.dress-progress{font-size:12px;color:var(--muted)}
+@media(max-width:560px){.maker .preview{position:sticky;top:5px;z-index:2;max-width:150px;border:2px solid var(--line);box-shadow:0 4px 14px #0002}.maker{gap:10px}}
+
 .like{font:inherit;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:var(--panel);color:var(--fg);border-radius:99px;padding:3px 12px 3px 9px;cursor:pointer}
 .like .nut,.noti .nut{position:relative;width:14px;height:15px;flex:none}
 .like .nut::before,.noti .nut::before{content:"";position:absolute;left:2px;top:4px;width:10px;height:11px;border-radius:40% 40% 50% 50% / 30% 30% 70% 70%;background:var(--line)}
@@ -342,6 +354,8 @@ input[type=range]{width:100%}
       <div class="col" style="gap:10px">
         <div class="row"><input type="text" id="mk-name" maxlength="12" placeholder="なまえ（12文字まで）" style="flex:1 1 160px"><button class="btn sm" id="mk-random">おまかせ</button></div>
         <input type="text" id="mk-bio" maxlength="60" placeholder="ひとこと（60文字まで）">
+        <div class="dress-guide">パーツを選んでタップで試着。果物の衣装はクリア数で解放！</div>
+        <div id="mk-categories" class="dress-tabs" role="tablist" aria-label="着せ替えカテゴリ"></div>
         <div id="mk-parts" class="col" style="gap:8px"></div>
         <div class="row"><button class="btn primary" id="mk-save">保存する</button><span class="muted" id="mk-state"></span></div>
       </div>
@@ -356,6 +370,9 @@ input[type=range]{width:100%}
     <h3 style="margin:6px 0 0">コース職人</h3>
     <p class="muted" id="maker-note" style="margin:0"></p>
     <div id="maker-titles" class="titles"></div>
+    <h3 style="margin:6px 0 0">バトルの称号</h3>
+    <p class="muted" id="win-note" style="margin:0"></p>
+    <div id="win-titles" class="titles"></div>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
   </section>
@@ -450,6 +467,7 @@ const TITLES = [
   { n: 3,  name: 'くりひろい見習い', note: '3種類のコースをクリア' },
   { n: 5,  name: 'イガグリよけ名人', note: '5種類のコースをクリア' },
   { n: 10, name: 'どんぐりマスター', note: '10種類のコースをクリア' },
+  ...[[20,'森の冒険家'],[30,'くりの達人'],[50,'ハムの探検隊長'],[75,'コース博士'],[100,'百戦錬磨のハム'],[150,'森の英雄'],[200,'イガグリの覇者'],[300,'伝説の旅ハム'],[500,'五百の頂へ'],[750,'千への挑戦者'],[1000,'千コースの神話']].map(([n,name]) => ({n,name,note:`${n}種類のコースをクリア`})),
 ];
 const titleFor = n => TITLES.filter(t => n >= t.n).pop() || null;
 // course-maker titles: likes other players gave to the courses you made
@@ -460,8 +478,13 @@ const MAKER_TITLES = [
   { n: 10, name: '名コース職人',     note: '作ったコースに10いいね' },
   { n: 20, name: 'コースの匠',       note: '作ったコースに20いいね' },
   { n: 50, name: '伝説のコース職人', note: '作ったコースに50いいね' },
+  ...[[75,'人気コース職人'],[100,'百いいねの名匠'],[150,'注目のクリエイター'],[200,'コース界のスター'],[300,'みんなの人気者'],[500,'五百いいねの巨匠'],[750,'コース界のレジェンド'],[1000,'千いいねの神職人']].map(([n,name]) => ({n,name,note:`作ったコースに${n}いいね`})),
 ];
 const makerTitleFor = n => MAKER_TITLES.filter(t => n >= t.n).pop() || null;
+const WIN_TITLES = [[1,'初勝利'],[3,'勝負師のたまご'],[5,'かけだしファイター'],[10,'十勝ハム'],[20,'バトル上手'],[30,'連戦の勇者'],[50,'五十勝の猛者'],[75,'森のファイター'],[100,'百勝の英雄'],[150,'熟練の勝負師'],[200,'二百勝の覇者'],[300,'歴戦の戦士'],[500,'五百勝の伝説'],[750,'無敵のハム'],[1000,'千勝の王者']].map(([n,name]) => ({n,name,note:`フレンド対戦で${n}勝`}));
+const winTitleFor = n => WIN_TITLES.filter(t => n >= t.n).pop() || null;
+const FRUITS = [[1,'banana','ばなな','🍌'],[3,'apple','りんご','🍎'],[5,'grape','ぶどう','🍇'],[10,'strawberry','いちご','🍓'],[20,'orange','みかん','🍊'],[30,'lemon','れもん','🍋'],[50,'peach','もも','🍑'],[75,'cherry','さくらんぼ','🍒'],[100,'pineapple','ぱいなっぷる','🍍'],[150,'melon','めろん','🍈'],[200,'watermelon','すいか','🍉'],[300,'kiwi','きうい','🥝'],[500,'mango','まんごー','🥭'],[750,'pear','なし','🍐'],[1000,'coconut','ここなっつ','🥥']].map(([n,key,name,emoji]) => ({n,key,name,emoji}));
+const fruitByKey = Object.fromEntries(FRUITS.map(f => [f.key,f]));
 
 /* ---------- hamster look ---------- */
 // tableware lying in the endless course: pick one up to unlock it as a hat or accessory
@@ -499,7 +522,7 @@ const PARTS = {
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
   hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}]] },
-  outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき']] },
+  outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき'],...FRUITS.map(f => [f.key,`${f.emoji} ${f.name}`,{clear:f.n}])] },
   color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
   acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう'],['hashi','おはし',{item: 'hashi'}],['fork','フォーク',{item: 'fork'}]] },
 };
@@ -512,6 +535,13 @@ function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g
 function paintHam(ctx, look, dead){
   const L = look || DEFAULT_LOOK, C = L.color;
   const bodyPath = () => { ctx.beginPath(); ctx.ellipse(0, 1, 15, 12, 0, 0, 7); };
+  if (fruitByKey[L.outfit]){
+    const fruit = fruitByKey[L.outfit], colors = {banana:'#f6d751',apple:'#dd3f38',grape:'#8555ad',strawberry:'#eb5069',orange:'#f59b34',lemon:'#f4dc57',peach:'#f29aae',cherry:'#d92f4a',pineapple:'#dda634',melon:'#9fca6e',watermelon:'#54ad62',kiwi:'#89a74f',mango:'#f4b64b',pear:'#b6c65c',coconut:'#96704b'};
+    ctx.fillStyle = colors[fruit.key]; ctx.beginPath(); ctx.ellipse(1,3,17,14,0,0,7); ctx.fill();
+    ctx.fillStyle='#498443'; ctx.beginPath(); ctx.ellipse(4,-12,6,3,-.45,0,7); ctx.fill();
+    if (fruit.key === 'grape' || fruit.key === 'watermelon' || fruit.key === 'strawberry') { ctx.fillStyle=fruit.key==='grape'?'#af84d3':'#382b24'; for(let i=0;i<5;i++){ctx.beginPath();ctx.arc(-10+i*5,8+(i%2)*4,1,0,7);ctx.fill();} }
+    if (fruit.key === 'banana'){ctx.strokeStyle='#b78b25';ctx.lineWidth=4;ctx.beginPath();ctx.arc(-3,1,14,-.7,1.1);ctx.stroke();}
+  }
   if (L.outfit === 'cape'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(0, -4); ctx.quadraticCurveTo(22, 0, 20, 14); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill(); }
   ctx.fillStyle = L.body; bodyPath(); ctx.fill();
   ctx.fillStyle = L.belly; ctx.beginPath(); ctx.ellipse(-4, 5, 9, 7, 0, 0, 7); ctx.fill();
@@ -1590,7 +1620,7 @@ function onState(s, info){
     btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
-    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); });
+    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」＋果物衣装をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); if(!formDirty)syncForm(); });
   }
 }
 async function finishRewindTest(played, attempt, info){
@@ -1748,7 +1778,7 @@ function renderSheet(first){
       box.append(el('div', {class: 'row'}, el('button', {class: 'btn' + (on ? ' on' : ' primary'), text: on ? 'フォロー中' : 'フォローする', onclick: () => toggleFollow(uid)}),
         following(uid).includes(social.uid) ? el('span', {class: 'muted', text: on ? 'おたがいにフォローしています' : 'あなたをフォローしています'}) : null));
     }
-    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true), el('h3', {text: 'コース職人'}), titleGrid(likesReceived(uid), true, MAKER_TITLES));
+    box.append(el('h2', {text: '称号'}), titleGrid(clearCount(p && p.clears), true), el('h3', {text: 'コース職人'}), titleGrid(likesReceived(uid), true, MAKER_TITLES), el('h3',{text:'バトル'}),titleGrid(+(p?.battle?.wins)||0,true,WIN_TITLES));
     const mine = social.courses.filter(c => c.author === uid);
     box.append(el('h2', {text: `投稿したコース ${mine.length}`}));
     box.append(mine.length ? el('div', {class: 'grid'}, ...mine.map(courseCard)) : el('p', {class: 'muted', style: 'margin:0', text: 'まだ投稿はありません。'}));
@@ -1766,7 +1796,7 @@ function profileHeader(uid){
       el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
 function titleGrid(n, compact, list = TITLES){
-  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{text:`🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -2278,20 +2308,24 @@ $('bd-post').onclick = async () => {
 };
 
 /* ---------- my page ---------- */
-let draftLook = null, formDirty = false;
+let draftLook = null, formDirty = false, dressCategory = 'outfit';
 function buildParts(){
-  const box = $('mk-parts'); box.replaceChildren();
-  for (const [key, part] of Object.entries(PARTS)){
-    const opts = el('div', {class: 'opts', role: 'group', 'aria-label': part.label});
-    for (const [val, label, need] of part.opts){
-      const locked = need && need.item && !myItems()[need.item] && draftLook[key] !== val;
-      const b = el('button', {class: 'opt' + (part.swatch ? ' swatch' : '') + (locked ? ' locked' : ''), 'aria-pressed': String(draftLook[key] === val), title: locked ? `エンドレスの${itemByKey[need.item].d}マスあたりで拾えます` : label, 'aria-label': label, text: part.swatch ? '' : (locked ? '🔒' + label : label),
-        onclick: () => { if (locked) return toast(`${label}はエンドレスの${itemByKey[need.item].d}マスあたりに落ちています`); draftLook = {...draftLook, [key]: val}; formDirty = true; buildParts(); paintAvatar($('mk-preview'), draftLook); $('mk-state').textContent = '未保存の変更があります'; }});
-      if (part.swatch) b.style.background = val;
-      opts.append(b);
-    }
-    box.append(el('div', {class: 'part'}, el('span', {text: part.label}), opts));
+  const box = $('mk-parts'), tabs = $('mk-categories'); box.replaceChildren(); tabs.replaceChildren();
+  const groups = [['body','体'],['belly','おなか'],['eyes','目'],['cheek','ほっぺ'],['hat','ぼうし'],['outfit','いしょう'],['color','衣装色'],['acc','こもの']];
+  for (const [key,label] of groups) tabs.append(el('button',{role:'tab','aria-selected':String(key===dressCategory),text:label,onclick:()=>{dressCategory=key;buildParts();}}));
+  const part = PARTS[dressCategory], key = dressCategory;
+  const opts = el('div',{class:'dress-grid',role:'group','aria-label':part.label});
+  const clears = clearCount(myClears());
+  for (const [val,label,need] of part.opts){
+    const locked = !!(need && ((need.item && !myItems()[need.item]) || (need.clear && clears < need.clear)));
+    const hint = need?.clear ? `${need.clear}種類クリアで解放（${clears}/${need.clear}）` : need?.item ? `エンドレス${itemByKey[need.item].d}マスで拾う` : '';
+    const b = el('button',{class:'opt'+(part.swatch?' swatch':'')+(locked?' locked':''),'aria-pressed':String(draftLook[key]===val),'aria-label':label+(locked?' 未解放 '+hint:''),title:locked?hint:label,
+      onclick:()=>{if(locked)return toast(hint);draftLook={...draftLook,[key]:val};formDirty=true;buildParts();paintAvatar($('mk-preview'),draftLook);$('mk-state').textContent='未保存の変更があります';}});
+    if(part.swatch){b.style.background=val;b.title=label;}
+    else {b.append(el('span',{text:(fruitByKey[val]?.emoji||'')+(locked?' 🔒':'') ,style:'font-size:18px'}),el('span',{text:label}));if(locked)b.append(el('small',{class:'muted',text:need?.clear?`${clears}/${need.clear} クリア`:'エンドレスで入手'}));}
+    opts.append(b);
   }
+  box.append(el('div',{class:'part'},el('b',{text:part.label}),key==='outfit'?el('span',{class:'dress-progress',text:`🍎 果物コスチューム ${FRUITS.filter(f=>clears>=f.n).length}/${FRUITS.length} 解放済み`}):null,opts));
 }
 function syncForm(){
   if (formDirty) return;
@@ -2323,6 +2357,9 @@ function renderMe(){
   const lk = likesReceived(social.uid), mt = makerTitleFor(lk), mn = MAKER_TITLES.find(x => lk < x.n);
   $('maker-note').textContent = `作ったコースがもらったいいね ${lk}` + (mt ? `・いまの称号「${mt.name}」` : '') + (mn ? `・次の「${mn.name}」まであと${mn.n - lk}` : '・コース職人の称号を全部集めました！');
   $('maker-titles').replaceChildren(...titleGrid(lk, false, MAKER_TITLES).children);
+  const wins = battleWins(), wt = winTitleFor(wins), wn = WIN_TITLES.find(x => wins < x.n);
+  $('win-note').textContent = `フレンド対戦 ${wins}勝` + (wt ? `・いまの称号「${wt.name}」` : '') + (wn ? `・次の称号まであと${wn.n-wins}勝` : '・全称号達成！');
+  $('win-titles').replaceChildren(...titleGrid(wins,false,WIN_TITLES).children);
   const eb = myEndless(), ep = endlessRanking().findIndex(r => r.uid === social.uid);
   $('my-endless').textContent = eb ? `エンドレスのベスト ${eb}マス` + (ep >= 0 ? `（ランキング${ep + 1}位）` : '') : 'エンドレスの記録はまだありません';
   const links = $('my-links');
@@ -2336,8 +2373,8 @@ function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('m
 /* ---------- title celebration: confetti of acorns and a big card ---------- */
 function celebrate(t, kind){
   const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
-  $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : '新しい称号';
-  $('cel-name').textContent = t.name; $('cel-note').textContent = t.note || '';
+  $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : kind === 'バトル' ? 'バトルの称号' : '新しい称号・果物コスチューム';
+  $('cel-name').textContent = t.name; $('cel-note').textContent = (t.note || '') + (kind === 'クリア' && FRUITS.some(f=>f.n===t.n) ? ` 🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装をゲット！` : '');
   box.hidden = false; box.classList.remove('go'); void box.offsetWidth; box.classList.add('go');
   sfx('fanfare');
   const dpr = Math.min(2, devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
@@ -2722,8 +2759,11 @@ function battleShowResult(){
 }
 const battleWins = () => { const m = me(); return Math.max(+(m && m.battle && m.battle.wins) || 0, +store.get('hi-wins') || 0); };
 function recordBattleWin(){
-  const n = battleWins() + 1; store.set('hi-wins', n);
+  const before = battleWins(), n = before + 1; store.set('hi-wins', n);
   if (social.db && social.uid && social.canWrite) patchMe({battle: {wins: n}});
+  const t = winTitleFor(n);
+  if (t && (!winTitleFor(before) || winTitleFor(before).n !== t.n)) setTimeout(() => celebrate(t, 'バトル'), 900);
+  renderMe();
 }
 // leaving the race early counts as a miss so the friend isn't left waiting
 function battleQuit(){
