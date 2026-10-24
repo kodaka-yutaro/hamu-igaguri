@@ -573,32 +573,29 @@ const randomLook = () => { const o = {}; for (const k in PARTS){ const a = PARTS
 function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const m = c => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f))); return `rgb(${m(r)},${m(g)},${m(b)})`; }
 
 // Special full-body transformation: the same gameplay hitbox, a kangaroo appearance.
-function paintKangaroo(ctx, dead){
+function paintKangaroo(ctx, look, dead){
+  // Keep the hamster's original proportions, facial expression and drawing style.
+  const L={...look,body:'#be925f',belly:'#f5dfbf',outfit:'none',hat:'none'};
   ctx.save();
-  // Tail curls behind the body.
-  ctx.strokeStyle='#ad7440'; ctx.lineWidth=5; ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(9,7);ctx.quadraticCurveTo(22,1,22,14);ctx.quadraticCurveTo(22,19,16,19);ctx.stroke();
-  // Long legs and oversized feet.
-  ctx.fillStyle='#a56b3d';
-  ctx.beginPath();ctx.ellipse(-7,11,6,5,-.35,0,7);ctx.ellipse(8,11,6,5,.25,0,7);ctx.fill();
-  ctx.fillStyle='#85502f';
-  ctx.beginPath();ctx.ellipse(-12,13,6,2.5,-.1,0,7);ctx.ellipse(12,14,6,2.5,.1,0,7);ctx.fill();
-  // Torso and distinct light-colored pouch.
-  ctx.fillStyle='#c58a53';ctx.beginPath();ctx.ellipse(0,1,13,12,0,0,7);ctx.fill();
-  ctx.fillStyle='#f2d3a7';ctx.beginPath();ctx.ellipse(-3,5,7,6,-.1,0,7);ctx.fill();
-  ctx.strokeStyle='#a56b3d';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(-3,5,6,.1,Math.PI-.1);ctx.stroke();
-  // Ears are long and pointed, visibly different from a hamster's round ears.
-  ctx.fillStyle='#b67a45';
-  for(const x of [-6,6]){ctx.beginPath();ctx.moveTo(x-3,-8);ctx.quadraticCurveTo(x-5,-31,x,-30);ctx.quadraticCurveTo(x+6,-26,x+3,-8);ctx.closePath();ctx.fill();}
-  ctx.fillStyle='#eeafa6';for(const x of [-6,6]){ctx.beginPath();ctx.ellipse(x,-20,1.7,7,0,0,7);ctx.fill();}
-  // Head with a longer muzzle.
-  ctx.fillStyle='#ca925c';ctx.beginPath();ctx.ellipse(-3,-8,11,8,-.1,0,7);ctx.fill();
-  ctx.fillStyle='#f1d5af';ctx.beginPath();ctx.ellipse(-12,-5,6,4,-.2,0,7);ctx.fill();
-  ctx.fillStyle='#322117';
-  if(dead){ctx.font='bold 8px sans-serif';ctx.fillText('×',-9,-9);}
-  else{ctx.beginPath();ctx.arc(-9,-10,1.7,0,7);ctx.fill();}
-  ctx.beginPath();ctx.arc(-16,-6,1.4,0,7);ctx.fill();
-  ctx.strokeStyle='#7a4b32';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(14,4);ctx.stroke();
+  // Curled tail, tucked behind the familiar round body.
+  ctx.strokeStyle='#a9784b';ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(10,5);ctx.quadraticCurveTo(21,2,21,11);ctx.quadraticCurveTo(21,17,15,16);ctx.stroke();
+  paintHam(ctx,L,dead);
+  // Small kangaroo pouch, fitted to the hamster's cream belly.
+  ctx.fillStyle='#e8c69d';ctx.beginPath();ctx.ellipse(-2,7,6,4.7,0,0,7);ctx.fill();
+  ctx.strokeStyle='#a9784b';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(-2,7,6,.05,Math.PI-.05);ctx.stroke();
+  // Short pointed kangaroo ears, still proportional to the original hamster.
+  ctx.fillStyle='#ae7c50';
+  for(const x of [-4,6]){
+    ctx.beginPath();ctx.moveTo(x-3,-10);ctx.quadraticCurveTo(x-4,-25,x,-24);
+    ctx.quadraticCurveTo(x+4,-22,x+3,-10);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#eda8a3';ctx.beginPath();ctx.ellipse(x,-17,1.5,4.5,0,0,7);ctx.fill();
+    ctx.fillStyle='#ae7c50';
+  }
+  // Tiny hopping feet.
+  ctx.fillStyle='#a9784b';
+  ctx.beginPath();ctx.ellipse(-8,12,5,2.2,-.1,0,7);ctx.ellipse(9,12,5.5,2.2,.1,0,7);ctx.fill();
+  if(fruitByKey[look.hat])paintFruitHat(ctx,look.hat);
   ctx.restore();
 }
 
@@ -700,13 +697,24 @@ function paintFruitHat(ctx,key){
     ctx.strokeStyle='#79512f';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(0,-8);ctx.lineTo(1,-13);ctx.stroke();
     leaf(1,-11,-.35,8);
   }
+  // Fine skin grain and soft reflections make the fruits intentionally more realistic
+  // than the game's simple hamster character.
+  if(['apple','orange','peach','mango','pear','lemon','strawberry'].includes(key)){
+    ctx.save();ctx.globalAlpha=.24;
+    const flecks=[[-5,1],[-2,5],[2,2],[5,-2],[-3,-5],[6,5],[-6,-2],[1,-6]];
+    for(const [x,y] of flecks){
+      ctx.fillStyle=(key==='lemon'||key==='pear')?'#fff8d8':'#fff3bc';
+      ctx.beginPath();ctx.ellipse(x,y,.45,.7,.4,0,7);ctx.fill();
+    }
+    ctx.restore();
+  }
   ctx.restore();
 }
 
 // draws the hamster centered at (0,0), facing left, body ~30x24
 function paintHam(ctx, look, dead){
   const L = look || DEFAULT_LOOK, C = L.color;
-  if (L.outfit === 'kangaroo') { paintKangaroo(ctx, dead); return; }
+  if (L.outfit === 'kangaroo') { paintKangaroo(ctx, L, dead); return; }
   const bodyPath = () => { ctx.beginPath(); ctx.ellipse(0, 1, 15, 12, 0, 0, 7); };
   if (L.outfit === 'cape'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(0, -4); ctx.quadraticCurveTo(22, 0, 20, 14); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill(); }
   ctx.fillStyle = L.body; bodyPath(); ctx.fill();
