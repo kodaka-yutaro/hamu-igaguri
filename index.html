@@ -151,6 +151,8 @@ input[type=range]{width:100%}
 .player{width:min(520px,100%);align-items:center;display:flex;flex-direction:column;gap:10px}
 .player .bar{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:10px;color:#f3ead8}
 .player .bar b{font-family:var(--display);font-weight:400;font-size:18px;overflow-wrap:anywhere}
+#pl-rewind{align-self:stretch;min-width:0;color:#f3ead8}
+#pl-rewind .muted{color:#d6c8b5}
 .msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#fff;text-align:center;background:rgba(20,24,40,.45);pointer-events:none;padding:8px}
 .msg .big{font-family:var(--display);font-size:clamp(26px,6vw,44px);text-shadow:0 3px 0 #0006}
 .msg .gain{font-weight:800;background:#f0c050;color:#2b2620;border-radius:8px;padding:2px 10px}
@@ -381,6 +383,11 @@ input[type=range]{width:100%}
     <div class="ctrl" id="pl-ctrl" hidden>
       <button id="ct-back" aria-label="うしろにダッシュ">◀</button><button id="ct-fwd" aria-label="まえにダッシュ">▶</button>
       <button id="ct-fire" class="fire">黒どんぐり</button>
+    </div>
+    <div id="pl-rewind" class="col" hidden style="gap:6px;padding:8px 0">
+      <div class="row"><span class="badge op">運営テスト</span><span id="pl-rewind-note" class="muted"></span></div>
+      <div class="row" style="gap:6px"><button id="pl-mark" class="btn sm">再開地点を保存</button><button id="pl-restore" class="btn sm" disabled>再開地点に戻る</button><button id="pl-back2" class="btn sm" disabled>2秒戻る</button><button id="pl-back5" class="btn sm" disabled>5秒戻る</button></div>
+      <span class="muted" style="font-size:11px">ライフやギミックもその時点に戻ります。ゴール後、最初から通して再現できた場合だけクリアになります。</span>
     </div>
   </div>
 </div>
@@ -924,7 +931,9 @@ function setMute(m){ muted = m; store.set('hi-mute', m); const b = $('pl-mute');
 
 /* ---------- game ---------- */
 function makeGame(canvas, rows, hooks){
-  const ctx = canvas.getContext('2d');
+  const ctx = hooks.headless ? null : canvas.getContext('2d');
+  const sound = name => { if (!hooks.silent && !replaying) sfx(name); };
+  const notify = (state, info) => { if (!replaying && hooks.onState) hooks.onState(state, info); };
   // endless: hooks.endless() hands out a fresh generated course on every (re)start
   let gen = null;
   if (hooks.endless){ gen = hooks.endless(); rows = gen.rows; }
@@ -945,6 +954,10 @@ function makeGame(canvas, rows, hooks){
   const ready = (k, cd) => !(t - (springs.has(k) ? springs.get(k) : -9) < cd);
   // knock: sideways push from a bounce ball or a cannon shot, fading out. cannon: the one I'm sitting in
   let kvx = 0, cannon = null;
+  const canRewind = !!hooks.rewind && !B && !gen;
+  let replaying = false, paused = false, elapsed = 0, trace = [], history = [], checkpoint = null, rewindCount = 0, overflow = false, hasStarted = false;
+  const MAX_TRACE = 240000;
+  function remember(event){ if (canRewind && !replaying){ if (trace.length < MAX_TRACE) trace.push(event); else overflow = true; } }
   const shotDmg = () => SHOT_DMG; // big acorns are only easier to hit
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
@@ -978,12 +991,17 @@ function makeGame(canvas, rows, hooks){
     }
   }
   function reset(){
+    paused = false; elapsed = 0;
+    if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; checkpoint = null; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); hooks.onState && hooks.onState('ready'); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
-    if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); }
-    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sfx('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state !== 'ready' && state !== 'run') return;
+    if (paused){ paused = false; last = null; notify('run'); }
+    remember({type: 'jump'}); hasStarted = true;
+    if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -991,13 +1009,13 @@ function makeGame(canvas, rows, hooks){
     if (!B || state !== 'run') return;
     if (dashCd > 0){ wantDash = {dir, t: .25}; return; }
     wantDash = null;
-    dashDir = dir; dashT = DASH_T; dashCd = DASH_CD; sfx('dash');
+    dashDir = dir; dashT = DASH_T; dashCd = DASH_CD; sound('dash');
   }
   function fire(){
     if (!B || state !== 'run') return;
     if (shotCd > 0){ wantFire = .25; return; }
     wantFire = 0;
-    shotCd = SHOT_CD; life -= SHOT_COST; sfx('fire');
+    shotCd = SHOT_CD; life -= SHOT_COST; sound('fire');
     const spread = (power >= 2 ? [-90, 0, 90] : [0]).map(vy => [vy, 1]);
     if (rear) for (const [vy] of spread.slice()) spread.push([vy, -1]);
     for (const [vy, dir] of spread){
@@ -1020,7 +1038,7 @@ function makeGame(canvas, rows, hooks){
   // my black acorn hit the rival: burst where it struck
   function dropShot(id, hit){
     const s = shots.find(x => x.id === id); shots = shots.filter(x => x.id !== id);
-    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false, shotDmg(s.pw)); sfx('bonk'); }
+    if (hit && s){ const r = B.rival; burst(r && r.x != null ? r.x + PW/2 : s.x, r && r.x != null ? r.y + PH/2 : s.y, false, shotDmg(s.pw)); sound('bonk'); }
   }
   const banner = hooks.banner;
   function burst(x, y, me, dmg = SHOT_DMG){
@@ -1049,7 +1067,7 @@ function makeGame(canvas, rows, hooks){
     for (const s of shots){ s.x += SHOT_V * (s.dir || 1) * dt; s.y += (s.vy || 0) * dt; s.age += dt; }
     if (ghostT <= 0) for (const s of shots) if (!s.mine && !s.gone && Math.hypot(s.x - cx, s.y - cy) < (s.pw ? 26 : 20)){
       const d = shotDmg(s.pw);
-      s.gone = true; life -= d; hurtT = .5; sfx('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
+      s.gone = true; life -= d; hurtT = .5; sound('hit'); burst(cx, cy, true, d); B.onHit && B.onHit(s.id);
       // getting hit costs one step of gear: the rear shot goes first, then a weapon level
       if (rear){ rear = false; banner && banner('うしろ撃ちを落とした…'); } else if (power > 0){ power--; banner && banner(power ? '武器が1段下がった…' : '武器を落とした…'); }
       if (life <= 0){ life = 0; shots = shots.filter(x => !x.gone); return die('黒どんぐりに当たった'); }
@@ -1074,7 +1092,7 @@ function makeGame(canvas, rows, hooks){
     if (cannon){
       cannon.t -= dt; p.x = cannon.x * T + (T - PW) / 2; p.y = cannon.y * T + (T - PH) / 2; p.vy = 0;
       if (cannon.t <= 0){
-        p.vy = -900; kvx = 330; p.x += 14; p.y -= 14; sfx('boom'); shake = .25;
+        p.vy = -900; kvx = 330; p.x += 14; p.y -= 14; sound('boom'); shake = .25;
         for (let i = 0; i < 10; i++) fx.push({k: 'puff', x: cannon.x * T + T * .9, y: cannon.y * T + 2, vx: 40 + Math.random() * 80, vy: -40 - Math.random() * 80, age: 0, life: .5 + Math.random() * .3});
         springs.set(cannon.x * ROWS + cannon.y, t); cannon = null;
       } else return;
@@ -1099,7 +1117,7 @@ function makeGame(canvas, rows, hooks){
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
         if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
-        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sfx('acorn'); }
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); }
         // spring: a big bounce that costs no life
         // bounce ball: knocks you away hard from wherever you touch it
         if (c === 'O' && ready(x*ROWS + y, .18)){
@@ -1109,19 +1127,19 @@ function makeGame(canvas, rows, hooks){
             p.vy = ny > .45 ? 650 : Math.min(-720, ny * 1000 - 420); kvx = nx * 520;
             const push = 26 - d;
             pushAgainstBlocks(nx * push, ny * push);
-            springs.set(x*ROWS + y, t); hoverT = 0; shake = .15; sfx('boing');
+            springs.set(x*ROWS + y, t); hoverT = 0; shake = .15; sound('boing');
             for (let i = 0; i < 8; i++){ const a = Math.atan2(ny, nx) + (Math.random() - .5) * 1.6; fx.push({k: 'star', x: bx + nx * 14, y: by + ny * 14, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, age: 0, life: .4}); }
           }
         }
-        if (c === 'C' && ready(x*ROWS + y, .4) && !cannon && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 20){ cannon = {x, y, t: .45}; kvx = 0; hoverT = 0; sfx('clunk'); }
-        if (c === 'J' && ready(x*ROWS + y, .25) && Math.abs(cx - (x*T+T/2)) < 22 && cy > y*T - 6 && cy < y*T + T + 4){ p.vy = JUMP * 1.55; springs.set(x*ROWS + y, t); hoverT = 0; sfx('spring'); }
+        if (c === 'C' && ready(x*ROWS + y, .4) && !cannon && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 20){ cannon = {x, y, t: .45}; kvx = 0; hoverT = 0; sound('clunk'); }
+        if (c === 'J' && ready(x*ROWS + y, .25) && Math.abs(cx - (x*T+T/2)) < 22 && cy > y*T - 6 && cy < y*T + T + 4){ p.vy = JUMP * 1.55; springs.set(x*ROWS + y, t); hoverT = 0; sound('spring'); }
         if ((c === 'R' || c === 'H') && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){
-          taken.add(x*ROWS + y); sfx('power');
+          taken.add(x*ROWS + y); sound('power');
           if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
           else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); banner && banner(`ライフアップ！最大${maxLife}`, true); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, -1); }
         }
-        if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sfx('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
-        if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sfx('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
+        if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sound('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
+        if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sound('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
@@ -1130,7 +1148,7 @@ function makeGame(canvas, rows, hooks){
   }
   // battle: the first miss costs a stock and puts you back in a safe spot with a moment of invincibility
   function respawn(why){
-    stocks--; sfx('die'); burst(p.x + PW/2, p.y + PH/2, true, 0); fx.pop();
+    stocks--; sound('die'); burst(p.x + PW/2, p.y + PH/2, true, 0); fx.pop();
     const safe = (gen && gen.safeAt) || [], c0 = Math.max(0, Math.floor((p.x + PW/2) / T));
     let col = -1;
     for (let d = 0; d < 40 && col < 0; d++) for (const c of [c0 + d, c0 - d]) if (c >= 0 && safe[c] != null){ col = c; break; }
@@ -1140,8 +1158,8 @@ function makeGame(canvas, rows, hooks){
     banner && banner(`ミス！（${why}）のこり${stocks}`, true);
     B.onDown && B.onDown(why, stocks);
   }
-  function die(why){ if (B && stocks > 1 && state === 'run') return respawn(why); sfx('die'); state = 'dead'; deaths++; t = 0; hooks.onState && hooks.onState('dead', {deaths, why, dist: dist()}); }
-  function win(){ sfx('clear'); state = 'clear'; const sec = (performance.now() - startedAt) / 1000; hooks.onState && hooks.onState('clear', {deaths, sec}); }
+  function die(why){ if (B && stocks > 1 && state === 'run') return respawn(why); sound('die'); state = 'dead'; deaths++; t = 0; notify('dead', {deaths, why, dist: dist()}); }
+  function win(){ sound('clear'); state = 'clear'; const sec = canRewind || hooks.manual ? elapsed : (performance.now() - startedAt) / 1000; notify('clear', {deaths, sec}); }
   function drawLife(f){
     const x = 58, y = 30, bw = 110, h = 10;
     ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, bw+4, h+4);
@@ -1149,6 +1167,7 @@ function makeGame(canvas, rows, hooks){
     ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.fillText('ライフ', 10, y + 10);
   }
   function draw(){
+    if (hooks.headless || replaying) return;
     const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
@@ -1175,21 +1194,90 @@ function makeGame(canvas, rows, hooks){
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
     if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
-  function loop(now){
-    const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now; t += dt;
-    if (state === 'run'){ let acc = dt; while (acc > 0){ const s = Math.min(acc, 1/120); step(s); acc -= s; if (state !== 'run') break; } camX = clampCam(p.x); }
+  // Replay and live play use this same integration and collision code, including frame substeps.
+  function simulateFrame(dt){
+    t += dt;
+    if (state === 'run'){
+      elapsed += dt;
+      let acc = dt;
+      while (acc > 0){ const s = Math.min(acc, 1/120); step(s); acc -= s; if (state !== 'run') break; }
+      camX = clampCam(p.x);
+    }
     if (state === 'dead'){ p.vy += GRAV*dt*0.6; p.y += p.vy*dt*0.3; }
     stepFx(dt);
+  }
+  function loop(now){
+    const dt = Math.min(0.05, Math.max(0, (now - (last || now)) / 1000)); last = now;
+    if (!paused){
+      if (state === 'ready' || state === 'run') remember({type: 'frame', dt});
+      simulateFrame(dt);
+      if (canRewind && !overflow && state === 'run') history.push({index: trace.length, time: elapsed});
+    }
     draw(); raf = requestAnimationFrame(loop);
   }
+  function restoreAt(point){
+    if (!canRewind || overflow || !point) return false;
+    const prefix = trace.slice(0, point.index), saved = checkpoint, attempts = deaths;
+    replaying = true;
+    try {
+      reset(); history = [{index: 0, time: 0}];
+      for (let i = 0; i < prefix.length; i++){
+        const event = prefix[i];
+        if (event.type === 'jump') jump(); else simulateFrame(event.dt);
+        if (state === 'dead' || state === 'clear') return false;
+        if (state === 'run') history.push({index: i + 1, time: elapsed});
+      }
+      trace = prefix; checkpoint = saved && saved.index <= prefix.length ? saved : null;
+      rewindCount++; deaths = attempts; paused = state === 'run'; last = null;
+      startedAt = performance.now() - elapsed * 1000;
+    } finally { replaying = false; }
+    draw(); notify(paused ? 'rewound' : 'ready'); return true;
+  }
+  function rewind(seconds){
+    if (!canRewind || !hasStarted || overflow || !Number.isFinite(seconds) || seconds <= 0) return false;
+    const target = Math.max(0, elapsed - seconds);
+    const point = target <= 0 ? history[0] : [...history].reverse().find(p => p.time <= target) || history[0];
+    return restoreAt(point);
+  }
+  function mark(){
+    if (!canRewind || state !== 'run' || overflow) return false;
+    checkpoint = {index: trace.length, time: elapsed, dist: dist()};
+    hooks.onRewindInfo && hooks.onRewindInfo(); return true;
+  }
+  function resume(){ if (canRewind && paused){ paused = false; last = null; notify('run'); } }
+  function replayEvent(event){
+    if (!hooks.manual || B || gen || !event || (state !== 'ready' && state !== 'run')) return false;
+    if (event.type === 'jump') jump();
+    else if (event.type === 'frame' && Number.isFinite(event.dt) && event.dt >= 0 && event.dt <= .05) simulateFrame(event.dt);
+    else return false;
+    return state !== 'dead';
+  }
   // battle: both players start at the same moment without a jump
-  function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sfx('start'); hooks.onState && hooks.onState('run'); } }
-  reset(); raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return state; },
-    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : (performance.now() - startedAt) / 1000; } };
+  function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
+  reset(); if (!hooks.manual) raf = requestAnimationFrame(loop);
+  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
+    rewind, mark, resume, restoreCheckpoint(){ return restoreAt(checkpoint); }, replayEvent,
+    get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {...checkpoint}, count: rewindCount, overflow}; },
+    get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
+    get snap(){ return {x: Math.round(p.x), y: Math.round(p.y), vy: Math.round(p.vy), life, maxLife, stocks, dead: state === 'dead', dist: dist()}; }, get time(){ return state === 'ready' ? 0 : canRewind || hooks.manual ? elapsed : (performance.now() - startedAt) / 1000; } };
 }
 
 if (window.__hamuTest) Object.assign(window, {__makeGame: makeGame, __endless: endlessCourse, __toPiece: toPiece});
+// A clear is witnessed by a legal, uninterrupted replay in a fresh ordinary engine.
+// No checkpoint snapshots, warps, resource refills or special collision rules enter verification.
+async function verifyCourseRoute(rows, route, cancelled = () => false){
+  if (!Array.isArray(route) || !route.length || route.length > 240000 || !route.some(e => e && e.type === 'jump')) return false;
+  const verifier = makeGame(null, rows.slice(), {manual: true, headless: true, silent: true});
+  try {
+    for (let i = 0; i < route.length; i++){
+      if (cancelled() || !verifier.replayEvent(route[i])) return false;
+      if (verifier.state === 'clear') return i === route.length - 1;
+      if (i && i % 2000 === 0) await new Promise(resolve => setTimeout(resolve, 0));
+    }
+    return false;
+  } finally { verifier.stop(); }
+}
+if (window.__hamuTest) window.__verifyCourseRoute = verifyCourseRoute;
 /* ---------- social state ---------- */
 const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], allCourses: [], pieces: [], people: new Map(), board: [], ownerId: null, ops: new Set(), names: {}, sort: 'new', ready: false };
 const me = () => (social.uid && social.people.get(social.uid)) || null;
@@ -1310,7 +1398,8 @@ function patchMe(patch){
 /* ---------- player overlay ---------- */
 let game = null, current = null, lastClear = {sec: 0, deaths: 0};
 function openPlayer(course, mode){
-  current = {course, mode};
+  current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
+  $('pl-rewind').hidden = true;
   $('pl-title').textContent = course.title || '名前のないコース';
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer(); $('pl-stage').focus({preventScroll: true});
   if (game) game.stop();
@@ -1329,15 +1418,35 @@ function openPlayer(course, mode){
     game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
-  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), rewind: mode === 'test' && social.isOwner === true, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  renderRewindControls(); fitPlayer();
 }
-function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+function renderRewindControls(){
+  const allowed = current && current.mode === 'test' && social.isOwner === true && game && game.rewindInfo.enabled;
+  $('pl-rewind').hidden = !allowed;
+  if (!allowed) return;
+  const r = game.rewindInfo;
+  $('pl-mark').disabled = !['run', 'paused'].includes(game.state) || r.overflow;
+  $('pl-restore').disabled = !r.checkpoint || !r.available;
+  $('pl-back2').disabled = $('pl-back5').disabled = !r.available;
+  $('pl-rewind-note').textContent = r.overflow ? '記録の上限です。最初からテストし直してください。' : `${r.checkpoint ? '保存地点 ' + r.checkpoint.dist + 'マス' : '再開地点はまだありません'} · 巻き戻し ${r.count}回`;
+  fitPlayer();
+}
+function rewindTest(seconds){
+  if (!current || current.mode !== 'test' || !social.isOwner || !game || !game.rewindInfo.enabled) return;
+  if (!(seconds == null ? game.restoreCheckpoint() : game.rewind(seconds))) toast('戻れる地点がありません');
+  renderRewindControls();
+}
+for (const [id, fn] of [['pl-mark', () => { if (current && current.mode === 'test' && social.isOwner && game && game.mark()) renderRewindControls(); }], ['pl-restore', () => rewindTest()], ['pl-back2', () => rewindTest(2)], ['pl-back5', () => rewindTest(5)]]) {
+  $(id).onpointerdown = e => e.stopPropagation(); $(id).onclick = e => { e.stopPropagation(); fn(); $('pl-stage').focus({preventScroll: true}); };
+}
 // fit the course to whatever part of the screen is visible right now (rotation, browser bars, leftover zoom)
 function fitPlayer(){
   if ($('overlay').hidden) return;
   const vv = window.visualViewport, vw = vv ? vv.width : innerWidth, vh = vv ? vv.height : innerHeight;
   const cs = getComputedStyle($('overlay')), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-  const barH = document.querySelector('.player .bar').offsetHeight + 10 + ($('pl-ctrl').hidden ? 0 : $('pl-ctrl').offsetHeight + 10);
+  const barH = document.querySelector('.player .bar').offsetHeight + 10 + ($('pl-ctrl').hidden ? 0 : $('pl-ctrl').offsetHeight + 10) + ($('pl-rewind').hidden ? 0 : $('pl-rewind').offsetHeight + 10);
   const w = Math.max(160, Math.min(520, vw - padX, (vh - padY - barH) * VIEW_W / VIEW_H));
   const st = $('pl-stage'); st.style.width = Math.floor(w) + 'px'; st.style.minWidth = '0';
 }
@@ -1410,20 +1519,30 @@ async function recordClear(course, sec){
 }
 function onState(s, info){
   trackCourseRun(s);
+  renderRewindControls();
   if (s === 'ready') showMsg('タップでスタート', 'スペース / ↑ / タップで跳ねる');
   if (s === 'run') $('pl-msg').hidden = true;
+  if (s === 'rewound') showMsg('巻き戻しました', 'ライフ・取得済みアイテム・ギミックも保存時点の状態です', [['ここから再開', () => game.resume(), true], ['ジャンプして再開', () => game.jump()]]);
   if (s === 'dead' && current && current.mode === 'endless'){
     const prev = myEndless(), n = info.dist;
     showMsg(`${n}マス`, `${info.why}・タップでもう一回`, [['もう一回', () => game.reset(), true], ['Xで自慢する', () => shareX(`エンドレスで${n}マス進んだ！🐹🌰 きみはどこまで行ける？`)]], n > prev ? (prev ? `自己ベスト更新！（前回 ${prev}マス）` : '記録をつけました！') : '');
     if (n > prev){ recordEndless(n); if (prev > 0) showAccountHint('pl-account-hint'); }
     return;
   }
-  if (s === 'dead') showMsg('ミス！', `${info.why}・タップでもう一回`, []);
+  if (s === 'dead') {
+    if (current && current.mode === 'test' && social.isOwner && game && game.rewindInfo.enabled) showMsg('ミス！', `${info.why}・巻き戻して続きを試せます`, [['2秒戻って続ける', () => rewindTest(2), true], ...(game.rewindInfo.checkpoint ? [['再開地点に戻る', () => rewindTest()]] : []), ['最初から', () => game.reset()]]);
+    else showMsg('ミス！', `${info.why}・タップでもう一回`, []);
+  }
   if (s === 'clear'){
     lastClear = info;
     const c = current.course;
     const btns = [['もう一回', () => game.reset()]];
-    if (current.mode === 'test'){ editor.cleared = true; updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return; }
+    if (current.mode === 'test'){
+      if (game && game.rewindInfo.enabled){ finishRewindTest(game, current, info); return; }
+      editor.clearProof = null;
+      editor.cleared = current.draftId === activeDraftId && c.rows.join('\n') === editor.rows.join('\n');
+      updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return;
+    }
     if (social.db && social.canWrite){
       const label = () => `${likedByMe(c.id) ? 'いいね済み' : 'いいね！'} ${likeCount(c.id)}`;
       btns.push([label(), async (e) => { const b = e.currentTarget; await toggleLike(c.id); b.textContent = label(); }, true]);
@@ -1435,11 +1554,28 @@ function onState(s, info){
     recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); });
   }
 }
+async function finishRewindTest(played, attempt, info){
+  const rows = attempt.course.rows.slice(), route = played.route, fingerprint = rows.join('\n');
+  const stale = () => game !== played || current !== attempt || !social.isOwner || activeDraftId !== attempt.draftId || editor.rows.join('\n') !== fingerprint;
+  editor.cleared = false; editor.clearProof = null; updatePubBtn();
+  showMsg('通しクリアを確認中…', '成功した操作を、通常の判定で最初から再現しています');
+  let ok = false;
+  try { ok = await verifyCourseRoute(rows, route, stale); } catch { ok = false; }
+  if (stale()) return;
+  if (ok){
+    editor.clearProof = {rows: fingerprint, route, method: 'ordinary-replay-v1'};
+    editor.cleared = true; updatePubBtn();
+    showMsg('通しクリアを確認！', `巻き戻しなしでもゴールできる操作を確認しました。${info.sec.toFixed(1)}秒`, [['エディタにもどる', closePlayer, true], ['もう一回', () => game.reset()]]);
+  } else {
+    updatePubBtn();
+    showMsg('通しクリアを確認できませんでした', 'この結果では公開できません。最初からテストし直してください。', [['最初から', () => game.reset(), true], ['エディタにもどる', closePlayer]]);
+  }
+}
 function press(e){
   if (!game) return;
   if (e) e.preventDefault();
   if (inBattle()){ if (e && e.pointerType === 'touch') return; if (game.state === 'run' && !battle.result) game.jump(); return; }
-  if (game.state === 'dead'){ game.reset(); return; }
+  if (game.state === 'dead'){ if (current && current.mode === 'test' && social.isOwner && game.rewindInfo.enabled) rewindTest(2); else game.reset(); return; }
   if (game.state === 'clear') return;
   game.jump();
 }
@@ -1618,7 +1754,7 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, tool: '#', cam: 0, cleared: false, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+const editor = { rows: null, tool: '#', cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -1776,7 +1912,7 @@ function startDraftSync(api){
   setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
 }
 
-function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, cam: editor.cam}; }
+function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
   if (!s || s.rows.join('\n') === editor.rows.join('\n')) return;
@@ -1789,6 +1925,7 @@ function undoEditor(){
   if (!s) return;
   editor.rows = s.rows.slice();
   editor.cleared = s.cleared;
+  editor.clearProof = s.clearProof || null;
   syncWidth();
   editor.cols = Math.min(editor.cols, maxCols());
   editor.cam = s.cam;
@@ -1926,7 +2063,8 @@ $('ed-kind').onchange = () => updatePubBtn();
 function updatePubBtn(){
   renderEdOp();
   const err = validate();
-  const ok = !err && editor.cleared && $('ed-title').value.trim() && social.canWrite && social.uid;
+  const proofMatches = !editor.clearProof || editor.clearProof.rows === editor.rows.join('\n');
+  const ok = !err && editor.cleared && proofMatches && $('ed-title').value.trim() && social.canWrite && social.uid;
   $('ed-pub').disabled = !ok;
   $('ed-hint').textContent = err ? err
     : !social.db ? 'オンライン機能につながっていないため公開できません。テストプレイは自由にできます。'
@@ -1953,7 +2091,15 @@ async function publishCourse(){
   if ($('ed-pub').disabled) return;
   $('ed-pub').disabled = true;
   try {
-    const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows: editor.rows.slice(), author: social.uid, createdAt: Date.now() };
+    const rows = editor.rows.slice(), fingerprint = rows.join('\n'), draftId = activeDraftId, proof = editor.clearProof, uid = social.uid;
+    if (proof){
+      const stale = () => activeDraftId !== draftId || social.uid !== uid || !social.isOwner || editor.rows.join('\n') !== fingerprint;
+      if (proof.rows !== fingerprint || !await verifyCourseRoute(rows, proof.route, stale) || stale()) {
+        editor.cleared = false; editor.clearProof = null; updatePubBtn();
+        toast('通しクリアを再確認できませんでした。もう一度テストしてください。'); return;
+      }
+    }
+    const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows, author: social.uid, createdAt: Date.now() };
     if (kind === 'official') doc.official = true;
     if (kind === 'piece') doc.kind = 'piece';
     await social.db.collection('courses').add(doc);
