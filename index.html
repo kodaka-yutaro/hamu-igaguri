@@ -1304,6 +1304,21 @@ function lookOf(uid){ const p = personOf(uid); return cleanLook(p && p.look); }
 const following = uid => { const p = personOf(uid); return Array.isArray(p && p.following) ? p.following : []; };
 const followers = uid => [...social.people.entries()].filter(([id, p]) => id !== uid && Array.isArray(p.following) && p.following.includes(uid)).map(([id]) => id);
 const isFriend = (a, b) => following(a).includes(b) && following(b).includes(a);
+function friendsWhoCleared(cid){
+  if (!social.uid) return [];
+  return [...social.people.entries()].filter(([uid, p]) => {
+    const time = p.clears && p.clears[cid];
+    return uid !== social.uid && isFriend(social.uid, uid) && typeof time === 'number' && Number.isFinite(time) && time >= 0;
+  }).map(([uid]) => uid).sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'ja') || a.localeCompare(b));
+}
+function friendClearDisplay(cid, detail = false){
+  const ids = friendsWhoCleared(cid);
+  if (!ids.length) return null;
+  return el('div', {class: 'col', style: 'gap:6px;overflow-wrap:anywhere'},
+    el('span', {class: 'badge friend', style: 'align-self:flex-start', text: `ともだち ${ids.length}人がクリア！`}),
+    detail ? el('div', {class: 'row'}, ...ids.map(uid => whoChip(uid, 22)))
+      : el('span', {class: 'muted', text: ids.slice(0, 3).map(nameOf).join('、') + (ids.length > 3 ? ` ほか${ids.length - 3}人` : '')}));
+}
 // how many players cleared a course, and the fastest time, from everyone's clears
 function clearStats(cid){
   let n = 0, best = Infinity;
@@ -1715,6 +1730,7 @@ function renderSheet(first){
       el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
       (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
       rateDisplay(c.id, true),
+      friendClearDisplay(c.id, true),
       thumb(c.rows),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
@@ -2165,6 +2181,7 @@ function courseCard(c){
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
       el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
     rateDisplay(c.id),
+    friendClearDisplay(c.id),
     el('div', {class: 'row'}, likeButton(c),
       el('button', {class: 'like', onclick: (e) => { e.stopPropagation(); openCourse(c.id, true); }}, el('span', {text: `コメント ${commentsFor('c:' + c.id).length}`}))));
   return card;
