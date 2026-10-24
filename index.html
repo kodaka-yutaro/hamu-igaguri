@@ -61,6 +61,13 @@ h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
 .cel-kind{font-weight:800;color:#b8561c;font-size:14px}
 .cel-name{font-family:var(--display);font-size:30px;line-height:1.2;color:var(--fg)}
 .cel-tap{font-size:11px;color:var(--muted);margin-top:4px}
+.cel-card.bulk{width:min(92vw,440px);max-width:440px;max-height:82dvh;overflow-y:auto}
+.cel-card.bulk .cel-name{font-size:25px}
+.cel-awards{display:flex;flex-direction:column;gap:6px;max-height:48dvh;overflow-y:auto;text-align:left;margin-top:8px}
+.cel-award{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--soft)}
+.cel-award>span:first-child{font-size:22px}
+.cel-award>span:last-child{display:flex;flex-direction:column;line-height:1.4;min-width:0}
+.cel-award small{color:var(--muted);font-size:11px}
 .cel-rays{position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;z-index:-1;border-radius:50%;background:repeating-conic-gradient(rgba(255,210,60,.35) 0 10deg,transparent 10deg 20deg);-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
 .celebrate.go .cel-card{animation:cel-pop .6s cubic-bezier(.2,1.6,.4,1)}
 .celebrate.go .cel-rays{animation:cel-spin 6s linear infinite}
@@ -186,6 +193,13 @@ input[type=range]{width:100%}
 .ttl b{font-size:14px}
 .ttl.locked{opacity:.45}
 .ttl.got{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 16%,var(--panel))}
+.title-fold{border:1.5px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.title-fold>summary{padding:12px 14px;font-weight:800;cursor:pointer}
+.title-fold[open]>summary{border-bottom:1px solid var(--line)}
+.title-fold>.titles{padding:12px}
+.cel-gifts{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;border:2px solid #e6a92a;border-radius:12px;background:color-mix(in srgb,#ffe08a 30%,var(--panel));padding:9px;color:var(--fg);font-size:14px;font-weight:800;animation:gift-pop .65s cubic-bezier(.2,1.5,.4,1)}
+@keyframes gift-pop{0%{transform:scale(.2) rotate(-7deg);opacity:0}55%{transform:scale(1.13) rotate(3deg)}100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.cel-gifts{animation:none}}
 .maker{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:560px){.maker{grid-template-columns:minmax(0,1fr)}}
 .maker .preview{background:var(--soft);border-radius:16px;width:100%;max-width:200px;aspect-ratio:1;display:block;margin:0 auto}
@@ -371,13 +385,13 @@ input[type=range]{width:100%}
     <h2>称号</h2>
     <p class="muted" id="ttl-note" style="margin:0"></p>
     <p class="muted" id="my-endless" style="margin:0"></p>
-    <div id="my-titles" class="titles"></div>
+    <details class="title-fold"><summary>クリア称号の一覧をひらく</summary><div id="my-titles" class="titles"></div></details>
     <h3 style="margin:6px 0 0">コース職人</h3>
     <p class="muted" id="maker-note" style="margin:0"></p>
-    <div id="maker-titles" class="titles"></div>
+    <details class="title-fold"><summary>コース職人の称号一覧をひらく</summary><div id="maker-titles" class="titles"></div></details>
     <h3 style="margin:6px 0 0">バトルの称号</h3>
     <p class="muted" id="win-note" style="margin:0"></p>
-    <div id="win-titles" class="titles"></div>
+    <details class="title-fold"><summary>バトル称号の一覧をひらく</summary><div id="win-titles" class="titles"></div></details>
     <h2>つながり</h2>
     <div id="my-links" class="col" style="gap:10px"></div>
   </section>
@@ -415,7 +429,7 @@ input[type=range]{width:100%}
 </div>
 <div class="toast" id="toast" hidden></div>
 <div class="celebrate" id="celebrate" hidden><canvas id="cel-cv"></canvas>
-  <div class="cel-card"><div class="cel-rays"></div><div class="cel-kind" id="cel-kind"></div><div class="cel-name" id="cel-name"></div><div class="muted" id="cel-note"></div><div class="cel-tap">タップでとじる</div></div>
+  <div class="cel-card"><div class="cel-rays"></div><div class="cel-kind" id="cel-kind"></div><div class="cel-name" id="cel-name"></div><div class="cel-gifts" id="cel-gifts" hidden></div><div class="muted" id="cel-note"></div><div class="cel-tap">タップでとじる</div></div>
 </div>
 
 <script>
@@ -429,7 +443,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-title-awards', 'hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -1663,7 +1677,7 @@ function onState(s, info){
     btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
     showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
-    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」＋果物衣装をゲット！`; setTimeout(() => celebrate(t, 'クリア'), 900); } renderMe(); if(!formDirty)syncForm(); });
+    recordClear(c, info.sec).then(t => { if (t && current === cur){ $('pl-gain').hidden = false; $('pl-gain').textContent = `称号「${t.name}」と報酬をゲット！`; } checkTitleAwards(); renderMe(); if(!formDirty)syncForm(); });
   }
 }
 async function finishRewindTest(played, attempt, info){
@@ -2432,7 +2446,17 @@ function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('m
 function celebrate(t, kind){
   const box = $('celebrate'), cv = $('cel-cv'), ctx = cv.getContext('2d');
   $('cel-kind').textContent = kind === 'コース職人' ? 'コース職人の称号' : kind === 'バトル' ? 'バトルの称号' : '新しい称号・果物コスチューム';
-  $('cel-name').textContent = t.name; $('cel-note').textContent = (t.note || '') + (kind === 'クリア' && FRUITS.some(f=>f.n===t.n) ? ` 🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装${t.n===200?'＆🦘カンガルー変身':''}をゲット！` : kind === 'コース職人' && DECOR.some(d=>d.n===t.n) ? ` 🎨 ${DECOR.find(d=>d.n===t.n).emoji} ${DECOR.find(d=>d.n===t.n).name}の飾りを解放！` : '');
+  $('celebrate').querySelector('.cel-card').classList.remove('bulk');
+  $('cel-name').textContent = t.name; $('cel-note').textContent = t.note || '';
+  const fruit = kind === 'クリア' && FRUITS.find(f=>f.n===t.n);
+  const decor = kind === 'コース職人' && DECOR.find(d=>d.n===t.n);
+  const gifts = $('cel-gifts');
+  gifts.hidden = !fruit && !decor;
+  gifts.replaceChildren();
+  if(fruit) gifts.append(el('span',{text:`🎁 プレゼントGET！ ${fruit.emoji} ${fruit.name}衣装${t.n===200?' ＋ 🦘 カンガルー変身':''}`}));
+  if(decor) gifts.append(el('span',{text:`🎁 プレゼントGET！ ${decor.emoji} ${decor.name}の飾り`}));
+  // Restart the reward pop animation for every new achievement.
+  gifts.style.animation='none';void gifts.offsetWidth;gifts.style.animation='';
   box.hidden = false; box.classList.remove('go'); void box.offsetWidth; box.classList.add('go');
   sfx('fanfare');
   const dpr = Math.min(2, devicePixelRatio || 1), W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
@@ -2452,6 +2476,51 @@ function celebrate(t, kind){
   };
   tick();
   clearTimeout(celebrate.h); celebrate.h = setTimeout(() => box.hidden = true, 4500);
+}
+function celebrateMany(items){
+  if(!items.length)return;
+  if(items.length===1){celebrate(items[0].title,items[0].kind);return;}
+  celebrate(items[items.length-1].title,items[items.length-1].kind);
+  clearTimeout(celebrate.h);
+  $('celebrate').querySelector('.cel-card').classList.add('bulk');
+  $('cel-kind').textContent='🎉 獲得済みの称号をまとめて解放！';
+  $('cel-name').textContent=`${items.length}個の称号をゲット！`;
+  const giftCount=items.filter(item=>item.kind==='クリア'&&FRUITS.some(f=>f.n===item.title.n)||item.kind==='コース職人'&&DECOR.some(d=>d.n===item.title.n)).length;
+  $('cel-gifts').hidden=!giftCount;
+  $('cel-gifts').replaceChildren(el('span',{text:`🎁 プレゼントも${giftCount}個まとめてGET！`}));
+  const box=el('div',{class:'cel-awards'});
+  for(const item of items){
+    const reward=item.kind==='クリア' && FRUITS.find(f=>f.n===item.title.n);
+    const decor=item.kind==='コース職人' && DECOR.find(d=>d.n===item.title.n);
+    box.append(el('div',{class:'cel-award'},
+      el('span',{text:item.kind==='クリア'?'🏅':item.kind==='コース職人'?'🎨':'⚔️'}),
+      el('span',{},el('b',{text:item.title.name}),
+        el('small',{text:reward?`🎁 ${reward.emoji} ${reward.name}衣装${item.title.n===200?'＋🦘カンガルー変身':''}`:decor?`🎁 ${decor.emoji} ${decor.name}の飾り`:item.title.note}))));
+  }
+  $('cel-note').replaceChildren(box);
+  $('celebrate').querySelector('.cel-tap').textContent='タップでまとめて受け取る';
+}
+let titleAwardCheckBusy=false;
+function checkTitleAwards(){
+  if(titleAwardCheckBusy || !social.uid || !social.peopleLoaded || !social.coursesLoaded)return;
+  titleAwardCheckBusy=true;
+  try{
+    const uid=social.uid, current={
+      clear:clearCount({...((me()||{}).clears||{}),...(store.get('hi-clears')||{})}),
+      maker:likesReceived(uid), win:battleWins()
+    };
+    const prior=store.get('hi-title-awards')||{clear:0,maker:0,win:0};
+    const lists=[['clear',TITLES,'クリア'],['maker',MAKER_TITLES,'コース職人'],['win',WIN_TITLES,'バトル']];
+    const acquired=[];
+    for(const [key,list,kind] of lists){
+      const previous=Math.max(0,Number(prior[key])||0);
+      for(const title of list) if(title.n>previous && title.n<=current[key])acquired.push({title,kind});
+    }
+    if(acquired.length){
+      store.set('hi-title-awards',{clear:Math.max(current.clear,+prior.clear||0),maker:Math.max(current.maker,+prior.maker||0),win:Math.max(current.win,+prior.win||0)});
+      celebrateMany(acquired);
+    }
+  }finally{titleAwardCheckBusy=false;}
 }
 $('celebrate').addEventListener('pointerdown', e => { e.stopPropagation(); $('celebrate').hidden = true; });
 
@@ -2491,10 +2560,7 @@ function renderBell(){
   // a like arriving while the page is open gets a toast
   if (notiTop !== null && top > notiTop) toast(notiText(list[0]));
   notiTop = top;
-  // a new course-maker title is announced once; the highest one reached is kept on this device
-  const mt = makerTitleFor(likesReceived(social.uid)), had = store.get('hi-maker');
-  if (mt && mt.n > (+had || 0)){ store.set('hi-maker', mt.n); if (had !== null) setTimeout(() => celebrate(mt, 'コース職人'), 1500); }
-  else if (had === null && social.coursesLoaded) store.set('hi-maker', 0);
+  checkTitleAwards();
 }
 function notiText(n){
   if (n.post) return `運営からのお知らせ「${n.post.title || '（無題）'}」`;
@@ -2820,7 +2886,7 @@ function recordBattleWin(){
   const before = battleWins(), n = before + 1; store.set('hi-wins', n);
   if (social.db && social.uid && social.canWrite) patchMe({battle: {wins: n}});
   const t = winTitleFor(n);
-  if (t && (!winTitleFor(before) || winTitleFor(before).n !== t.n)) setTimeout(() => celebrate(t, 'バトル'), 900);
+  if (t && (!winTitleFor(before) || winTitleFor(before).n !== t.n)) checkTitleAwards();
   renderMe();
 }
 // leaving the race early counts as a miss so the friend isn't left waiting
