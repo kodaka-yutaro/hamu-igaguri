@@ -1796,7 +1796,7 @@ function profileHeader(uid){
       el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
 }
 function titleGrid(n, compact, list = TITLES){
-  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{text:`🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
+  return el('div', {class: 'titles'}, ...list.map(t => el('div', {class: 'ttl ' + (n >= t.n ? 'got' : 'locked')}, el('b', {text: list === TITLES && n < t.n ? '？？？' : t.name}), list === TITLES && FRUITS.find(f=>f.n===t.n) ? el('span',{text:`🎁 ${FRUITS.find(f=>f.n===t.n).emoji} ${FRUITS.find(f=>f.n===t.n).name}衣装`}) : null, el('span', {class: 'muted', text: n >= t.n ? t.note : `${t.note}（あと${t.n - n}）`}))));
 }
 // likes are stored in the liker's own likes map: a course by its id, a comment as cm:<author>:<comment id>
 function likeButton(c, key = c.id, small){
@@ -2352,7 +2352,7 @@ $('my-code-copy').onclick = () => navigator.clipboard.writeText(codeOf(social.ui
 function renderMe(){
   $('my-code').hidden = !social.uid; if (social.uid) $('my-code-v').textContent = codeOf(social.uid);
   const n = clearCount(myClears()), t = titleFor(n), next = TITLES.find(x => n < x.n);
-  $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の「${next.name}」まであと${next.n - n}` : '・全部の称号を集めました！');
+  $('ttl-note').textContent = `クリアしたコース ${n}種類` + (t ? `・いまの称号「${t.name}」` : '') + (next ? `・次の称号まであと${next.n - n}クリア（名前は？？？）` : '・全部の称号を集めました！');
   $('my-titles').replaceChildren(...titleGrid(n).children);
   const lk = likesReceived(social.uid), mt = makerTitleFor(lk), mn = MAKER_TITLES.find(x => lk < x.n);
   $('maker-note').textContent = `作ったコースがもらったいいね ${lk}` + (mt ? `・いまの称号「${mt.name}」` : '') + (mn ? `・次の「${mn.name}」まであと${mn.n - lk}` : '・コース職人の称号を全部集めました！');
