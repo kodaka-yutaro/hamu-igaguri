@@ -2632,6 +2632,7 @@ function renderList(){
   else if (social.sort === 'follow'){ const f = social.uid ? following(social.uid) : []; items = items.filter(c => f.includes(c.author)); }
   else items = items.concat(BUILTIN);
   if (social.sort === 'pop') items.sort((a, b) => likeCount(b.id) - likeCount(a.id) || b.createdAt - a.createdAt);
+  else if (social.sort === 'new') items.sort((a, b) => b.createdAt - a.createdAt);
   else items.sort((a, b) => (!!a.official - !!b.official) || (b.createdAt - a.createdAt));
   list.replaceChildren();
   if (!items.length){
