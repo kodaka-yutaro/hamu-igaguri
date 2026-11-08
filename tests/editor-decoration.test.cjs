@@ -6,19 +6,21 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 
-test('course parts form a scrollable, icon-only strip immediately beneath the map', () => {
+test('course parts form a scrollable strip with the real in-course graphics beneath the map', () => {
   const stage = html.indexOf('id="ed-stage"');
   const palette = html.indexOf('class="tools editor-palette"');
   const decorations = html.indexOf('id="ed-decor-fold"');
   assert.ok(stage > 0 && stage < palette && palette < decorations);
   assert.match(html, /\.editor-palette\{[^}]*flex-wrap:nowrap;overflow-x:auto/);
   const strip = html.slice(palette, html.indexOf('</div>', palette));
-  const buttons = [...strip.matchAll(/<button[^>]+data-t="([#*AOCSG])"[^>]*>([^<]+)<\/button>/g)];
-  assert.equal(buttons.length, 7);
-  for (const [, , symbol] of buttons) assert.ok(symbol.trim().length <= 2);
-  for (const name of ['地面', 'イガグリ', 'どんぐり', 'ボール', '大砲', 'スタート', 'ゴールライン']) {
+  const buttons = [...strip.matchAll(/<button[^>]+data-t="([^"]+)"[^>]*><\/button>/g)];
+  assert.equal(buttons.length, 10);
+  assert.deepEqual(buttons.map(([,tile])=>tile),['#','*','A','O','C','S','G','warp-in','warp-out','L']);
+  for (const name of ['地面', 'イガグリ', 'どんぐり', 'ボール', '大砲', 'スタート', 'ゴールライン','ワープ入口','ワープ出口','ランチャー']) {
     assert.ok(strip.includes(`aria-label="${name}"`));
   }
+  assert.match(html,/function renderEditorPaletteIcons\(\)[\s\S]*?drawCourse\(context,rows,0,0,\{viewW:3\*T,showStart:true,look\}\)/);
+  assert.match(html,/\.editor-palette \.tool canvas\{width:40px;height:40px/);
 });
 
 test('eraser is overlaid at the top right of the map and selects delete', () => {

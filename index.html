@@ -152,9 +152,8 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .tool[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
 .editor-palette{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:4px 2px 10px;max-width:100%;-webkit-overflow-scrolling:touch}
 .editor-palette .tool{flex:0 0 46px;min-width:46px;height:46px;padding:0;display:grid;place-items:center;font-size:24px;line-height:1;touch-action:manipulation}
-.editor-palette .tool[data-t="S"],.editor-palette .tool[data-t="G"]{font-size:18px}
 .editor-palette .tool[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
-.editor-palette .tool img{width:38px;height:38px;object-fit:contain}
+.editor-palette .tool canvas{width:40px;height:40px;display:block;pointer-events:none}
 .warp-controls{padding:7px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--soft);align-items:center;gap:10px}
 .warp-controls select{font-weight:800;min-width:70px}
 .editor-stage{isolation:isolate}
@@ -341,16 +340,16 @@ input[type=range]{width:100%}
       <button class="editor-eraser" id="ed-eraser" data-t="." aria-label="消しゴム（マスを消す）" aria-pressed="false" title="消しゴム（マスを消す）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 20-7 0-9.1-9.1a2 2 0 0 1 0-2.8l5.2-5.2a2 2 0 0 1 2.8 0l9.1 9.1a2 2 0 0 1 0 2.8L15.8 20H7"/><path d="m7 14 7-7"/></svg></button>
     </div>
     <div class="tools editor-palette" role="group" aria-label="コースパーツを選ぶ">
-      <button class="tool" data-t="#" aria-label="地面" title="地面" aria-pressed="true">▦</button>
-      <button class="tool" data-t="*" aria-label="イガグリ" title="イガグリ" aria-pressed="false">★</button>
-      <button class="tool" data-t="A" aria-label="どんぐり" title="どんぐり" aria-pressed="false">◆</button>
-      <button class="tool" data-t="O" aria-label="ボール" title="ボール" aria-pressed="false">●</button>
-      <button class="tool" data-t="C" aria-label="大砲" title="大砲" aria-pressed="false">♜</button>
-      <button class="tool" data-t="S" aria-label="スタート" title="スタート" aria-pressed="false">S</button>
-      <button class="tool" data-t="G" aria-label="ゴールライン" title="ゴールライン" aria-pressed="false">⚑</button>
-      <button class="tool" data-t="warp-in" aria-label="ワープ入口" title="ワープ入口" aria-pressed="false"><img src="gimmick/warp-entry.png" alt=""></button>
-      <button class="tool" data-t="warp-out" aria-label="ワープ出口" title="ワープ出口" aria-pressed="false"><img src="gimmick/warp-entry.png" alt="" style="opacity:.48"></button>
-      <button class="tool" data-t="L" aria-label="ランチャー" title="ランチャー" aria-pressed="false"><img src="gimmick/launcher.png" alt=""></button>
+      <button class="tool" data-t="#" aria-label="地面" title="地面" aria-pressed="true"></button>
+      <button class="tool" data-t="*" aria-label="イガグリ" title="イガグリ" aria-pressed="false"></button>
+      <button class="tool" data-t="A" aria-label="どんぐり" title="どんぐり" aria-pressed="false"></button>
+      <button class="tool" data-t="O" aria-label="ボール" title="ボール" aria-pressed="false"></button>
+      <button class="tool" data-t="C" aria-label="大砲" title="大砲" aria-pressed="false"></button>
+      <button class="tool" data-t="S" aria-label="スタート" title="スタート" aria-pressed="false"></button>
+      <button class="tool" data-t="G" aria-label="ゴールライン" title="ゴールライン" aria-pressed="false"></button>
+      <button class="tool" data-t="warp-in" aria-label="ワープ入口" title="ワープ入口" aria-pressed="false"></button>
+      <button class="tool" data-t="warp-out" aria-label="ワープ出口" title="ワープ出口" aria-pressed="false"></button>
+      <button class="tool" data-t="L" aria-label="ランチャー" title="ランチャー" aria-pressed="false"></button>
     </div>
     <div class="row warp-controls" id="ed-warp-controls" hidden>
       <label for="ed-warp-num"><b id="ed-warp-label">ワープ入口の番号</b></label>
@@ -991,6 +990,31 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     else if (c === 'A' && !(opts.taken && opts.taken.has(x*ROWS + y))) drawAcorn(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
+  }
+}
+
+// Use the exact course renderer for the editor's small part previews.
+// The selected warp number and the hamster's current appearance are reflected here too.
+function renderEditorPaletteIcons(){
+  const look=myLook();
+  for(const button of document.querySelectorAll('.editor-palette .tool')){
+    const kind=button.dataset.t;
+    const tile=kind==='warp-in'?WARP_ENTRIES[editor.warpNumber-1]
+      :kind==='warp-out'?WARP_EXITS[editor.warpNumber-1]:kind;
+    const asset=kind.startsWith('warp-')?gimmickArt.entry:kind==='L'?gimmickArt.launcher:null;
+    const signature=tile+'|'+(asset?Number(asset.complete&&asset.naturalWidth>0):'')+'|'+(kind==='S'?JSON.stringify(look):'');
+    if(button.dataset.preview===signature)continue;
+    const canvas=document.createElement('canvas');
+    canvas.width=88;canvas.height=88;canvas.setAttribute('aria-hidden','true');
+    const context=canvas.getContext('2d');
+    if(!context)continue;
+    const rows=Array.from({length:ROWS},()=> '...');
+    rows[7]='.'+tile+'.';
+    context.setTransform(2,0,0,2,0,0);
+    context.translate(-T+6,-7*T+(tile==='G'?30:6));
+    drawCourse(context,rows,0,0,{viewW:3*T,showStart:true,look});
+    button.replaceChildren(canvas);
+    button.dataset.preview=signature;
   }
 }
 
@@ -2354,6 +2378,7 @@ function syncEditorTools(){
   const warp=editor.tool==='warp-in'||editor.tool==='warp-out';
   $('ed-warp-controls').hidden=!warp;
   if(warp){$('ed-warp-label').textContent=editor.tool==='warp-in'?'ワープ入口の番号':'ワープ出口の番号';$('ed-warp-num').value=String(editor.warpNumber);}
+  renderEditorPaletteIcons();
 }
 function editorPlacementChar(){
   if(editor.tool==='warp-in')return WARP_ENTRIES[editor.warpNumber-1];
@@ -2362,6 +2387,7 @@ function editorPlacementChar(){
 }
 function drawEditor(){
   renderDecorTools();
+  renderEditorPaletteIcons();
   const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW(), k = 640 / VW;
   const h = Math.round(VIEW_H * k); if (cv.height !== h) cv.height = h;
   clampCam();
