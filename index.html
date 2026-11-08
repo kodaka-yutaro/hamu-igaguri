@@ -1989,8 +1989,20 @@ function press(e){
   game.jump();
 }
 $('pl-stage').addEventListener('pointerdown', press);
-$('pl-launcher').onpointerdown=e=>e.stopPropagation();
-$('pl-launcher').onclick=e=>{e.stopPropagation();if(game)game.fireLauncher();};
+// Fire as soon as a finger presses the button. Mobile browsers can cancel a
+// delayed click during stage movement, so click is only a keyboard fallback.
+let lastLauncherPointerAt=-Infinity;
+$('pl-launcher').onpointerdown=e=>{
+  e.preventDefault();e.stopPropagation();
+  if(e.pointerType==='mouse' && e.button!==0)return;
+  lastLauncherPointerAt=performance.now();
+  if(game)game.fireLauncher();
+};
+$('pl-launcher').onclick=e=>{
+  e.stopPropagation();
+  if(e.detail>0 && performance.now()-lastLauncherPointerAt<500)return;
+  if(game)game.fireLauncher();
+};
 // battle buttons react on touch-down so they feel instant
 const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (e.pointerType === 'touch') return; if (game && inBattle() && !battle.result) fn(); });
 ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire());
