@@ -51,4 +51,6 @@ test('numbered warp pair and launcher are selectable beneath the map', () => {
   for(const asset of ['warp-entry','launcher']) assert.ok(fs.existsSync(path.join(root,'gimmick',`${asset}.png`)));
   assert.ok(html.includes("if(exit)ctx.globalAlpha=.48"),'exit is the same purple portal with lower opacity');
   assert.ok(html.includes('id="pl-launcher"'));
+  assert.match(html,/\.launcher-fire\{[^}]*left:50%;bottom:14px;transform:translateX\(-50%\)/);
+  assert.match(html,/\.launcher-fire:active\{transform:translateX\(-50%\) scale\(\.96\)\}/);
 });
