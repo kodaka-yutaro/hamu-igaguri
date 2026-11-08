@@ -1,9 +1,15 @@
 // A library keeps each course independent when two devices edit different files.
 (() => {
   const copy = v => JSON.parse(JSON.stringify(v));
+  const decorationsValid = v => v.decorations == null || (Array.isArray(v.decorations) &&
+    v.decorations.length <= v.rows[0].length * 16 &&
+    v.decorations.every(d => d && typeof d.key === 'string' && /^[a-n]$/.test(d.key) &&
+      Number.isInteger(d.x) && d.x >= 0 && d.x < v.rows[0].length &&
+      Number.isInteger(d.y) && d.y >= 0 && d.y < 16 && [1, 3, 5].includes(d.size)) &&
+    new Set(v.decorations.map(d => `${d.x},${d.y}`)).size === v.decorations.length);
   const courseValid = v => v && Array.isArray(v.rows) && v.rows.length === 16 &&
     v.rows.every(r => typeof r === 'string' && r.length >= 10 && r.length <= 150 && r.length === v.rows[0].length) &&
-    typeof v.title === 'string' && v.title.length <= 30;
+    typeof v.title === 'string' && v.title.length <= 30 && decorationsValid(v);
   const empty = () => ({format: 2, files: {}});
   function normalize(v) {
     if (!v) return empty();
@@ -12,7 +18,7 @@
     if (courseValid(v)) return {format: 2, files: {legacy: {...copy(v), updatedAt: 0}}};
     throw new Error('Invalid course library');
   }
-  const fileSignature = f => f ? JSON.stringify({title: f.title, rows: f.rows, deleted: !!f.deleted}) : '';
+  const fileSignature = f => f ? JSON.stringify({title: f.title, rows: f.rows, decorations: f.decorations || [], deleted: !!f.deleted}) : '';
   const signature = v => JSON.stringify(Object.entries(normalize(v).files).sort(([a], [b]) => a.localeCompare(b)).map(([id, f]) => [id, fileSignature(f)]));
   function merge(base, local, remote, choice) {
     const b = normalize(base).files, l = normalize(local).files, r = normalize(remote).files;

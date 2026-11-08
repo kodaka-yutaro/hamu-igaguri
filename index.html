@@ -154,6 +154,13 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .editor-palette .tool{flex:0 0 46px;min-width:46px;height:46px;padding:0;display:grid;place-items:center;font-size:24px;line-height:1;touch-action:manipulation}
 .editor-palette .tool[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
 .editor-palette .tool canvas{width:40px;height:40px;display:block;pointer-events:none}
+.editor-mode-switch{display:flex;gap:4px;padding:4px;border-radius:12px;background:var(--soft);border:1.5px solid var(--line);align-self:flex-start}
+.editor-mode-switch .btn{min-width:112px;border:0;border-radius:9px}
+.editor-mode-switch .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);font-weight:800}
+.editor-decor-panel{display:flex;flex-direction:column;gap:8px;min-width:0}
+.decor-size-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.decor-size-controls .btn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,var(--panel));font-weight:800}
+.editor-palette[hidden],.editor-decor-panel[hidden],.warp-controls[hidden]{display:none!important}
 .warp-controls{padding:7px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--soft);align-items:center;gap:10px}
 .warp-controls select{font-weight:800;min-width:70px}
 .editor-stage{isolation:isolate}
@@ -272,6 +279,7 @@ input[type=range]{width:100%}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
+<script src="decorations.js"></script>
 <script src="backend.js"></script>
 </head>
 <body>
@@ -331,6 +339,10 @@ input[type=range]{width:100%}
       <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" aria-label="コースの名前" style="flex:1 1 220px">
       <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
     </div>
+    <div class="editor-mode-switch" role="group" aria-label="編集モードの切り替え">
+      <button class="btn sm" id="ed-mode-course" aria-pressed="true">コース作り</button>
+      <button class="btn sm" id="ed-mode-decor" aria-pressed="false">🎨 装飾</button>
+    </div>
     <div class="row" style="justify-content:space-between;gap:6px">
       <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
       <div class="row" style="gap:6px"><button class="btn sm" id="ed-zout" aria-label="縮小">－</button><span class="muted" id="ed-zoom-v" style="min-width:3em;text-align:center">等倍</span><button class="btn sm" id="ed-zin" aria-label="拡大">＋</button><button class="btn sm" id="ed-zall">全体</button></div>
@@ -339,7 +351,7 @@ input[type=range]{width:100%}
       <canvas id="ed-canvas" width="640" height="1024"></canvas>
       <button class="editor-eraser" id="ed-eraser" data-t="." aria-label="消しゴム（マスを消す）" aria-pressed="false" title="消しゴム（マスを消す）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 20-7 0-9.1-9.1a2 2 0 0 1 0-2.8l5.2-5.2a2 2 0 0 1 2.8 0l9.1 9.1a2 2 0 0 1 0 2.8L15.8 20H7"/><path d="m7 14 7-7"/></svg></button>
     </div>
-    <div class="tools editor-palette" role="group" aria-label="コースパーツを選ぶ">
+    <div class="tools editor-palette" id="ed-course-palette" role="group" aria-label="コースパーツを選ぶ">
       <button class="tool" data-t="#" aria-label="地面" title="地面" aria-pressed="true"></button>
       <button class="tool" data-t="*" aria-label="イガグリ" title="イガグリ" aria-pressed="false"></button>
       <button class="tool" data-t="A" aria-label="どんぐり" title="どんぐり" aria-pressed="false"></button>
@@ -356,13 +368,16 @@ input[type=range]{width:100%}
       <select id="ed-warp-num" aria-label="ワープ番号"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
       <span class="muted">同じ番号の入口と出口がつながります</span>
     </div>
-    <details class="decor-fold" id="ed-decor-fold">
-      <summary>🎨 コースの飾り <span class="muted" style="font-weight:500;font-size:12px">（タップで開閉）</span></summary>
-      <div class="decor-body">
-        <div class="tools decor-palette" id="ed-decor" role="group" aria-label="飾りを置く"></div>
-        <span class="muted" id="ed-decor-note" style="font-size:12px"></span>
+    <div class="editor-decor-panel" id="ed-decor-panel" hidden>
+      <div class="tools editor-palette decor-palette" id="ed-decor" role="group" aria-label="飾りを選ぶ"></div>
+      <div class="decor-size-controls" role="group" aria-label="装飾の大きさ">
+        <span class="muted">サイズ</span>
+        <button class="btn sm" data-decor-size="1" aria-pressed="true">1×1</button>
+        <button class="btn sm" data-decor-size="3" aria-pressed="false">3×3</button>
+        <button class="btn sm" data-decor-size="5" aria-pressed="false">5×5</button>
       </div>
-    </details>
+      <span class="muted" id="ed-decor-note" style="font-size:12px"></span>
+    </div>
     <input type="range" id="ed-scroll" min="0" max="0" value="0" aria-label="コースを左右にスクロール">
     <div class="row" style="justify-content:space-between">
       <div class="row">
@@ -948,11 +963,12 @@ function drawGoal(ctx, x, y){
   ctx.fillStyle = '#ece4d4'; ctx.fillRect(x+14, y-T+4, 4, T*2-4);
   ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.moveTo(x+18, y-T+4); ctx.lineTo(x+36, y-T+13); ctx.lineTo(x+18, y-T+22); ctx.fill();
 }
-function paintDecor(ctx, decoration, x, y){
+function paintDecor(ctx, decoration, x, y, size=1){
   const img=decorArt[decoration.key];
-  if(img && img.complete && img.naturalWidth){ctx.drawImage(img,x+1,y+1,T-2,T-2);return;}
-  ctx.save();ctx.font='25px system-ui,Apple Color Emoji,Segoe UI Emoji,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText(decoration.emoji,x+T/2,y+T/2);ctx.restore();
+  const span=T*size;
+  if(img && img.complete && img.naturalWidth){ctx.drawImage(img,x+1,y+1,span-2,span-2);return;}
+  ctx.save();ctx.font=`${25*size}px system-ui,Apple Color Emoji,Segoe UI Emoji,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(decoration.emoji,x+span/2,y+span/2);ctx.restore();
 }
 function paintWarp(ctx,x,y,num,exit){
   ctx.save();
@@ -973,10 +989,22 @@ function paintLauncher(ctx,x,y){
 function drawCourse(ctx, rows, camX, t, opts = {}){
   const w = rows[0].length;
   const x0 = Math.max(0, Math.floor(camX / T)), x1 = Math.min(w - 1, Math.ceil((camX + (opts.viewW || VIEW_W)) / T));
+  // Draw in placement order: newer, overlapping decorations appear in front.
+  // Every course part is painted afterward and therefore remains above the decor.
+  for(const d of opts.decorations || []){
+    const span=d.size*T, left=(d.x+.5)*T-span/2-camX, top=(d.y+.5)*T-span/2;
+    if(left>=(opts.viewW || VIEW_W) || left+span<=0 || !decorByKey[d.key])continue;
+    paintDecor(ctx,decorByKey[d.key],left,top,d.size);
+  }
+  for(let y=0;y<ROWS;y++)for(let x=x0;x<=x1;x++){
+    const c=rows[y][x];
+    if(decorByKey[c])paintDecor(ctx,decorByKey[c],x*T-camX,y*T);
+  }
+  ctx.save();
+  if(opts.fadeCourse)ctx.globalAlpha*=.42;
   for (let y = 0; y < ROWS; y++) for (let x = x0; x <= x1; x++){
     const c = rows[y][x], px = x*T - camX, py = y*T;
-    if (decorByKey[c]) paintDecor(ctx,decorByKey[c],px,py);
-    else if(WARP_ENTRIES.includes(c))paintWarp(ctx,px,py,WARP_ENTRIES.indexOf(c)+1,false);
+    if(WARP_ENTRIES.includes(c))paintWarp(ctx,px,py,WARP_ENTRIES.indexOf(c)+1,false);
     else if(WARP_EXITS.includes(c))paintWarp(ctx,px,py,WARP_EXITS.indexOf(c)+1,true);
     else if(c==='L' && !(opts.taken && opts.taken.has(x*ROWS+y)))paintLauncher(ctx,px,py);
     else if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
@@ -991,6 +1019,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     else if (itemByCh[c] && !(opts.taken && opts.taken.has(x*ROWS + y))) drawItem(ctx, px+T/2, py+T/2, itemByCh[c], t);
     else if (c === 'S' && opts.showStart) drawHam(ctx, px+4, py+10, 0, false, 0, opts.look);
   }
+  ctx.restore();
 }
 
 // Use the exact course renderer for the editor's small part previews.
@@ -1023,17 +1052,19 @@ function renderEditorPaletteIcons(){
 // harder stretches: winding tunnels, 3-row gaps and burr walls in the open.
 // Acorns sit in a gap often enough that a careful player never runs out of life.
 // an endless piece: the columns from the start to the goal line, with the goal's row as the way out
-function toPiece(rows){
+function toPiece(rows, decorations=[]){
   let S = null, G = null;
   rows.forEach((r, y) => { for (let x = 0; x < r.length; x++){ if (r[x] === 'S' && !S) S = {x, y}; if (r[x] === 'G' && !G) G = {x, y}; } });
   if (!S || !G || G.x - S.x < 2) return null;
-  return {rows: rows.map(r => r.slice(S.x, G.x + 1).replace(/[SG]/g, '.')), exit: G.y};
+  return {rows: rows.map(r => r.slice(S.x, G.x + 1).replace(/[SG]/g, '.')), exit: G.y,
+    decorations: decorations.filter(d=>d.x>=S.x && d.x<=G.x).map(d=>({...d,x:d.x-S.x}))};
 }
 function endlessCourse(seed, startAt = 0, opts = {}){
   let s = seed >>> 0 || 1;
   const rnd = () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
   const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
   const rows = Array.from({length: ROWS}, () => '');
+  const decorations = [];
   const put = col => { for (let y = 0; y < ROWS; y++) rows[y] += col[y]; };
   const empty = () => Array(ROWS).fill('.');
   const len = () => rows[0].length + startAt;
@@ -1068,6 +1099,8 @@ function endlessCourse(seed, startAt = 0, opts = {}){
         let i = ri(0, pieces.length - 1); if (i === lastPiece && pieces.length > 1) i = (i + 1) % pieces.length;
         const pc = pieces[i]; lastPiece = i;
         open(4, 0);
+        const pieceStart=rows[0].length;
+        for(const d of pc.decorations || [])decorations.push({...d,x:pieceStart+d.x});
         for (let x = 0; x < pc.rows[0].length; x++) put(pc.rows.map(r => r[x]));
         gap = pc.exit; clampGap(5); open(4, 0); pieceAt = len(); calm = true;
         if (pc.rows.some(r => r.includes('A'))) sinceAcorn = 0; else sinceAcorn += pc.rows[0].length + 7;
@@ -1096,7 +1129,7 @@ function endlessCourse(seed, startAt = 0, opts = {}){
     }
   }
   extend(60);
-  return { rows, extend };
+  return { rows, extend, decorations };
 }
 
 /* ---------- friend battle course: themed zones that change every so often ---------- */
@@ -1529,7 +1562,7 @@ function makeGame(canvas, rows, hooks){
     const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
-    drawCourse(ctx, rows, camX, t, {spin: true, taken, springs});
+    drawCourse(ctx, rows, camX, t, {spin: true, taken, springs, decorations: hooks.decorations || (gen && gen.decorations) || []});
     if(!B)for(const s of launcherShots){
       ctx.fillStyle='#d83d35';ctx.beginPath();ctx.arc(s.x-camX,s.y,5,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#ffd3ad';ctx.lineWidth=2;ctx.stroke();
@@ -1816,7 +1849,7 @@ function openPlayer(course, mode){
     return;
   }
   const savedPoint = mode === 'test' && social.isOwner === true ? savedTestCheckpoint(current.draftId) : null;
-  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
 }
 function savedTestCheckpoint(id){
@@ -2091,7 +2124,7 @@ function markOfficial(){
   const op = c => isOp(c.author);
   for (const c of social.allCourses) c.official = c.wantOfficial && op(c);
   social.courses = social.allCourses.filter(c => c.kind !== 'piece');
-  social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows)})).filter(c => c.piece);
+  social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows,c.decorations)})).filter(c => c.piece);
 }
 function courseById(id){ return social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
 function renderSheet(first){
@@ -2116,7 +2149,7 @@ function renderSheet(first){
       (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
       rateDisplay(c.id, true),
       friendClearDisplay(c.id, true),
-      thumb(c.rows),
+      thumb(c.rows,c.decorations),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
@@ -2193,7 +2226,7 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, tool: '#', warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+const editor = { rows: null, decorations: [], mode: 'course', tool: '#', courseTool: '#', decorTool: 'a', decorSize: 1, warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -2218,17 +2251,18 @@ function loadDraft(){
   if (!activeDraftId || !files[activeDraftId] || files[activeDraftId].deleted) activeDraftId = selected && files[selected] && !files[selected].deleted ? selected : Object.keys(files).find(id => !files[id].deleted) || null;
   const d = activeDraftId && files[activeDraftId];
   store.set('hi-course-active', activeDraftId);
-  if (d){ editor.rows = d.rows.slice(); $('ed-title').value = d.title; }
-  else { editor.rows = blankCourse(40); $('ed-title').value = 'わたしのコース'; }
+  if (d){ const converted = HamuDecorations.fromCourse(d); editor.rows = converted.rows; editor.decorations = converted.decorations; $('ed-title').value = d.title; }
+  else { editor.rows = blankCourse(40); editor.decorations = []; $('ed-title').value = 'わたしのコース'; }
   syncWidth(); editor.cam = 0; editor.undo = []; updateUndoBtn();
 }
 function saveDraft(){
   if (!activeDraftId) return;
   const library = courseLibrary(), previous = library.files[activeDraftId];
   if (!previous || previous.deleted) return;
-  const value = {rows: editor.rows.slice(), title: $('ed-title').value.slice(0, 30)};
-  if (previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n')) return;
-  library.files[activeDraftId] = {...value, updatedAt: Date.now()};
+  const value = {rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), title: $('ed-title').value.slice(0, 30)};
+  if (previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n') &&
+      JSON.stringify(previous.decorations || []) === JSON.stringify(value.decorations)) return;
+  library.files[activeDraftId] = {...previous, ...value, updatedAt: Date.now()};
   store.set('hi-draft', value); store.set('hi-course-library', library);
   if (draftSync) draftSync.changed();
 }
@@ -2247,7 +2281,8 @@ function openCourseFile(id){
 }
 function addCourseFile(value){
   saveDraft(); const library = courseLibrary(), id = newId();
-  library.files[id] = {rows: value.rows.slice(), title: value.title.slice(0, 30), updatedAt: Date.now()};
+  const converted = HamuDecorations.fromCourse(value);
+  library.files[id] = {rows: converted.rows, decorations: converted.decorations, title: value.title.slice(0, 30), updatedAt: Date.now()};
   if (new TextEncoder().encode(JSON.stringify(library)).length > 220000) return toast('下書きの保存容量がいっぱいです。新しいコースを追加できません。');
   store.set('hi-course-library', library);
   if (draftSync) draftSync.changed();
@@ -2272,8 +2307,14 @@ function courseFilePreview(file){
   const cv = el('canvas', {width: 600, height: 200, class: 'course-file-preview', 'aria-hidden': 'true'}), ctx = cv.getContext('2d');
   const colors = {'#': '#785438', '*': '#965b20', A: '#d89926', O: '#ed70a3', C: '#39484b', S: '#db8f44', G: '#cd4030'};
   ctx.fillStyle = '#dcecf0'; ctx.fillRect(0, 0, 600, 200);
-  const w = file.rows[0].length, scale = Math.min(600 / w, 200 / ROWS), left = (600 - w * scale) / 2;
-  file.rows.forEach((row, y) => [...row].forEach((c, x) => { if (colors[c]) { ctx.fillStyle = colors[c]; ctx.fillRect(left + x * scale, y * scale, Math.max(2, scale), scale); } }));
+  const course = HamuDecorations.fromCourse(file);
+  const w = course.rows[0].length, scale = Math.min(600 / w, 200 / ROWS), left = (600 - w * scale) / 2;
+  for (const d of course.decorations){
+    const img=decorArt[d.key], span=d.size*scale;
+    const px=left+(d.x+.5)*scale-span/2, py=(d.y+.5)*scale-span/2;
+    if(img && img.complete && img.naturalWidth)ctx.drawImage(img,px,py,span,span);
+  }
+  course.rows.forEach((row, y) => [...row].forEach((c, x) => { if (colors[c]) { ctx.fillStyle = colors[c]; ctx.fillRect(left + x * scale, y * scale, Math.max(2, scale), scale); } }));
   return cv;
 }
 function renderCourseFiles(){
@@ -2289,7 +2330,7 @@ function renderCourseFiles(){
       el('span', {class: 'muted', text: `${file.rows[0].length}マス · ${file.updatedAt ? ago(file.updatedAt) + ' 更新' : '引き継いだ下書き'}`}),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary sm', text: '編集する', 'aria-label': `${title}を編集`, onclick: () => openCourseFile(id)}),
-        el('button', {class: 'btn sm', text: '複製', 'aria-label': `${title}を複製`, onclick: () => addCourseFile({rows: file.rows, title: title.slice(0, 26) + ' コピー'})}),
+        el('button', {class: 'btn sm', text: '複製', 'aria-label': `${title}を複製`, onclick: () => addCourseFile({rows: file.rows, decorations: file.decorations, title: title.slice(0, 26) + ' コピー'})}),
         el('button', {class: 'btn sm', text: 'ゴミ箱へ', 'aria-label': `${title}をゴミ箱へ`, onclick: () => moveCourseFile(id, true)})))));
   }
   $('course-file-trash-count').textContent = `（${trash.length}件）`;
@@ -2351,10 +2392,10 @@ function startDraftSync(api){
   setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
 }
 
-function editorSnapshot(){ return {rows: editor.rows.slice(), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
+function editorSnapshot(){ return {rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
-  if (!s || s.rows.join('\n') === editor.rows.join('\n')) return;
+  if (!s || (s.rows.join('\n') === editor.rows.join('\n') && JSON.stringify(s.decorations) === JSON.stringify(editor.decorations))) return;
   editor.undo.push(s);
   if (editor.undo.length > 50) editor.undo.shift();
   updateUndoBtn();
@@ -2363,6 +2404,7 @@ function undoEditor(){
   const s = editor.undo.pop();
   if (!s) return;
   editor.rows = s.rows.slice();
+  editor.decorations = s.decorations.map(d=>({...d}));
   editor.cleared = s.cleared;
   editor.clearProof = s.clearProof || null;
   syncWidth();
@@ -2385,13 +2427,30 @@ function renderDecorTools(){
     return el('button',{class:'tool','data-t':d.key,'aria-pressed':String(editor.tool===d.key),disabled:unlocked?false:'disabled','aria-label':unlocked?d.name:`${d.name}（${d.n}いいねで解放）`,title:unlocked?d.name:`${d.n}いいねで解放（あと${d.n-likes}）`,onclick:()=>{if(!unlocked)return;editor.tool=d.key;syncEditorTools();}},
       el('img',{src:`decor/${DECOR_ASSETS[d.key]}.png`,alt:'',loading:'lazy'}),unlocked?null:el('span',{class:'decor-lock',text:'🔒'}));
   }));
-  $('ed-decor-note').textContent=`もらったいいね ${likes}・解放済み ${DECOR.filter(d=>likes>=d.n).length}/${DECOR.length}種類。飾りは通り抜けられます。`;
+  $('ed-decor-note').textContent=`もらったいいね ${likes}・解放済み ${DECOR.filter(d=>likes>=d.n).length}/${DECOR.length}種類。コースの上にも置けます。重なった飾りは後から置いたものが手前になります。`;
+}
+function setEditorMode(mode){
+  if(editor.mode==='course')editor.courseTool=editor.tool;
+  else editor.decorTool=editor.tool;
+  editor.mode=mode;
+  if(mode==='decor' && editor.decorTool!=='.' && !DECOR.some(d=>d.key===editor.decorTool && likesReceived(social.uid)>=d.n)){
+    editor.decorTool=(DECOR.find(d=>likesReceived(social.uid)>=d.n)||{}).key || '.';
+  }
+  editor.tool=mode==='course'?editor.courseTool:editor.decorTool;
+  $('ed-course-palette').hidden=mode!=='course';
+  $('ed-decor-panel').hidden=mode!=='decor';
+  $('ed-mode-course').setAttribute('aria-pressed',String(mode==='course'));
+  $('ed-mode-decor').setAttribute('aria-pressed',String(mode==='decor'));
+  $('ed-eraser').setAttribute('aria-label',mode==='decor'?'消しゴム（このマスの飾りを消す）':'消しゴム（マスを消す）');
+  $('ed-eraser').title=$('ed-eraser').getAttribute('aria-label');
+  syncEditorTools();drawEditor();
 }
 function syncEditorTools(){
-  document.querySelectorAll('.tool, #ed-eraser').forEach(b=>b.setAttribute('aria-pressed',String(editor.tool===b.dataset.t)));
-  const warp=editor.tool==='warp-in'||editor.tool==='warp-out';
+  document.querySelectorAll('#ed-course-palette .tool, #ed-decor .tool, #ed-eraser').forEach(b=>b.setAttribute('aria-pressed',String(editor.tool===b.dataset.t)));
+  const warp=editor.mode==='course'&&(editor.tool==='warp-in'||editor.tool==='warp-out');
   $('ed-warp-controls').hidden=!warp;
   if(warp){$('ed-warp-label').textContent=editor.tool==='warp-in'?'ワープ入口の番号':'ワープ出口の番号';$('ed-warp-num').value=String(editor.warpNumber);}
+  document.querySelectorAll('[data-decor-size]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.decorSize===editor.decorSize)));
   renderEditorPaletteIcons();
 }
 function editorPlacementChar(){
@@ -2410,7 +2469,7 @@ function drawEditor(){
   edCtx.strokeStyle = `rgba(255,255,255,${(.25 * Math.min(1, 16 / editor.cols)).toFixed(3)})`; edCtx.lineWidth = PX / k * .6;
   for (let x = 0; x <= w; x++){ const px = x*T - editor.cam; if (px < -1 || px > VW+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
   for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T); edCtx.lineTo(VW, y*T); edCtx.stroke(); }
-  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook(), viewW: VW});
+  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook(), viewW: VW, decorations: editor.decorations, fadeCourse: editor.mode==='decor'});
   // when zoomed out, outline how much a player sees at once
   if (editor.cols > MIN_COLS){ edCtx.strokeStyle = 'rgba(255,255,255,.75)'; edCtx.lineWidth = 2 * PX / k; edCtx.setLineDash([8 * PX / k, 6 * PX / k]); edCtx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2); edCtx.setLineDash([]); }
   edCtx.setTransform(PX, 0, 0, PX, 0, 0);
@@ -2433,6 +2492,12 @@ function setCell(x, y, c){
   const r = editor.rows[y].split(''); r[x] = c; editor.rows[y] = r.join('');
   editor.cleared = false; updatePubBtn(); drawEditor();
 }
+function paintEditorCell(x,y){
+  if(editor.mode==='course'){setCell(x,y,editorPlacementChar());return;}
+  const next=HamuDecorations.place(editor.rows,editor.decorations,x,y,editor.tool,editor.decorSize);
+  if(next===editor.decorations)return;
+  editor.decorations=next;drawEditor();
+}
 function cellFrom(e){
   const rc = $('ed-canvas').getBoundingClientRect();
   const lx = (e.clientX - rc.left) / rc.width * viewW(), ly = (e.clientY - rc.top) / rc.height * VIEW_H;
@@ -2447,13 +2512,13 @@ edCv.addEventListener('pointerdown', e => {
   touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); try { edCv.setPointerCapture(e.pointerId); } catch {}
   if (touches.size === 2){
     // second finger: take back what the first finger just painted and switch to moving the view
-    if (painting && before){ editor.rows = before.rows; editor.cleared = before.cleared; updatePubBtn(); drawEditor(); }
+    if (painting && before){ editor.rows = before.rows; editor.decorations=before.decorations; editor.cleared = before.cleared; updatePubBtn(); drawEditor(); }
     painting = false; before = null;
     const st = pinchState(); pinch = {...st, cols: editor.cols, world: editor.cam + st.f * viewW()}; return;
   }
   if (touches.size > 2) return;
   painting = true; before = editorSnapshot();
-  const [x,y] = cellFrom(e); setCell(x, y, editorPlacementChar());
+  const [x,y] = cellFrom(e); paintEditorCell(x, y);
 });
 edCv.addEventListener('pointermove', e => {
   if (!touches.has(e.pointerId)) return;
@@ -2463,7 +2528,7 @@ edCv.addEventListener('pointermove', e => {
     editor.cols = Math.max(MIN_COLS, Math.min(maxCols(), pinch.cols * pinch.d / st.d));
     editor.cam = pinch.world - st.f * viewW(); drawEditor(); return;
   }
-  if (!painting || editor.tool === 'S' || editor.tool === 'G' || editor.tool.startsWith('warp-')) return; const [x,y] = cellFrom(e); setCell(x, y, editorPlacementChar());
+  if (!painting || (editor.mode==='course' && (editor.tool === 'S' || editor.tool === 'G' || editor.tool.startsWith('warp-')))) return; const [x,y] = cellFrom(e); paintEditorCell(x, y);
 });
 const lift = e => {
   touches.delete(e.pointerId);
@@ -2480,9 +2545,12 @@ $('ed-zout').onclick = () => setZoom(editor.cols * 1.6);
 $('ed-zin').onclick = () => setZoom(editor.cols / 1.6);
 $('ed-zall').onclick = () => { editor.cols = maxCols(); editor.cam = 0; drawEditor(); };
 $('ed-scroll').addEventListener('input', e => { editor.cam = +e.target.value; drawEditor(); });
-document.querySelectorAll('.tools:not(#ed-decor) .tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; syncEditorTools(); });
+document.querySelectorAll('#ed-course-palette .tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; editor.courseTool=editor.tool; syncEditorTools(); });
+$('ed-mode-course').onclick=()=>setEditorMode('course');
+$('ed-mode-decor').onclick=()=>setEditorMode('decor');
+document.querySelectorAll('[data-decor-size]').forEach(b=>b.onclick=()=>{editor.decorSize=+b.dataset.decorSize;syncEditorTools();});
 $('ed-warp-num').onchange=e=>{editor.warpNumber=Number(e.target.value);syncEditorTools();};
-$('ed-eraser').onclick = () => { editor.tool = '.'; syncEditorTools(); };
+$('ed-eraser').onclick = () => { editor.tool = '.'; if(editor.mode==='decor')editor.decorTool='.';else editor.courseTool='.'; syncEditorTools(); };
 const SIZES = [40, 80, 150];
 const sizeName = c => { const len = c.rows[0].length; return len <= 50 ? 'ショート' : len <= 110 ? 'ミドル' : 'ロング'; };
 function syncWidth(){ const w = editor.rows[0].length; $('ed-width').value = SIZES.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a); }
@@ -2491,6 +2559,7 @@ $('ed-width').addEventListener('change', e => {
   const nw = +e.target.value, ow = editor.rows[0].length, d = nw - ow;
   // keep both ends: add/remove empty columns just before the goal area on the right
   editor.rows = editor.rows.map(r => d > 0 ? r.slice(0, ow - 4) + '.'.repeat(d) + r.slice(ow - 4) : r.slice(0, ow - 4 + d) + r.slice(ow - 4));
+  editor.decorations=HamuDecorations.resized(editor.rows,editor.decorations,ow,nw);
   if (!editor.rows.join('').includes('G')){ const r = editor.rows[7].split(''); r[nw-3] = 'G'; editor.rows[7] = r.join(''); }
   editor.cols = Math.min(editor.cols, maxCols()); editor.cleared = false; pushUndo(beforeChange); updatePubBtn(); drawEditor(); saveDraft();
 });
@@ -2499,7 +2568,7 @@ $('ed-undo').onclick = undoEditor;
 $('ed-new').onclick = () => {
   if (!confirm('コースをまっさらにします。\n今までの編集は「1つ戻る」で元に戻せます。\n\n本当にまっさらにしますか？')) return;
   const beforeClear = editorSnapshot();
-  editor.rows = blankCourse(+$('ed-width').value || 40); editor.cam = 0; editor.cleared = false;
+  editor.rows = blankCourse(+$('ed-width').value || 40); editor.decorations=[]; editor.cam = 0; editor.cleared = false;
   pushUndo(beforeClear); updatePubBtn(); drawEditor(); saveDraft();
 };
 function validate(){
@@ -2512,8 +2581,8 @@ function validate(){
   if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
-function remix(c){ saveDraft(); setTab('make'); addCourseFile({rows: c.rows, title: ((c.title || '') + ' アレンジ').slice(0, 30)}); }
-$('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice()}, 'test'); };
+function remix(c){ saveDraft(); setTab('make'); addCourseFile({rows: c.rows, decorations:c.decorations, title: ((c.title || '') + ' アレンジ').slice(0, 30)}); }
+$('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice(), decorations:editor.decorations.map(d=>({...d}))}, 'test'); };
 // the operator can publish a course as an official one, or as a piece that endless mode mixes in
 const edKind = () => social.isOwner ? $('ed-kind').value : '';
 function renderEdOp(){
@@ -2527,7 +2596,7 @@ function renderEdOp(){
   const box = $('ed-pieces'); box.replaceChildren();
   if (k !== 'piece') return;
   box.append(el('b', {text: `エンドレス用パーツ ${social.pieces.length}個`}));
-  for (const c of social.pieces) box.append(el('div', {class: 'row', style: 'gap:8px'}, thumb(c.rows), el('span', {style: 'flex:1', text: `${c.title || '名前なし'}（${c.piece.rows[0].length}マス）`}), deleteBtn(c)));
+  for (const c of social.pieces) box.append(el('div', {class: 'row', style: 'gap:8px'}, thumb(c.rows,c.decorations), el('span', {style:'flex:1', text:`${c.title || '名前なし'}（${c.piece.rows[0].length}マス）`}), deleteBtn(c)));
 }
 $('ed-kind').onchange = () => updatePubBtn();
 function updatePubBtn(){
@@ -2553,7 +2622,7 @@ function renderPubConfirm(box){
     el('h2', {style: 'padding-right:70px', text: kind === 'piece' ? 'エンドレス用パーツとして追加します' : kind === 'official' ? '公式コースとして公開します' : 'この名前で公開しますか？'}),
     el('p', {class: 'muted', style: 'margin:0', text: 'コース名'}),
     el('p', {style: 'margin:0;font-size:22px;font-weight:800;overflow-wrap:anywhere', text: `「${title}」`}),
-    thumb(editor.rows),
+    thumb(editor.rows,editor.decorations),
     el('p', {class: 'muted', style: 'margin:0', text: '公開したあとはコース名を変えられません。'}),
     el('div', {class: 'row'}, go, el('button', {class: 'btn', text: '名前を変える', onclick: () => { closeSheet(); const t = $('ed-title'); t.focus(); t.select(); }})));
 }
@@ -2569,7 +2638,7 @@ async function publishCourse(){
         toast('通しクリアを再確認できませんでした。もう一度テストしてください。'); return;
       }
     }
-    const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows, author: social.uid, createdAt: Date.now() };
+    const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows, decorations:(editor.decorations || []).map(d=>({...d})), author: social.uid, createdAt: Date.now() };
     if (kind === 'official') doc.official = true;
     if (kind === 'piece') doc.kind = 'piece';
     await social.db.collection('courses').add(doc);
@@ -2584,11 +2653,17 @@ async function publishCourse(){
 }
 
 /* ---------- course list ---------- */
-function thumb(rows){
+function thumb(rows,decorations=[]){
   const c = document.createElement('canvas'); const w = rows[0].length, s = 4;
   c.width = Math.min(w, 90) * s; c.height = ROWS * s; const x = c.getContext('2d');
   x.fillStyle = '#9fd0dc'; x.fillRect(0,0,c.width,c.height);
   const off = 0;
+  for(const d of decorations){
+    if(d.x>=Math.min(w,90))continue;
+    const img=decorArt[d.key], span=d.size*s, dx=(d.x+.5)*s-span/2, dy=(d.y+.5)*s-span/2;
+    if(img && img.complete && img.naturalWidth)x.drawImage(img,dx,dy,span,span);
+    else {x.fillStyle='#76a579';x.fillRect(dx,dy,span,span);}
+  }
   for (let r = 0; r < ROWS; r++) for (let i = 0; i < Math.min(w, 90); i++){
     const ch = rows[r][i + off];
     if (decorByKey[ch]){
@@ -2615,7 +2690,7 @@ function thumb(rows){
 function courseCard(c){
   const cleared = myClears()[c.id] != null;
   const card = el('article', {class: 'card click', tabindex: 0, onclick: () => openCourse(c.id), onkeydown: e => { if (e.key === 'Enter') openCourse(c.id); }},
-    thumb(c.rows),
+    thumb(c.rows,c.decorations),
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
       el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
@@ -3306,7 +3381,7 @@ $('db-state').textContent = '公式コースを表示中';
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
     social.coursesLoaded = true;
-    const all = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), rows: Array.isArray(v.rows) && v.rows.length === ROWS ? v.rows.map(String) : null, author: v.author || null, createdAt: +v.createdAt || 0, wantOfficial: !!v.official, kind: v.kind === 'piece' ? 'piece' : ''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    const all = snap.docs.map(d => { const v = d.data(); const rows=Array.isArray(v.rows) && v.rows.length===ROWS?v.rows.map(String):null; return {id:d.id,title:String(v.title || ''),rows,decorations:rows?HamuDecorations.normalize(rows,v.decorations):[],author:v.author || null,createdAt:+v.createdAt || 0,wantOfficial:!!v.official,kind:v.kind==='piece'?'piece':''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     social.allCourses = all; markOfficial(); updatePubBtn();
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();

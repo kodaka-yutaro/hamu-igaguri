@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 test('course parts form a scrollable strip with the real in-course graphics beneath the map', () => {
   const stage = html.indexOf('id="ed-stage"');
   const palette = html.indexOf('class="tools editor-palette"');
-  const decorations = html.indexOf('id="ed-decor-fold"');
+  const decorations = html.indexOf('id="ed-decor-panel"');
   assert.ok(stage > 0 && stage < palette && palette < decorations);
   assert.match(html, /\.editor-palette\{[^}]*flex-wrap:nowrap;overflow-x:auto/);
   const strip = html.slice(palette, html.indexOf('</div>', palette));
@@ -28,18 +28,26 @@ test('eraser is overlaid at the top right of the map and selects delete', () => 
   const stageEnd = html.indexOf('</div>', stageStart);
   assert.ok(html.slice(stageStart, stageEnd).includes('id="ed-eraser"'));
   assert.match(html, /\.editor-eraser\{[^}]*top:8px;right:8px/);
-  assert.match(html, /\$\('ed-eraser'\)\.onclick = \(\) => \{ editor\.tool = '\.'; syncEditorTools\(\); \};/);
+  assert.match(html, /\$\('ed-eraser'\)\.onclick = \(\) => \{ editor\.tool = '\.';[\s\S]*syncEditorTools\(\); \};/);
 });
 
-test('decorations collapse by default and use generated images', () => {
-  assert.match(html, /<details class="decor-fold" id="ed-decor-fold">/);
-  assert.match(html, /function paintDecor\([\s\S]*?ctx\.drawImage\(img,x\+1,y\+1,T-2,T-2\)/);
+test('decoration mode swaps the lower palette, sizes images, and fades course parts', () => {
+  assert.match(html, /id="ed-mode-course" aria-pressed="true"/);
+  assert.match(html, /id="ed-mode-decor" aria-pressed="false"/);
+  assert.match(html, /id="ed-decor-panel" hidden/);
+  assert.match(html, /data-decor-size="1"/);
+  assert.match(html, /data-decor-size="3"/);
+  assert.match(html, /data-decor-size="5"/);
+  assert.match(html, /function setEditorMode\(mode\)/);
+  assert.match(html, /drawCourse\(edCtx, editor\.rows[\s\S]*fadeCourse: editor\.mode==='decor'/);
+  assert.match(html, /function paintDecor\([\s\S]*?ctx\.drawImage\(img,x\+1,y\+1,span-2,span-2\)/);
   assert.match(html, /class:'tool'[^\n]+aria-label[^\n]+\n\s*el\('img'/);
   for (const asset of ['flower','mushroom','grass','butterfly','lantern','streamer','balloon','star','rainbow','tree','flag','trophy','fireworks','crown']) {
     assert.ok(fs.existsSync(path.join(root, 'decor', `${asset}.png`)), `Missing sprite: ${asset}`);
   }
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf8');
   assert.ok(workflow.includes('cp -R decor gimmick _site/'));
+  assert.ok(workflow.includes('decorations.js'));
 });
 
 test('numbered warp pair and launcher are selectable beneath the map', () => {
