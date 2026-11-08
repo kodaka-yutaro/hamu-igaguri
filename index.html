@@ -1393,16 +1393,18 @@ function makeGame(canvas, rows, hooks){
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
   }
-  function launcherTarget(c,x,y){
-    return c!=='.' && c!=='S' && c!=='G' && !decorByKey[c] &&
-      !(taken.has(x*ROWS+y) && (c==='L' || c==='A' || itemByCh[c]));
+  function launcherTarget(c){
+    // Pickups and portals are intangible to projectiles and survive nearby blasts.
+    const pickup=c==='A' || c==='L' || c==='W' || c==='R' || c==='H' || !!itemByCh[c];
+    const warp=WARP_ENTRIES.includes(c) || WARP_EXITS.includes(c);
+    return c!=='.' && c!=='S' && c!=='G' && !decorByKey[c] && !pickup && !warp;
   }
   function detonateLauncher(cx,cy){
     const r=T*1.7;
     for(let y=Math.max(0,Math.floor((cy-r)/T));y<=Math.min(ROWS-1,Math.floor((cy+r)/T));y++){
       const tiles=rows[y].split('');let changed=false;
       for(let x=Math.max(0,Math.floor((cx-r)/T));x<=Math.min(w-1,Math.floor((cx+r)/T));x++){
-        if(Math.hypot(x*T+T/2-cx,y*T+T/2-cy)>r || !launcherTarget(tiles[x],x,y))continue;
+        if(Math.hypot(x*T+T/2-cx,y*T+T/2-cy)>r || !launcherTarget(tiles[x]))continue;
         tiles[x]='.';changed=true;
       }
       if(changed)rows[y]=tiles.join('');
@@ -1416,7 +1418,7 @@ function makeGame(canvas, rows, hooks){
       s.x+=540*dt;s.age+=dt;
       const x=Math.floor(s.x/T),y=Math.floor(s.y/T);
       if(x<0 || x>=w || y<0 || y>=ROWS || s.age>2.8){s.gone=true;continue;}
-      if(launcherTarget(rows[y][x],x,y)){s.gone=true;detonateLauncher(s.x,s.y);}
+      if(launcherTarget(rows[y][x])){s.gone=true;detonateLauncher(s.x,s.y);}
     }
     launcherShots=launcherShots.filter(s=>!s.gone);
   }

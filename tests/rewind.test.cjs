@@ -17,7 +17,7 @@ function course(tiles = []) {
 }
 function setup(rows = course(), options = {}) {
   let now = 1, next = 0; const scheduled = new Map(), states = [];
-  const ctx = {T:32, ROWS:16, VIEW_W:320, VIEW_H:512, PX:2, itemByCh:{},
+  const ctx = {T:32, ROWS:16, VIEW_W:320, VIEW_H:512, PX:2, itemByCh:Object.fromEntries('123456'.split('').map(c=>[c,{ch:c}])),
     WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy',decorByKey:Object.fromEntries('abcdefghijklmn'.split('').map(c=>[c,true])),
     performance:{now: () => now}, sfx(){}, setTimeout,
     requestAnimationFrame(fn){scheduled.set(++next, fn); return next;},
@@ -84,19 +84,27 @@ test('numbered warp entry sends the hamster to its matching exit only', () => {
   assert.ok(g.inspect().p.x<29*32,'warp 1 uses exit 1, not exit 2');
   assert.ok(Math.abs(g.inspect().p.y-(13*32+5))<24);
 });
-test('launcher is collected with exactly two shots and clears nearby hazards, not decorations or saved rows', async () => {
-  const rows=course([[5,13,'L'],[9,13,'#'],[10,13,'*'],[10,12,'a']]);
+test('launcher passes through pickups and warps, and blasts only destroy hazards', async () => {
+  const rows=course([[5,13,'L'],[7,13,'A'],[8,13,'p'],[8,12,'u'],[9,13,'#'],[10,13,'*'],[9,12,'L'],[8,14,'a'],[9,14,'1']]);
   const h=setup(rows),g=h.game;g.jump();
   h.until(()=>g.launcherCharges===2,150);
   assert.equal(g.fireLauncher(),true);assert.equal(g.fireLauncher(),true);assert.equal(g.fireLauncher(),false);
   h.tick(40);
   assert.equal(g.rows[13][9],'.');assert.equal(g.rows[13][10],'.');
-  assert.equal(g.rows[12][10],'a');assert.equal(rows[13][9],'#','published layout remains unchanged');
+  for(const [x,y,ch] of [[7,13,'A'],[8,13,'p'],[8,12,'u'],[9,12,'L'],[8,14,'a'],[9,14,'1']])assert.equal(g.rows[y][x],ch,`${ch} survives nearby blast`);
+  assert.equal(rows[13][9],'#','published layout remains unchanged');
   g.reset();assert.equal(g.rows[13][9],'#');assert.equal(g.launcherCharges,0);
   const clean=course([[5,13,'L']]),v=setup(clean),gv=v.game;gv.jump();
   v.until(()=>gv.launcherCharges===2);gv.fireLauncher();gv.fireLauncher();
   v.until(()=>gv.state==='clear');
   assert.equal(await v.verify(clean,gv.route),true,'legitimate launcher events replay for publication');
+});
+test('all collectible types and numbered warp endpoints are non-colliding launcher targets', () => {
+  const start=html.indexOf('  function launcherTarget(c){'),end=html.indexOf('  function detonateLauncher(',start);
+  const script=html.slice(start,end)+'\nlauncherTarget;';
+  const predicate=vm.runInNewContext(script,{itemByCh:Object.fromEntries('123456'.split('').map(c=>[c,true])),decorByKey:Object.fromEntries('abcdefghijklmn'.split('').map(c=>[c,true])),WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy'});
+  for(const c of 'ALWRH123456pqrstuvwxyabcdefghijklmnSG.')assert.equal(predicate(c),false,`${c} is protected`);
+  for(const c of '#*OCJ')assert.equal(predicate(c),true,`${c} is destructible`);
 });
 test('battle and endless engines cannot enable rewind even when requested', () => {
   const rows=course();
