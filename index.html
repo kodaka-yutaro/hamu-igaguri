@@ -150,6 +150,28 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .tool{font:inherit;font-weight:800;font-size:13px;border:2px solid var(--line);background:var(--panel);color:var(--fg);border-radius:10px;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:6px}
 .tool[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
+.editor-palette{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:4px 2px 10px;max-width:100%;-webkit-overflow-scrolling:touch}
+.editor-palette .tool{flex:0 0 46px;min-width:46px;height:46px;padding:0;display:grid;place-items:center;font-size:24px;line-height:1;touch-action:manipulation}
+.editor-palette .tool[data-t="S"],.editor-palette .tool[data-t="G"]{font-size:18px}
+.editor-palette .tool[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
+.editor-palette .tool img{width:38px;height:38px;object-fit:contain}
+.warp-controls{padding:7px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--soft);align-items:center;gap:10px}
+.warp-controls select{font-weight:800;min-width:70px}
+.editor-stage{isolation:isolate}
+.editor-eraser{position:absolute;z-index:2;top:8px;right:8px;width:44px;height:44px;border:2px solid #fff9;border-radius:12px;background:#fffdf0ee;color:#33291d;display:grid;place-items:center;padding:8px;cursor:pointer;box-shadow:0 3px 12px #0004;touch-action:manipulation}
+.editor-eraser svg{width:26px;height:26px}
+.editor-eraser[aria-pressed="true"]{background:#f5a64b;color:#21180e;border-color:#32281e}
+.launcher-fire{position:absolute;right:12px;bottom:14px;z-index:3;border:2px solid #ffb1a8;background:rgba(240,103,93,.68);color:#fff;border-radius:16px;min-width:82px;min-height:55px;padding:8px 10px;font:800 15px var(--body);box-shadow:0 3px 12px #0005;cursor:pointer;touch-action:manipulation;text-shadow:0 1px 2px #7c1e1e}
+.launcher-fire:active{transform:scale(.96)}
+.decor-fold{border:1.5px solid var(--line);border-radius:12px;background:var(--panel);min-width:0;overflow:hidden}
+.decor-fold>summary{padding:9px 12px;cursor:pointer;font-weight:800;user-select:none}
+.decor-fold[open]>summary{border-bottom:1px solid var(--line)}
+.decor-body{padding:10px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.decor-palette{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding:2px 2px 9px;scrollbar-width:thin}
+.decor-palette .tool{position:relative;flex:0 0 52px;min-width:52px;height:52px;display:grid;place-items:center;padding:4px}
+.decor-palette .tool img{width:42px;height:42px;object-fit:contain}
+.decor-palette .tool:disabled{opacity:.45;cursor:not-allowed}
+.decor-palette .tool .decor-lock{position:absolute;bottom:0;right:0;font-size:13px;line-height:1;background:var(--panel);border-radius:5px;padding:2px}
 .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
 input[type=text],input[type=email],select,textarea{font:inherit;font-size:16px;background:var(--panel);color:var(--fg);border:1.5px solid var(--line);border-radius:8px;padding:6px 10px;min-width:0}
 textarea{width:100%;box-sizing:border-box;resize:vertical}
@@ -310,26 +332,38 @@ input[type=range]{width:100%}
       <input type="text" id="ed-title" maxlength="30" placeholder="コースの名前" aria-label="コースの名前" style="flex:1 1 220px">
       <label class="row muted" for="ed-width">長さ <select id="ed-width"><option value="40">ショート</option><option value="80">ミドル</option><option value="150">ロング</option></select></label>
     </div>
-    <div class="tools" role="group" aria-label="置くもの">
-      <button class="tool" data-t="#" aria-pressed="true"><span class="sw" style="background:#7a5233"></span>地面</button>
-      <button class="tool" data-t="*" aria-pressed="false"><span class="sw" style="background:#8a5a1c;border-radius:50%"></span>イガグリ</button>
-      <button class="tool" data-t="A" aria-pressed="false"><span class="sw" style="background:#a86a2c;border-radius:50% 50% 45% 45%"></span>どんぐり</button>
-      <button class="tool" data-t="O" aria-pressed="false"><span class="sw" style="background:#ff6fa3;border-radius:50%"></span>ボール</button>
-      <button class="tool" data-t="C" aria-pressed="false"><span class="sw" style="background:#3b3f47;border-radius:3px 8px 3px 3px"></span>大砲</button>
-      <button class="tool" data-t="S" aria-pressed="false"><span class="sw" style="background:#f0b56a;border-radius:50%"></span>スタート</button>
-      <button class="tool" data-t="G" aria-pressed="false"><span class="sw" style="background:#d9412b"></span>ゴールライン</button>
-      <button class="tool" data-t="." aria-pressed="false"><span class="sw" style="border:2px dashed var(--muted)"></span>けす</button>
-    </div>
-    <div class="card col" style="gap:6px;padding:10px">
-      <b>🎨 コースの飾り <span class="muted" style="font-weight:500;font-size:12px">いいね称号で解放・当たり判定なし</span></b>
-      <div class="tools" id="ed-decor" role="group" aria-label="飾りを置く"></div>
-      <span class="muted" id="ed-decor-note" style="font-size:12px"></span>
-    </div>
     <div class="row" style="justify-content:space-between;gap:6px">
       <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
       <div class="row" style="gap:6px"><button class="btn sm" id="ed-zout" aria-label="縮小">－</button><span class="muted" id="ed-zoom-v" style="min-width:3em;text-align:center">等倍</span><button class="btn sm" id="ed-zin" aria-label="拡大">＋</button><button class="btn sm" id="ed-zall">全体</button></div>
     </div>
-    <div class="stage tall" id="ed-stage"><canvas id="ed-canvas" width="640" height="1024"></canvas></div>
+    <div class="stage tall editor-stage" id="ed-stage">
+      <canvas id="ed-canvas" width="640" height="1024"></canvas>
+      <button class="editor-eraser" id="ed-eraser" data-t="." aria-label="消しゴム（マスを消す）" aria-pressed="false" title="消しゴム（マスを消す）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m20 20-7 0-9.1-9.1a2 2 0 0 1 0-2.8l5.2-5.2a2 2 0 0 1 2.8 0l9.1 9.1a2 2 0 0 1 0 2.8L15.8 20H7"/><path d="m7 14 7-7"/></svg></button>
+    </div>
+    <div class="tools editor-palette" role="group" aria-label="コースパーツを選ぶ">
+      <button class="tool" data-t="#" aria-label="地面" title="地面" aria-pressed="true">▦</button>
+      <button class="tool" data-t="*" aria-label="イガグリ" title="イガグリ" aria-pressed="false">★</button>
+      <button class="tool" data-t="A" aria-label="どんぐり" title="どんぐり" aria-pressed="false">◆</button>
+      <button class="tool" data-t="O" aria-label="ボール" title="ボール" aria-pressed="false">●</button>
+      <button class="tool" data-t="C" aria-label="大砲" title="大砲" aria-pressed="false">♜</button>
+      <button class="tool" data-t="S" aria-label="スタート" title="スタート" aria-pressed="false">S</button>
+      <button class="tool" data-t="G" aria-label="ゴールライン" title="ゴールライン" aria-pressed="false">⚑</button>
+      <button class="tool" data-t="warp-in" aria-label="ワープ入口" title="ワープ入口" aria-pressed="false"><img src="gimmick/warp-entry.png" alt=""></button>
+      <button class="tool" data-t="warp-out" aria-label="ワープ出口" title="ワープ出口" aria-pressed="false"><img src="gimmick/warp-entry.png" alt="" style="opacity:.48"></button>
+      <button class="tool" data-t="L" aria-label="ランチャー" title="ランチャー" aria-pressed="false"><img src="gimmick/launcher.png" alt=""></button>
+    </div>
+    <div class="row warp-controls" id="ed-warp-controls" hidden>
+      <label for="ed-warp-num"><b id="ed-warp-label">ワープ入口の番号</b></label>
+      <select id="ed-warp-num" aria-label="ワープ番号"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+      <span class="muted">同じ番号の入口と出口がつながります</span>
+    </div>
+    <details class="decor-fold" id="ed-decor-fold">
+      <summary>🎨 コースの飾り <span class="muted" style="font-weight:500;font-size:12px">（タップで開閉）</span></summary>
+      <div class="decor-body">
+        <div class="tools decor-palette" id="ed-decor" role="group" aria-label="飾りを置く"></div>
+        <span class="muted" id="ed-decor-note" style="font-size:12px"></span>
+      </div>
+    </details>
     <input type="range" id="ed-scroll" min="0" max="0" value="0" aria-label="コースを左右にスクロール">
     <div class="row" style="justify-content:space-between">
       <div class="row">
@@ -427,6 +461,7 @@ input[type=range]{width:100%}
     <div class="stage tall" id="pl-stage" tabindex="-1">
       <canvas id="pl-canvas" width="640" height="1024"></canvas>
       <div class="hud" id="pl-hud"></div>
+      <button id="pl-launcher" class="launcher-fire" aria-label="ランチャーを前方に発射" hidden>発射 ×2</button>
       <div class="banner" id="pl-banner" hidden></div>
       <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div><div id="pl-account-hint" class="account-hint" hidden></div></div>
     </div>
@@ -514,6 +549,23 @@ const MAKER_TITLES = [
 const makerTitleFor = n => MAKER_TITLES.filter(t => n >= t.n).pop() || null;
 const DECOR = [[1,'a','🌼','お花'],[3,'b','🍄','きのこ'],[5,'c','🌿','草むら'],[10,'d','🦋','ちょうちょ'],[20,'e','🏮','ランタン'],[50,'f','🎏','旗飾り'],[75,'g','🎈','風船'],[100,'h','⭐','星'],[150,'i','🌈','虹'],[200,'j','🌳','木'],[300,'k','🚩','旗'],[500,'l','🏆','トロフィー'],[750,'m','🎆','花火'],[1000,'n','👑','王冠の飾り']].map(([n,key,emoji,name])=>({n,key,emoji,name}));
 const decorByKey=Object.fromEntries(DECOR.map(d=>[d.key,d]));
+// Five numbered one-way warp pairs; each character occupies exactly one course cell.
+const WARP_ENTRIES='pqrst', WARP_EXITS='uvwxy';
+const gimmickArt={entry:new Image(),launcher:new Image()};
+for(const [key,file] of [['entry','warp-entry'],['launcher','launcher']]){
+  gimmickArt[key].onload=()=>{if(!$('course-editor').hidden) drawEditor();};
+  gimmickArt[key].src=`gimmick/${file}.png`;
+}
+const DECOR_ASSETS={a:'flower',b:'mushroom',c:'grass',d:'butterfly',e:'lantern',f:'streamer',g:'balloon',h:'star',i:'rainbow',j:'tree',k:'flag',l:'trophy',m:'fireworks',n:'crown'};
+const decorArt=Object.fromEntries(DECOR.map(d=>{
+  const img=new Image();
+  img.onload=()=>{
+    if(!$('course-editor').hidden) drawEditor();
+    if(tab==='make' && $('course-editor').hidden) renderCourseFiles();
+  };
+  img.src=`decor/${DECOR_ASSETS[d.key]}.png`;
+  return [d.key,img];
+}));
 const WIN_TITLES = [[1,'初勝利'],[3,'勝負師のたまご'],[5,'かけだしファイター'],[10,'十勝ハム'],[20,'バトル上手'],[30,'連戦の勇者'],[50,'五十勝の猛者'],[75,'森のファイター'],[100,'百勝の英雄'],[150,'熟練の勝負師'],[200,'二百勝の覇者'],[300,'歴戦の戦士'],[500,'五百勝の伝説'],[750,'無敵のハム'],[1000,'千勝の王者']].map(([n,name]) => ({n,name,note:`フレンド対戦で${n}勝`}));
 const winTitleFor = n => WIN_TITLES.filter(t => n >= t.n).pop() || null;
 const FRUITS = [[1,'banana','バナナ','🍌'],[3,'apple','リンゴ','🍎'],[5,'grape','ブドウ','🍇'],[10,'strawberry','イチゴ','🍓'],[20,'orange','ミカン','🍊'],[30,'lemon','レモン','🍋'],[50,'peach','モモ','🍑'],[75,'cherry','サクランボ','🍒'],[100,'pineapple','パイナップル','🍍'],[150,'melon','メロン','🍈'],[200,'watermelon','スイカ','🍉'],[300,'kiwi','キウイ','🥝'],[500,'mango','マンゴー','🥭'],[750,'pear','ナシ','🍐'],[1000,'coconut','ココナッツ','🥥']].map(([n,key,name,emoji]) => ({n,key,name,emoji}));
@@ -898,8 +950,26 @@ function drawGoal(ctx, x, y){
   ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.moveTo(x+18, y-T+4); ctx.lineTo(x+36, y-T+13); ctx.lineTo(x+18, y-T+22); ctx.fill();
 }
 function paintDecor(ctx, decoration, x, y){
+  const img=decorArt[decoration.key];
+  if(img && img.complete && img.naturalWidth){ctx.drawImage(img,x+1,y+1,T-2,T-2);return;}
   ctx.save();ctx.font='25px system-ui,Apple Color Emoji,Segoe UI Emoji,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillText(decoration.emoji,x+T/2,y+T/2);ctx.restore();
+}
+function paintWarp(ctx,x,y,num,exit){
+  ctx.save();
+  if(exit)ctx.globalAlpha=.48;
+  const img=gimmickArt.entry;
+  if(img.complete && img.naturalWidth)ctx.drawImage(img,x+1,y+1,T-2,T-2);
+  else {ctx.strokeStyle='#6a39a4';ctx.lineWidth=5;ctx.beginPath();ctx.arc(x+T/2,y+T/2,12,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+  ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 13px sans-serif';
+  ctx.lineWidth=3;ctx.strokeStyle=exit?'#e2dcf1':'#261336';ctx.strokeText(String(num),x+T/2,y+T/2);
+  ctx.fillStyle=exit?'#512875':'#fff';ctx.fillText(String(num),x+T/2,y+T/2);ctx.restore();
+}
+function paintLauncher(ctx,x,y){
+  const img=gimmickArt.launcher;
+  if(img.complete && img.naturalWidth){ctx.drawImage(img,x+1,y+1,T-2,T-2);return;}
+  ctx.fillStyle='#c94738';ctx.fillRect(x+3,y+10,T-6,12);
 }
 function drawCourse(ctx, rows, camX, t, opts = {}){
   const w = rows[0].length;
@@ -907,6 +977,9 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
   for (let y = 0; y < ROWS; y++) for (let x = x0; x <= x1; x++){
     const c = rows[y][x], px = x*T - camX, py = y*T;
     if (decorByKey[c]) paintDecor(ctx,decorByKey[c],px,py);
+    else if(WARP_ENTRIES.includes(c))paintWarp(ctx,px,py,WARP_ENTRIES.indexOf(c)+1,false);
+    else if(WARP_EXITS.includes(c))paintWarp(ctx,px,py,WARP_EXITS.indexOf(c)+1,true);
+    else if(c==='L' && !(opts.taken && opts.taken.has(x*ROWS+y)))paintLauncher(ctx,px,py);
     else if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
     else if (c === 'G') drawGoal(ctx, px, py);
@@ -1147,6 +1220,8 @@ function makeGame(canvas, rows, hooks){
   // endless: hooks.endless() hands out a fresh generated course on every (re)start
   let gen = null;
   if (hooks.endless){ gen = hooks.endless(); rows = gen.rows; }
+  else rows=rows.slice(); // explosions must not alter saved or published course data
+  const originalRows=rows.slice();
   let w = rows[0].length, W = w * T;
   const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22, LIFE_MAX = 15;
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
@@ -1158,6 +1233,7 @@ function makeGame(canvas, rows, hooks){
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
   // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
   let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
+  let launcherCharges=0, launcherShots=[], warpCooldown=0;
   // springs: when each spring, ball or cannon last went off. Each part only ignores the hamster
   // for a moment after its own bounce, so a fast hamster still hits the next one in its path
   let springs = new Map();
@@ -1204,7 +1280,8 @@ function makeGame(canvas, rows, hooks){
     paused = false; elapsed = 0;
     if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); }
+    if(!gen)rows=originalRows.slice();
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); if(!replaying)hooks.onLauncher?.(launcherCharges); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state !== 'ready' && state !== 'run') return;
@@ -1233,6 +1310,14 @@ function makeGame(canvas, rows, hooks){
       shots.push(s); B.onFire && B.onFire(s);
     }
     if (life <= 0){ life = 0; die('ライフ切れ'); }
+  }
+  function fireLauncher(){
+    if(B || state!=='run' || launcherCharges<=0)return false;
+    if(paused){paused=false;last=null;notify('run');}
+    remember({type:'launcher'});
+    launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});
+    sound('fire');if(!replaying)hooks.onLauncher?.(launcherCharges);
+    return true;
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
   function addShot(x, y, id, lag = 0, vy = 0, pw = 0, dir = 1){ if (state === 'run') shots.push({id, x: x + SHOT_V * dir * lag, y: y + vy * lag, vy, pw, dir, mine: false, age: lag}); }
@@ -1284,6 +1369,33 @@ function makeGame(canvas, rows, hooks){
     }
     shots = shots.filter(s => !s.gone && s.age < SHOT_LIFE);
   }
+  function launcherTarget(c,x,y){
+    return c!=='.' && c!=='S' && c!=='G' && !decorByKey[c] &&
+      !(taken.has(x*ROWS+y) && (c==='L' || c==='A' || itemByCh[c]));
+  }
+  function detonateLauncher(cx,cy){
+    const r=T*1.7;
+    for(let y=Math.max(0,Math.floor((cy-r)/T));y<=Math.min(ROWS-1,Math.floor((cy+r)/T));y++){
+      const tiles=rows[y].split('');let changed=false;
+      for(let x=Math.max(0,Math.floor((cx-r)/T));x<=Math.min(w-1,Math.floor((cx+r)/T));x++){
+        if(Math.hypot(x*T+T/2-cx,y*T+T/2-cy)>r || !launcherTarget(tiles[x],x,y))continue;
+        tiles[x]='.';changed=true;
+      }
+      if(changed)rows[y]=tiles.join('');
+    }
+    shake=.2;sound('boom');
+    for(let i=0;i<15;i++){const a=i*Math.PI*2/15;fx.push({k:'star',x:cx,y:cy,vx:Math.cos(a)*180,vy:Math.sin(a)*180,age:0,life:.35});}
+    fx.push({k:'ring',x:cx,y:cy,age:0,life:.32});
+  }
+  function stepLauncherShots(dt){
+    for(const s of launcherShots){
+      s.x+=540*dt;s.age+=dt;
+      const x=Math.floor(s.x/T),y=Math.floor(s.y/T);
+      if(x<0 || x>=w || y<0 || y>=ROWS || s.age>2.8){s.gone=true;continue;}
+      if(launcherTarget(rows[y][x],x,y)){s.gone=true;detonateLauncher(s.x,s.y);}
+    }
+    launcherShots=launcherShots.filter(s=>!s.gone);
+  }
   function step(dt){
     p.vy = Math.min(p.vy + GRAV*dt, 900);
     if (B){
@@ -1298,6 +1410,8 @@ function makeGame(canvas, rows, hooks){
       if (dashT > 0){ dashT -= dt; p.vx = SPEED + catchUp + dashDir * DASH_V; } else p.vx = SPEED + catchUp;
       stepShots(dt); if (state !== 'run') return;
     } else p.vx = SPEED;
+    warpCooldown=Math.max(0,warpCooldown-dt);
+    if(!B)stepLauncherShots(dt);
     // inside a cannon: held in the barrel, then shot up and forward
     if (cannon){
       cannon.t -= dt; p.x = cannon.x * T + (T - PW) / 2; p.y = cannon.y * T + (T - PH) / 2; p.vy = 0;
@@ -1326,6 +1440,14 @@ function makeGame(canvas, rows, hooks){
     for (let y = Math.max(0, Math.floor(cy/T)-1); y <= Math.min(ROWS-1, Math.floor(cy/T)+1); y++)
       for (let x = Math.max(0, Math.floor(cx/T)-1); x <= Math.min(w-1, Math.floor(cx/T)+1); x++){
         const c = rows[y][x];
+        const wn=WARP_ENTRIES.indexOf(c);
+        if(wn>=0 && warpCooldown<=0 && Math.hypot(cx-(x*T+T/2),cy-(y*T+T/2))<22){
+          const exit=find(WARP_EXITS[wn]);
+          if(exit){p.x=exit.x*T+(T-PW)/2;p.y=exit.y*T+(T-PH)/2;p.vy=0;kvx=0;cannon=null;warpCooldown=.6;sound('power');return;}
+        }
+        if(c==='L' && !B && !taken.has(x*ROWS+y) && Math.hypot(cx-(x*T+T/2),cy-(y*T+T/2))<24){
+          taken.add(x*ROWS+y);launcherCharges=2;sound('item');if(!replaying)hooks.onLauncher?.(launcherCharges);
+        }
         if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); }
         // spring: a big bounce that costs no life
@@ -1382,6 +1504,10 @@ function makeGame(canvas, rows, hooks){
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
     drawCourse(ctx, rows, camX, t, {spin: true, taken, springs});
+    if(!B)for(const s of launcherShots){
+      ctx.fillStyle='#d83d35';ctx.beginPath();ctx.arc(s.x-camX,s.y,5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#ffd3ad';ctx.lineWidth=2;ctx.stroke();
+    }
     if (B){
       const r = B.rival;
       if (r && r.x != null){
@@ -1433,14 +1559,16 @@ function makeGame(canvas, rows, hooks){
       reset(); history = [{index: 0, time: 0}];
       for (let i = 0; i < prefix.length; i++){
         const event = prefix[i];
-        if (event.type === 'jump') jump(); else simulateFrame(event.dt);
+        if (event.type === 'jump') jump();
+        else if(event.type==='launcher'){if(!fireLauncher())return false;}
+        else simulateFrame(event.dt);
         if (state === 'dead' || state === 'clear') return false;
         if (state === 'run') history.push({index: i + 1, time: elapsed});
       }
       trace = prefix; overflow = false; hasStarted = prefix.some(e => e.type === 'jump');
       rewindCount++; deaths = attempts; paused = state === 'run'; last = null;
       startedAt = performance.now() - elapsed * 1000;
-    } finally { replaying = false; }
+    } finally { replaying = false; hooks.onLauncher?.(launcherCharges); }
     draw(); notify(paused ? 'rewound' : 'ready'); return true;
   }
   function rewind(seconds){
@@ -1451,13 +1579,13 @@ function makeGame(canvas, rows, hooks){
   }
   function mark(){
     if (!canRewind || state !== 'run' || overflow) return false;
-    const next = {index: trace.length, time: elapsed, dist: dist(), rows: rows.join('\n'), route: trace.map(e => ({...e}))};
+    const next = {index: trace.length, time: elapsed, dist: dist(), rows: originalRows.join('\n'), route: trace.map(e => ({...e}))};
     if (hooks.onSaveCheckpoint && hooks.onSaveCheckpoint(next) === false) return false;
     checkpoint = next;
     hooks.onRewindInfo && hooks.onRewindInfo(); return true;
   }
   function loadCheckpoint(saved){
-    if (!canRewind || !saved || saved.rows !== rows.join('\n') || !Array.isArray(saved.route) || !saved.route.length || saved.route.length > MAX_TRACE) return false;
+    if (!canRewind || !saved || saved.rows !== originalRows.join('\n') || !Array.isArray(saved.route) || !saved.route.length || saved.route.length > MAX_TRACE) return false;
     const check = makeGame(null, rows.slice(), {manual:true, headless:true, silent:true});
     try {
       for (const event of saved.route) if (!check.replayEvent(event)) return false;
@@ -1470,6 +1598,7 @@ function makeGame(canvas, rows, hooks){
   function replayEvent(event){
     if (!hooks.manual || B || gen || !event || (state !== 'ready' && state !== 'run')) return false;
     if (event.type === 'jump') jump();
+    else if (event.type === 'launcher'){if(!fireLauncher())return false;}
     else if (event.type === 'frame' && Number.isFinite(event.dt) && event.dt >= 0 && event.dt <= .05) simulateFrame(event.dt);
     else return false;
     return state !== 'dead';
@@ -1477,7 +1606,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
   reset(); if (hooks.checkpoint) loadCheckpoint(hooks.checkpoint); if (!hooks.manual) raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
+  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get launcherCharges(){return launcherCharges;}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
     rewind, mark, resume, restoreCheckpoint(){ return checkpoint ? restoreAt(checkpoint, checkpoint.route) : false; }, replayEvent,
     get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {index: checkpoint.index, time: checkpoint.time, dist: checkpoint.dist}, count: rewindCount, overflow}; },
     get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
@@ -1634,9 +1763,14 @@ function patchMe(patch){
 
 /* ---------- player overlay ---------- */
 let game = null, current = null, lastClear = {sec: 0, deaths: 0};
+function showLauncherAmmo(n){
+  const button=$('pl-launcher');button.hidden=!n;
+  button.textContent=`発射 ×${n}`;
+}
 function openPlayer(course, mode){
   current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
   $('pl-rewind').hidden = true;
+  showLauncherAmmo(0);
   $('pl-title').textContent = course.title || '名前のないコース';
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer(); $('pl-stage').focus({preventScroll: true});
   if (game) game.stop();
@@ -1652,11 +1786,11 @@ function openPlayer(course, mode){
   }
   if (mode === 'endless'){
     const best = myEndless();
-    game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
+    game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, onLauncher:showLauncherAmmo, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
   const savedPoint = mode === 'test' && social.isOwner === true ? savedTestCheckpoint(current.draftId) : null;
-  game = makeGame($('pl-canvas'), course.rows, { onState, look: myLook(), rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
 }
 function savedTestCheckpoint(id){
@@ -1670,7 +1804,7 @@ function saveTestCheckpoint(point){
   catch { toast('保存容量が足りません。前の再開地点を残しました'); return false; }
   toast('再開地点を保存しました。次のプレイでも使えます'); return true;
 }
-function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; showLauncherAmmo(0); if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
 function renderRewindControls(){
   const allowed = current && current.mode === 'test' && social.isOwner === true && game && game.rewindInfo.enabled;
   $('pl-rewind').hidden = !allowed;
@@ -1829,6 +1963,8 @@ function press(e){
   game.jump();
 }
 $('pl-stage').addEventListener('pointerdown', press);
+$('pl-launcher').onpointerdown=e=>e.stopPropagation();
+$('pl-launcher').onclick=e=>{e.stopPropagation();if(game)game.fireLauncher();};
 // battle buttons react on touch-down so they feel instant
 const ctl = (id, fn) => $(id).addEventListener('pointerdown', e => { e.preventDefault(); if (e.pointerType === 'touch') return; if (game && inBattle() && !battle.result) fn(); });
 ctl('ct-back', () => game.dash(-1)); ctl('ct-fwd', () => game.dash(1)); ctl('ct-fire', () => game.fire());
@@ -1851,6 +1987,7 @@ addEventListener('keydown', e => {
     if (e.code === 'Space' && e.target.closest && e.target.closest('#overlay button')) return;
     if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
     if (inBattle() && game && !e.repeat){ if (e.code === 'ArrowLeft') game.dash(-1); if (e.code === 'ArrowRight') game.dash(1); if (e.code === 'KeyX' || e.code === 'KeyF') game.fire(); }
+    if (!inBattle() && game && !e.repeat && (e.code==='KeyX'||e.code==='KeyF')){e.preventDefault();game.fireLauncher();}
     if (e.code === 'Escape') closePlayer();
   } else if (!$('sheet-bg').hidden && e.code === 'Escape') closeSheet();
 });
@@ -2018,7 +2155,7 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, tool: '#', cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+const editor = { rows: null, tool: '#', warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -2207,12 +2344,22 @@ function renderDecorTools(){
   box.dataset.likes=String(likes);box.dataset.tool=editor.tool;
   box.replaceChildren(...DECOR.map(d=>{
     const unlocked=likes>=d.n;
-    return el('button',{class:'tool','data-t':d.key,'aria-pressed':String(editor.tool===d.key),disabled:unlocked?false:'disabled',title:unlocked?d.name:`${d.n}いいねで解放（あと${d.n-likes}）`,onclick:()=>{if(!unlocked)return;editor.tool=d.key;syncEditorTools();}},
-      el('span',{text:unlocked?d.emoji:'🔒'}),el('span',{text:d.name}),unlocked?null:el('small',{text:`${d.n}♥`}));
+    return el('button',{class:'tool','data-t':d.key,'aria-pressed':String(editor.tool===d.key),disabled:unlocked?false:'disabled','aria-label':unlocked?d.name:`${d.name}（${d.n}いいねで解放）`,title:unlocked?d.name:`${d.n}いいねで解放（あと${d.n-likes}）`,onclick:()=>{if(!unlocked)return;editor.tool=d.key;syncEditorTools();}},
+      el('img',{src:`decor/${DECOR_ASSETS[d.key]}.png`,alt:'',loading:'lazy'}),unlocked?null:el('span',{class:'decor-lock',text:'🔒'}));
   }));
   $('ed-decor-note').textContent=`もらったいいね ${likes}・解放済み ${DECOR.filter(d=>likes>=d.n).length}/${DECOR.length}種類。飾りは通り抜けられます。`;
 }
-function syncEditorTools(){document.querySelectorAll('.tool').forEach(b=>b.setAttribute('aria-pressed',String(editor.tool===b.dataset.t)));}
+function syncEditorTools(){
+  document.querySelectorAll('.tool, #ed-eraser').forEach(b=>b.setAttribute('aria-pressed',String(editor.tool===b.dataset.t)));
+  const warp=editor.tool==='warp-in'||editor.tool==='warp-out';
+  $('ed-warp-controls').hidden=!warp;
+  if(warp){$('ed-warp-label').textContent=editor.tool==='warp-in'?'ワープ入口の番号':'ワープ出口の番号';$('ed-warp-num').value=String(editor.warpNumber);}
+}
+function editorPlacementChar(){
+  if(editor.tool==='warp-in')return WARP_ENTRIES[editor.warpNumber-1];
+  if(editor.tool==='warp-out')return WARP_EXITS[editor.warpNumber-1];
+  return editor.tool;
+}
 function drawEditor(){
   renderDecorTools();
   const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW(), k = 640 / VW;
@@ -2242,7 +2389,7 @@ function setCell(x, y, c){
   const w = editor.rows[0].length;
   if (x < 0 || x >= w || y < 0 || y >= ROWS) return;
   if (editor.rows[y][x] === c) return;
-  if (c === 'S' || c === 'G') editor.rows = editor.rows.map(r => r.replaceAll(c, '.'));
+  if (c === 'S' || c === 'G' || WARP_ENTRIES.includes(c) || WARP_EXITS.includes(c)) editor.rows = editor.rows.map(r => r.replaceAll(c, '.'));
   const r = editor.rows[y].split(''); r[x] = c; editor.rows[y] = r.join('');
   editor.cleared = false; updatePubBtn(); drawEditor();
 }
@@ -2266,7 +2413,7 @@ edCv.addEventListener('pointerdown', e => {
   }
   if (touches.size > 2) return;
   painting = true; before = editorSnapshot();
-  const [x,y] = cellFrom(e); setCell(x, y, editor.tool);
+  const [x,y] = cellFrom(e); setCell(x, y, editorPlacementChar());
 });
 edCv.addEventListener('pointermove', e => {
   if (!touches.has(e.pointerId)) return;
@@ -2276,7 +2423,7 @@ edCv.addEventListener('pointermove', e => {
     editor.cols = Math.max(MIN_COLS, Math.min(maxCols(), pinch.cols * pinch.d / st.d));
     editor.cam = pinch.world - st.f * viewW(); drawEditor(); return;
   }
-  if (!painting || editor.tool === 'S' || editor.tool === 'G') return; const [x,y] = cellFrom(e); setCell(x, y, editor.tool);
+  if (!painting || editor.tool === 'S' || editor.tool === 'G' || editor.tool.startsWith('warp-')) return; const [x,y] = cellFrom(e); setCell(x, y, editorPlacementChar());
 });
 const lift = e => {
   touches.delete(e.pointerId);
@@ -2294,6 +2441,8 @@ $('ed-zin').onclick = () => setZoom(editor.cols / 1.6);
 $('ed-zall').onclick = () => { editor.cols = maxCols(); editor.cam = 0; drawEditor(); };
 $('ed-scroll').addEventListener('input', e => { editor.cam = +e.target.value; drawEditor(); });
 document.querySelectorAll('.tools:not(#ed-decor) .tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; syncEditorTools(); });
+$('ed-warp-num').onchange=e=>{editor.warpNumber=Number(e.target.value);syncEditorTools();};
+$('ed-eraser').onclick = () => { editor.tool = '.'; syncEditorTools(); };
 const SIZES = [40, 80, 150];
 const sizeName = c => { const len = c.rows[0].length; return len <= 50 ? 'ショート' : len <= 110 ? 'ミドル' : 'ロング'; };
 function syncWidth(){ const w = editor.rows[0].length; $('ed-width').value = SIZES.reduce((a, b) => Math.abs(b - w) < Math.abs(a - w) ? b : a); }
@@ -2317,6 +2466,9 @@ function validate(){
   const all = editor.rows.join('');
   if (!all.includes('S')) return 'スタートを置いてください';
   if (!all.includes('G')) return 'ゴールラインを置いてください';
+  for(let i=0;i<5;i++){
+    if(all.includes(WARP_ENTRIES[i])!==all.includes(WARP_EXITS[i]))return `ワープ${i+1}の入口と出口を両方置いてください`;
+  }
   if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
@@ -2399,7 +2551,15 @@ function thumb(rows){
   const off = 0;
   for (let r = 0; r < ROWS; r++) for (let i = 0; i < Math.min(w, 90); i++){
     const ch = rows[r][i + off];
-    if (decorByKey[ch]){x.font='8px sans-serif';x.fillText(decorByKey[ch].emoji,i*s,r*s+5);}
+    if (decorByKey[ch]){
+      const img=decorArt[ch];
+      if(img && img.complete && img.naturalWidth) x.drawImage(img,i*s,r*s,s,s);
+      else {x.font='8px sans-serif';x.fillText(decorByKey[ch].emoji,i*s,r*s+5);}
+    }
+    if(WARP_ENTRIES.includes(ch) || WARP_EXITS.includes(ch)){
+      x.fillStyle=WARP_ENTRIES.includes(ch)?'#54267a':'#b9a1d8';x.beginPath();x.arc(i*s+2,r*s+2,2,0,Math.PI*2);x.fill();
+    }
+    if(ch==='L'){x.fillStyle='#c94738';x.fillRect(i*s,r*s+1,s,2);}
     if (ch === '#'){ x.fillStyle = '#7a5233'; x.fillRect(i*s, r*s, s, s); }
     if (ch === '*'){ x.fillStyle = '#5a3410'; x.beginPath(); x.arc(i*s+2, r*s+2, 2.2, 0, 7); x.fill(); }
     if (ch === 'A'){ x.fillStyle = '#c98b4a'; x.fillRect(i*s, r*s, s, s); }
