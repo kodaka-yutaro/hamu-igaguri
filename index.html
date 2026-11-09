@@ -276,6 +276,17 @@ input[type=range]{width:100%}
 .person .info{min-width:0;display:flex;flex-direction:column}
 .person .info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+.bamboo-event{max-width:700px;margin:auto;width:100%;gap:12px}
+.bamboo-scroll{height:min(66dvh,590px);overflow-y:auto;overscroll-behavior:contain;border-radius:22px;background:linear-gradient(90deg,#e4f4d9,#f7f9e9 45%,#e4f4d9);scrollbar-width:thin}
+.bamboo-tower{width:min(74%,340px);margin:20px auto;display:flex;flex-direction:column;border-left:24px solid #74b93d;border-right:24px solid #74b93d;border-radius:38px 38px 22px 22px;box-shadow:inset 8px 0 #b3dc77,inset -8px 0 #4f992e;position:relative}
+.bamboo-floor{height:170px;flex:none;position:relative;display:flex;align-items:center;justify-content:center;border:0;border-bottom:15px solid #7bbd48;border-radius:0 0 45% 45% / 0 0 11% 11%;background:linear-gradient(90deg,#f5fbe9,#fffdf0,#f5fbe9);cursor:pointer;color:#42632c}
+.bamboo-floor:first-child{border-top:14px solid #8bc853;border-radius:45% 45% 45% 45% / 8% 8% 11% 11%}
+.bamboo-floor.cleared{background:linear-gradient(90deg,#dff6c8,#f4ffde,#dff6c8)}
+.bamboo-floor.selected{outline:3px solid #f1bb35;outline-offset:-5px}
+.bamboo-floor-label{position:absolute;left:8px;top:10px;font-weight:800;font-size:15px}
+.bamboo-ham{width:118px;height:118px;object-fit:contain}
+.bamboo-selected{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 4px}
+@media(max-width:450px){.bamboo-tower{width:85%;border-left-width:17px;border-right-width:17px}.bamboo-floor{height:145px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -302,9 +313,25 @@ input[type=range]{width:100%}
     <button id="tab-make" role="tab" aria-selected="false">つくる</button>
     <button id="tab-people" role="tab" aria-selected="false">みんな</button>
     <button id="tab-board" role="tab" aria-selected="false">けいじばん</button>
+    <button id="tab-event" role="tab" aria-selected="false">❗</button>
     <button id="tab-me" role="tab" aria-selected="false">マイページ</button>
   </nav>
 
+  <section id="view-event" class="col" hidden>
+    <div class="card bamboo-event">
+      <h2>イガグリバンブーハウスチャレンジ</h2>
+      <p class="muted">10階の竹を登ろう！ ※現在は画面・進行演出のサンプルです。実際のコースや報酬は未設定です。</p>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong id="bamboo-progress">0 / 10階 クリア</strong>
+        <button class="btn sm" id="bamboo-reset">サンプルをリセット</button>
+      </div>
+      <div class="bamboo-scroll" id="bamboo-scroll" aria-label="上下にスワイプして階を移動">
+        <div class="bamboo-tower" id="bamboo-tower"></div>
+      </div>
+      <div class="bamboo-selected" id="bamboo-selected"></div>
+      <p class="muted" style="text-align:center">竹を上下にスワイプ・スクロールして階を選択できます。</p>
+    </div>
+  </section>
   <section id="view-play" class="col" style="gap:14px">
     <div class="card endless" id="endless"></div>
     <div id="play-account-hint" class="account-hint" hidden></div>
@@ -3172,14 +3199,55 @@ function renderAccount(){
   if (focused && box.querySelector('#' + focused)) $(focused).focus({preventScroll: true});
 }
 
+/* ---------- Bamboo house event sample ---------- */
+let bambooCleared=0, bambooSelected=1;
+function renderBamboo(){
+  const tower=$('bamboo-tower');
+  if(!tower)return;
+  tower.replaceChildren();
+  for(let floor=10;floor>=1;floor--){
+    const room=document.createElement('button');
+    room.type='button';room.className='bamboo-floor';
+    room.classList.toggle('cleared',floor<=bambooCleared);
+    room.classList.toggle('current',floor===Math.min(10,bambooCleared+1));
+    room.classList.toggle('selected',floor===bambooSelected);
+    room.setAttribute('aria-label',floor+'階 '+(floor<=bambooCleared?'クリア済み':floor===bambooCleared+1?'挑戦可能':'未解放'));
+    const tag=document.createElement('span');tag.className='bamboo-floor-label';
+    tag.textContent=floor+'階 '+(floor<=bambooCleared?'✓':floor>bambooCleared+1?'🔒':'');
+    room.append(tag);
+    if(floor===Math.min(10,bambooCleared+1)){
+      const c=document.createElement('canvas');c.width=120;c.height=120;c.className='bamboo-ham';
+      room.append(c);paintAvatar(c,myLook());
+    }
+    room.onclick=()=>{bambooSelected=floor;renderBamboo();};
+    tower.append(room);
+  }
+  $('bamboo-progress').textContent=bambooCleared+' / 10階 クリア';
+  const active=bambooSelected<=bambooCleared+1;
+  const detail=$('bamboo-selected');detail.replaceChildren();
+  const title=document.createElement('strong');title.textContent=bambooSelected+'階 '+(bambooSelected<=bambooCleared?'クリア済み':active?'挑戦可能':'未解放');
+  detail.append(title);
+  if(active&&bambooCleared<10&&bambooSelected===bambooCleared+1){
+    const btn=document.createElement('button');btn.className='btn primary';btn.textContent='サンプル：この階をクリア';
+    btn.onclick=()=>{bambooCleared++;bambooSelected=Math.min(10,bambooCleared+1);renderBamboo();bambooScrollToCurrent();};
+    detail.append(btn);
+  }else if(bambooCleared===10){const msg=document.createElement('span');msg.textContent='10階達成！ ※報酬は未実装';detail.append(msg);}
+}
+function bambooScrollToCurrent(){
+  const scroll=$('bamboo-scroll'), current=scroll.querySelector('.bamboo-floor.current')||scroll.querySelector('.bamboo-floor.cleared');
+  if(current)scroll.scrollTop=current.offsetTop-scroll.offsetTop-scroll.clientHeight/2+current.clientHeight/2;
+}
+$('bamboo-reset').onclick=()=>{bambooCleared=0;bambooSelected=1;renderBamboo();bambooScrollToCurrent();};
+
 /* ---------- tabs & render ---------- */
-const TABS = ['play','make','people','board','me'];
+const TABS = ['play','make','people','board','event','me'];
 let tab = 'play';
 function setTab(name){
   tab = name;
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
   if (name === 'make'){ showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
+  if (name === 'event'){renderBamboo();requestAnimationFrame(bambooScrollToCurrent);}
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
