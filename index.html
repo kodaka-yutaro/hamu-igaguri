@@ -2498,7 +2498,8 @@ function setCell(x, y, c){
   const w = editor.rows[0].length;
   if (x < 0 || x >= w || y < 0 || y >= ROWS) return;
   if (editor.rows[y][x] === c) return;
-  if (c === 'S' || c === 'G' || WARP_ENTRIES.includes(c) || WARP_EXITS.includes(c)) editor.rows = editor.rows.map(r => r.replaceAll(c, '.'));
+  // Start, goal and each warp exit remain unique; matching warp entries may be placed multiple times.
+  if (c === 'S' || c === 'G' || WARP_EXITS.includes(c)) editor.rows = editor.rows.map(r => r.replaceAll(c, '.'));
   const r = editor.rows[y].split(''); r[x] = c; editor.rows[y] = r.join('');
   editor.cleared = false; updatePubBtn(); drawEditor();
 }
