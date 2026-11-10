@@ -35,7 +35,7 @@ test('two fast touchscreen presses fire twice, without duplicate synthetic click
 test('launcher button remains visible after the first of two shots',()=>{
   const start=html.indexOf('function showLauncherAmmo(n){');
   const end=html.indexOf('function openPlayer(',start);
-  const button={hidden:true,textContent:''};
+  const button={hidden:true,textContent:'',setAttribute(k,v){this[k]=v;}};
   const context={$:()=>button};
   vm.runInNewContext(html.slice(start,end),context);
   context.showLauncherAmmo(2);
@@ -44,4 +44,5 @@ test('launcher button remains visible after the first of two shots',()=>{
   assert.equal(button.hidden,false);assert.match(button.textContent,/×1/);
   context.showLauncherAmmo(0);
   assert.equal(button.hidden,true);
+  context.showLauncherAmmo(Infinity);assert.equal(button.hidden,false);assert.equal(button['aria-label'],'どんぐりを前方に発射');
 });
