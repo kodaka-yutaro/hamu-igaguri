@@ -138,9 +138,9 @@ test('cancelled or stale verification cannot grant a clear and leaves no animati
   const rows=course(),h=setup(rows),g=h.game;g.jump();h.until(()=>g.state==='clear');const count=h.scheduled.size;
   assert.equal(await h.verify(rows,g.route,()=>true),false);assert.equal(h.scheduled.size,count);
 });
-function openHooks(isOwner, mode){
+function openHooks(isOwner, mode, operatorTest = true){
   let captured;
-  const nodes = new Map();
+  const nodes = new Map([['ed-admin-test', {checked:operatorTest}]]);
   const ctx = {social:{isOwner}, activeDraftId:'draft-a', game:null, current:null,
     $:id=>{if(!nodes.has(id))nodes.set(id,{style:{},focus(){}});return nodes.get(id);},
     document:{body:{style:{}}}, fitPlayer(){},renderRewindControls(){},savedTestCheckpoint(){return null;},saveTestCheckpoint(){},myLook:()=>({}),onState(){},showLauncherAmmo(){},
@@ -151,6 +151,8 @@ function openHooks(isOwner, mode){
 }
 test('the actual player enables rewind only for an operator editing their test course', () => {
   assert.equal(openHooks(true,'test').rewind,true);
+  assert.equal(openHooks(true,'test',false).rewind,false);
+  assert.equal(openHooks(true,'test',false).checkpoint,null);
   assert.equal(openHooks(false,'test').rewind,false);
   assert.equal(openHooks(true,'course').rewind,false);
   assert.equal(openHooks(false,'course').rewind,false);

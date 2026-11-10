@@ -345,6 +345,7 @@ input[type=range]{width:100%}
     </div>
     <div class="row" style="justify-content:space-between;gap:6px">
       <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
+      <span class="muted">PC：右ドラッグでマップ移動・Eで消しゴム</span>
       <div class="row" style="gap:6px"><button class="btn sm" id="ed-zout" aria-label="縮小">－</button><span class="muted" id="ed-zoom-v" style="min-width:3em;text-align:center">等倍</span><button class="btn sm" id="ed-zin" aria-label="拡大">＋</button><button class="btn sm" id="ed-zall">全体</button></div>
     </div>
     <div class="stage tall editor-stage" id="ed-stage">
@@ -383,6 +384,7 @@ input[type=range]{width:100%}
     <div class="row" style="justify-content:space-between">
       <div class="row">
         <button class="btn" id="ed-test">テストプレイ</button>
+        <label id="ed-test-options" hidden><input type="checkbox" id="ed-admin-test"> 運営用テストプレイ（巻き戻し・保存地点）</label>
         <button class="btn primary" id="ed-pub" disabled>公開する</button>
       </div>
       <div class="row" style="gap:6px">
@@ -1858,8 +1860,9 @@ function openPlayer(course, mode){
     game = makeGame($('pl-canvas'), null, { onState, onItem: gotItem, onLauncher:showLauncherAmmo, look: myLook(), endless: () => endlessCourse(Math.random() * 4294967296, 0, {pieces: social.pieces.map(c => c.piece)}), hud: n => $('pl-hud').textContent = `きょり ${n}マス　ベスト ${Math.max(best, myEndless())}マス` });
     return;
   }
-  const savedPoint = mode === 'test' && social.isOwner === true ? savedTestCheckpoint(current.draftId) : null;
-  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], rewind: mode === 'test' && social.isOwner === true, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  const operatorTest = mode === 'test' && social.isOwner === true && $('ed-admin-test').checked;
+  const savedPoint = operatorTest ? savedTestCheckpoint(current.draftId) : null;
+  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], rewind: operatorTest, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
 }
 function savedTestCheckpoint(id){
@@ -1972,7 +1975,7 @@ async function recordClear(course, sec){
 function onState(s, info){
   trackCourseRun(s);
   renderRewindControls();
-  if (s === 'ready') showMsg('タップでスタート', 'スペース / ↑ / タップで跳ねる');
+  if (s === 'ready') showMsg('タップでスタート', 'Space / ↑ / タップでジャンプ・Gでランチャー発射');
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'rewound') showMsg('巻き戻しました', 'ライフ・取得済みアイテム・ギミックも保存時点の状態です', [['ここから再開', () => game.resume(), true], ['ジャンプして再開', () => game.jump()]]);
   if (s === 'dead' && current && current.mode === 'endless'){
@@ -2063,14 +2066,18 @@ $('overlay').addEventListener('touchstart', e => {
 $('pl-close').onclick = closePlayer;
 $('pl-mute').onclick = () => { setMute(!muted); $('pl-stage').focus({preventScroll: true}); }; setMute(muted);
 addEventListener('keydown', e => {
+  if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])') && e.code !== 'Escape') return;
   if (!$('overlay').hidden){
-    if (e.target.closest && e.target.closest('input, textarea, select') && e.code !== 'Escape') return;
     if (e.code === 'Space' && e.target.closest && e.target.closest('#overlay button')) return;
-    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') press(e);
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW'){ e.preventDefault(); if (!e.repeat) press(e); }
     if (inBattle() && game && !e.repeat){ if (e.code === 'ArrowLeft') game.dash(-1); if (e.code === 'ArrowRight') game.dash(1); if (e.code === 'KeyX' || e.code === 'KeyF') game.fire(); }
-    if (!inBattle() && game && !e.repeat && (e.code==='KeyX'||e.code==='KeyF')){e.preventDefault();game.fireLauncher();}
+    if (!inBattle() && game && (e.code==='KeyG'||e.code==='KeyX'||e.code==='KeyF')){e.preventDefault();if(!e.repeat)game.fireLauncher();}
     if (e.code === 'Escape') closePlayer();
   } else if (!$('sheet-bg').hidden && e.code === 'Escape') closeSheet();
+  else if ($('sheet-bg').hidden && tab === 'make' && !$('course-editor').hidden && e.code === 'KeyE'){
+    e.preventDefault(); if (!e.repeat) $('ed-eraser').click();
+  }
 });
 
 /* ---------- sheets (course detail, profile) ---------- */
@@ -2515,11 +2522,21 @@ function cellFrom(e){
   return [Math.floor((lx + editor.cam) / T), Math.floor(ly / T)];
 }
 // one finger paints; two fingers drag to scroll and pinch to zoom
-let painting = false, before = null, pinch = null;
+let painting = false, before = null, pinch = null, mousePan = null;
 const touches = new Map();
 const edCv = $('ed-canvas');
 const pinchState = () => { const [p, q] = [...touches.values()], rc = edCv.getBoundingClientRect(); return { d: Math.hypot(p.x - q.x, p.y - q.y) || 1, f: ((p.x + q.x) / 2 - rc.left) / rc.width }; };
+edCv.addEventListener('contextmenu', e => e.preventDefault());
 edCv.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button === 2){
+    e.preventDefault();
+    if (touches.size || mousePan) return;
+    mousePan = {id:e.pointerId, x:e.clientX, cam:editor.cam, scale:viewW()/edCv.getBoundingClientRect().width};
+    edCv.style.cursor = 'grabbing';
+    try { edCv.setPointerCapture(e.pointerId); } catch {}
+    return;
+  }
+  if (mousePan || (e.pointerType === 'mouse' && e.button !== 0)) return;
   touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); try { edCv.setPointerCapture(e.pointerId); } catch {}
   if (touches.size === 2){
     // second finger: take back what the first finger just painted and switch to moving the view
@@ -2532,6 +2549,11 @@ edCv.addEventListener('pointerdown', e => {
   const [x,y] = cellFrom(e); paintEditorCell(x, y);
 });
 edCv.addEventListener('pointermove', e => {
+  if (mousePan && mousePan.id === e.pointerId){
+    if (!(e.buttons & 2)){ lift(e); return; }
+    editor.cam = mousePan.cam - (e.clientX - mousePan.x) * mousePan.scale;
+    drawEditor(); return;
+  }
   if (!touches.has(e.pointerId)) return;
   touches.set(e.pointerId, {x: e.clientX, y: e.clientY});
   if (pinch && touches.size === 2){
@@ -2542,11 +2564,13 @@ edCv.addEventListener('pointermove', e => {
   if (!painting || (editor.mode==='course' && (editor.tool === 'S' || editor.tool === 'G' || editor.tool.startsWith('warp-')))) return; const [x,y] = cellFrom(e); paintEditorCell(x, y);
 });
 const lift = e => {
+  if (mousePan && mousePan.id === e.pointerId){ mousePan = null; edCv.style.cursor = ''; return; }
   touches.delete(e.pointerId);
   if (painting){ pushUndo(before); painting = false; before = null; saveDraft(); }
   if (touches.size < 2) pinch = null;
 };
 edCv.addEventListener('pointerup', lift); edCv.addEventListener('pointercancel', lift);
+edCv.addEventListener('lostpointercapture', lift);
 edCv.addEventListener('wheel', e => {
   e.preventDefault();
   if (e.ctrlKey){ const rc = edCv.getBoundingClientRect(); setZoom(editor.cols * Math.exp(e.deltaY * .01), (e.clientX - rc.left) / rc.width); return; } // trackpad pinch
@@ -2598,6 +2622,8 @@ $('ed-test').onclick = () => { const err = validate(); if (err) return toast(err
 const edKind = () => social.isOwner ? $('ed-kind').value : '';
 function renderEdOp(){
   $('ed-op').hidden = !social.isOwner;
+  $('ed-test-options').hidden = !social.isOwner;
+  if (!social.isOwner) $('ed-admin-test').checked = false;
   if (!social.isOwner) return;
   const k = edKind();
   $('ed-pub').textContent = k === 'official' ? '公式コースとして公開' : k === 'piece' ? 'エンドレスに追加' : '公開する';
