@@ -388,6 +388,7 @@ input[type=range]{width:100%}
       <button class="tool" data-t="warp-in" aria-label="ワープ入口" title="ワープ入口" aria-pressed="false"></button>
       <button class="tool" data-t="warp-out" aria-label="ワープ出口" title="ワープ出口" aria-pressed="false"></button>
       <button class="tool" data-t="M" aria-label="金属ブロック" title="金属ブロック" aria-pressed="false"></button>
+      <button class="tool" data-t="W" aria-label="進化どんぐり" title="進化どんぐり（ボス戦用）" aria-pressed="false" hidden></button>
       <button class="tool" data-t="L" aria-label="ランチャー" title="ランチャー" aria-pressed="false"></button>
     </div>
     <div class="row warp-controls" id="ed-warp-controls" hidden>
@@ -421,12 +422,12 @@ input[type=range]{width:100%}
     <div class="card col" id="ed-boss-admin" hidden>
       <label><input type="checkbox" id="ed-boss-enabled"> バンブーハウス用ボス戦モード</label>
       <div id="ed-boss-settings" hidden class="col">
-        <p class="muted">ボス撃破で勝利。コースは周回します。Spaceでジャンプ（ライフ消費なし）、G／発射ボタンで無限ランチャー（0.35秒間隔）。敵の攻撃・接触は3ダメージ、被弾後0.9秒無敵。</p>
+        <p class="muted">ボス撃破で勝利。コースは周回します。Spaceでジャンプ（ライフ消費なし）、G／発射ボタンでどんぐり発射（0.8秒間隔）。進化どんぐりで2段階まで進化。被弾で1段階低下、進化0で被弾すると死亡。被弾後0.9秒無敵。</p>
         <div class="row"><label>ボスHP <input id="boss-hp" type="number" min="1" max="999" value="30"></label></div>
         <div class="row"><label>通常の攻撃順 <input id="boss-cycle" type="text" maxlength="95" value="1,2,2,1,5"></label><label>間隔（秒） <input id="boss-interval" type="number" min="1" max="60" step="0.1" value="6"></label></div>
         <div class="row"><label>怒り時の攻撃順 <input id="boss-rage-cycle" type="text" maxlength="95" value="7,6,4,3,5"></label><label>怒り時の間隔（秒） <input id="boss-rage-interval" type="number" min="1" max="60" step="0.1" value="4"></label></div>
         <p class="muted">HPが半分未満になると怒り状態。番号をカンマで区切って指定（最大32個）。間隔は攻撃開始から次の開始まで。予告まで含めて一定間隔です。最短間隔：攻撃1は1.3秒、4は2秒、7は3秒、5は4秒（その他は1秒）。</p>
-        <p class="muted">1：イガグリ3発 ／ 2：縦一列の壁 ／ 3：2×2イガグリ ／ 4：急上下移動＋イガグリ配置 ／ 5：突進・画面外で2秒待って帰還 ／ 6：縦壁を横に5列 ／ 7：イガグリ10発。壁はランチャーで破壊できます。</p>
+        <p class="muted">1：イガグリ3発 ／ 2：縦一列の壁 ／ 3：2×2イガグリ ／ 4：急上下移動＋イガグリ配置 ／ 5：突進・画面外で2秒待って帰還 ／ 6：縦壁を横に5列 ／ 7：イガグリ10発。壁は発射したどんぐりで破壊できます。</p>
         <p id="boss-error" role="status"></p>
         <div class="row"><canvas id="boss-preview" width="240" height="240" style="width:120px;height:120px;background:#e6f0d5;border-radius:16px" aria-label="ボスの見た目"></canvas><div id="boss-look-controls" class="row"></div></div>
       </div>
@@ -1061,7 +1062,7 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
     else if (c === 'M') drawMetalBlock(ctx,px,py);
     else if (c === '#') drawBlock(ctx, px, py, y === 0 || rows[y-1][x] !== '#');
     else if (c === '*') drawBurr(ctx, px+T/2, py+T/2, opts.spin ? t : 0);
-    else if (c === 'G') drawGoal(ctx, px, py);
+    else if (c === 'G' && !opts.hideGoal) drawGoal(ctx, px, py);
     else if (c === 'O') drawBall(ctx, px + T/2, py + T/2, opts.springs && opts.springs.has(x*ROWS + y) ? t - opts.springs.get(x*ROWS + y) : 9);
     else if (c === 'C') drawCannon(ctx, px, py, opts.springs && opts.springs.has(x*ROWS + y) ? t - opts.springs.get(x*ROWS + y) : 9, t);
     else if (c === 'J') drawSpring(ctx, px, py, opts.springs && opts.springs.has(x*ROWS + y) ? t - opts.springs.get(x*ROWS + y) : 9);
@@ -1362,7 +1363,8 @@ function makeGame(canvas, rows, hooks){
   const G = find('G') || {x: 0, y: 5};
   const goalX = gen || boss ? Infinity : G.x * T;
   const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
-  const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : (rows[ty][tx] === '#' || rows[ty][tx] === 'M'));
+  const tileX = tx => boss ? ((tx % w) + w) % w : tx;
+  const solid = (tx, ty) => !boss && (tx < 0 || tx >= w) ? true : (ty < 0 || ty >= ROWS ? false : (rows[ty][tileX(tx)] === '#' || rows[ty][tileX(tx)] === 'M'));
   // Bounce balls may overlap each other, but their knock-back must never push the hamster through ground blocks.
   function pushAgainstBlocks(dx, dy){
     if (dx){
@@ -1394,7 +1396,7 @@ function makeGame(canvas, rows, hooks){
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     if(!gen)rows=originalRows.slice();
     p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=boss?Infinity:0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); if(!replaying)hooks.onLauncher?.(launcherCharges); }
-  function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
+  function clampCam(px){ return boss ? px - VIEW_W*.3 : Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state !== 'ready' && state !== 'run') return;
     if (paused){ paused = false; last = null; notify('run'); }
@@ -1427,7 +1429,8 @@ function makeGame(canvas, rows, hooks){
     if(B || state!=='run' || launcherCharges<=0 || (boss && bossFireCd>0))return false;
     if(paused){paused=false;last=null;notify('run');}
     remember({type:'launcher'});
-    if(boss)bossFireCd=.35;else launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});
+    if(boss){bossFireCd=SHOT_CD;for(const vy of (power>=2?[-90,0,90]:[0]))launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0,vy,pw:power});}
+    else {launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});}
     sound('fire');if(!replaying)hooks.onLauncher?.(launcherCharges);
     return true;
   }
@@ -1501,11 +1504,16 @@ function makeGame(canvas, rows, hooks){
     for(let i=0;i<15;i++){const a=i*Math.PI*2/15;fx.push({k:'star',x:cx,y:cy,vx:Math.cos(a)*180,vy:Math.sin(a)*180,age:0,life:.35});}
     fx.push({k:'ring',x:cx,y:cy,age:0,life:.32});
   }
+  function takeBossHit(why){
+    if(hurtT>0)return;
+    if(power===0){life=0;die(why);return;}
+    power--;hurtT=.9;sound('hit');burst(p.x+PW/2,p.y+PH/2,true,0);
+  }
   function stepLauncherShots(dt){
     for(const s of launcherShots){
-      s.x+=540*dt;s.age+=dt;
-      if(boss){const hit=boss.hit(s.x-camX,s.y);if(hit){s.gone=true;detonateLauncher(s.x,s.y);if(boss.state.hp<=0){win();return;}continue;}}
-      const x=Math.floor(s.x/T),y=Math.floor(s.y/T);
+      s.x+=(boss?SHOT_V:540)*dt;s.y+=(s.vy||0)*dt;s.age+=dt;
+      if(boss){const hit=boss.hit(s.x-camX,s.y,s.pw?14:10);if(hit){s.gone=true;detonateLauncher(s.x,s.y);if(boss.state.hp<=0){win();return;}continue;}}
+      const x=tileX(Math.floor(s.x/T)),y=Math.floor(s.y/T);
       if(x<0 || x>=w || y<0 || y>=ROWS || s.age>2.8){s.gone=true;continue;}
       if(rows[y][x]==='M'){s.gone=true;detonateLauncher(s.x,s.y);}else if(launcherTarget(rows[y][x])){s.gone=true;detonateLauncher(s.x,s.y);}
     }
@@ -1526,7 +1534,7 @@ function makeGame(canvas, rows, hooks){
       stepShots(dt); if (state !== 'run') return;
     } else p.vx = SPEED;
     warpCooldown=Math.max(0,warpCooldown-dt);
-    if(boss){bossFireCd=Math.max(0,bossFireCd-dt);hurtT=Math.max(0,hurtT-dt);const damage=boss.update(dt,{x:p.x-camX,y:p.y,w:PW,h:PH});if(damage){life=Math.max(0,life-damage);hurtT=.5;burst(p.x+PW/2,p.y+PH/2,true,damage);sound('hit');if(life<=0){die('ボスの攻撃に当たった');return;}}}
+    if(boss){bossFireCd=Math.max(0,bossFireCd-dt);hurtT=Math.max(0,hurtT-dt);if(boss.update(dt,{x:p.x-camX,y:p.y,w:PW,h:PH}))takeBossHit('ボスの攻撃に当たった');if(state!=='run')return;}
     if(!B)stepLauncherShots(dt);
     if(state!=='run')return;
     // inside a cannon: held in the barrel, then shot up and forward
@@ -1541,6 +1549,12 @@ function makeGame(canvas, rows, hooks){
     kvx *= Math.exp(-dt * 2.2); if (Math.abs(kvx) < 3) kvx = 0;
     p.vx += kvx;
     p.x += p.vx * dt;
+    if(boss && (p.x>=W || p.x<0)){
+      const shift=Math.floor(p.x/W)*W;p.x-=shift;camX-=shift;
+      for(const shot of launcherShots)shot.x-=shift;
+      for(const effect of fx)effect.x-=shift;
+      taken.clear();rows=originalRows.slice();springs.clear();cannon=null;
+    }
     if (p.vx < 0){ const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor(p.x / T); for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = (tx + 1) * T; break; } }
     if (gen && gen.zones && hooks.onZone){ const z = gen.zones[zoneAt]; if (z && p.x >= z.x * T){ zoneAt++; hooks.onZone(z.name); } }
     if (B) p.x = Math.max(S.x*T + 5, p.x);
@@ -1549,8 +1563,8 @@ function makeGame(canvas, rows, hooks){
     for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = tx * T - PW; break; }
     p.y += p.vy * dt;
     const tx0 = Math.floor(p.x / T), tx1 = Math.floor((p.x + PW - 0.01) / T);
-    if (p.vy > 0){ const ty = Math.floor((p.y + PH) / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && x >= 0 && x < w){ p.y = ty*T - PH; p.vy = 0; break; } }
-    else if (p.vy < 0){ const ty = Math.floor(p.y / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && x >= 0 && x < w){ p.y = (ty+1)*T; p.vy = 0; break; } }
+    if (p.vy > 0){ const ty = Math.floor((p.y + PH) / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && (boss || (x >= 0 && x < w))){ p.y = ty*T - PH; p.vy = 0; break; } }
+    else if (p.vy < 0){ const ty = Math.floor(p.y / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && (boss || (x >= 0 && x < w))){ p.y = (ty+1)*T; p.vy = 0; break; } }
     // the top edge of the screen is a ceiling
     if (p.y < 0){ p.y = 0; if (p.vy < 0) p.vy = 0; }
     const cx = p.x + PW/2, cy = p.y + PH/2;
@@ -1565,7 +1579,7 @@ function makeGame(canvas, rows, hooks){
         if(c==='L' && !B && !taken.has(x*ROWS+y) && Math.hypot(cx-(x*T+T/2),cy-(y*T+T/2))<24){
           taken.add(x*ROWS+y);launcherCharges=boss?Infinity:2;sound('item');if(!replaying)hooks.onLauncher?.(launcherCharges);
         }
-        if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
+        if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) {if(boss){takeBossHit('イガグリに当たった');if(state!=='run')return;}else return die('イガグリに当たった');}
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); }
         // spring: a big bounce that costs no life
         // bounce ball: knocks you away hard from wherever you touch it
@@ -1587,11 +1601,9 @@ function makeGame(canvas, rows, hooks){
           if (c === 'R'){ banner && banner(rear ? 'うしろ撃ち（もう持っています）' : 'うしろ撃ちゲット！後ろにも黒どんぐりが飛ぶ', !rear); rear = true; }
           else { maxLife = Math.min(LIFE_MAX + 9, maxLife + 3); life = maxLife; myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); banner && banner(`ライフアップ！最大${maxLife}`, true); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, -1); }
         }
-        if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sound('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
+        if (c === 'W' && (B || boss) && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sound('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B && B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sound('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
-    // Boss courses repeat their terrain; only defeating the boss can clear them.
-    if(boss && p.x>=(w-2)*T){p.x=S.x*T+5;camX=clampCam(p.x);taken.clear();rows=originalRows.slice();launcherShots=[];springs.clear();cannon=null;}
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
@@ -1622,8 +1634,10 @@ function makeGame(canvas, rows, hooks){
     const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
     drawSky(ctx, camX, VIEW_W, VIEW_H);
-    drawCourse(ctx, rows, camX, t, {spin: true, taken, springs, decorations: hooks.decorations || (gen && gen.decorations) || []});
+    drawCourse(ctx, rows, camX, t, {hideGoal:!!boss, spin: true, taken, springs, decorations: hooks.decorations || (gen && gen.decorations) || []});
+    if(boss)for(const offset of [-W,W])drawCourse(ctx,originalRows,camX+offset,t,{hideGoal:true,spin:true,decorations:hooks.decorations||[]});
     if(!B)for(const s of launcherShots){
+      if(boss){drawBlackAcorn(ctx,s.x-camX,s.y,t,s.pw?1.4:1,Math.atan2(s.vy||0,SHOT_V));continue;}
       ctx.fillStyle='#d83d35';ctx.beginPath();ctx.arc(s.x-camX,s.y,5,0,Math.PI*2);ctx.fill();
       ctx.strokeStyle='#ffd3ad';ctx.lineWidth=2;ctx.stroke();
     }
@@ -1644,7 +1658,7 @@ function makeGame(canvas, rows, hooks){
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
-    drawLife(life / maxLife);
+    if(boss){ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.fillText(`進化 ${power}/2  ${power===2?'3方向発射':power===1?'大きなどんぐり':'通常どんぐり'}`,10,35);}else drawLife(life / maxLife);
     if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
@@ -1887,6 +1901,7 @@ let game = null, current = null, lastClear = {sec: 0, deaths: 0};
 function showLauncherAmmo(n){
   const button=$('pl-launcher');button.hidden=!n;
   button.textContent=n===Infinity?'発射 ∞（G）':`発射 ×${n}`;
+  button.setAttribute('aria-label',n===Infinity?'どんぐりを前方に発射':'ランチャーを前方に発射');
 }
 function openPlayer(course, mode){
   current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
@@ -2025,7 +2040,7 @@ async function recordClear(course, sec){
 function onState(s, info){
   trackCourseRun(s);
   renderRewindControls();
-  if (s === 'ready') showMsg('タップでスタート', 'Space / ↑ / タップでジャンプ・Gでランチャー発射');
+  if (s === 'ready') showMsg('タップでスタート', current?.course?.boss?'Space / ↑ / タップでジャンプ・Gでどんぐり発射':'Space / ↑ / タップでジャンプ・Gでランチャー発射');
   if (s === 'run') $('pl-msg').hidden = true;
   if (s === 'rewound') showMsg('巻き戻しました', 'ライフ・取得済みアイテム・ギミックも保存時点の状態です', [['ここから再開', () => game.resume(), true], ['ジャンプして再開', () => game.jump()]]);
   if (s === 'dead' && current && current.mode === 'endless'){
@@ -2217,7 +2232,7 @@ function renderSheet(first){
       rateDisplay(c.id, true),
       friendClearDisplay(c.id, true),
       thumb(c.rows,c.decorations),
-      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでランチャー。ボス戦ではジャンプのライフ消費なし・弾数無制限です。'}) : null,
+      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
@@ -2329,7 +2344,7 @@ function changeBossEditor(){
   $('ed-boss-settings').hidden=!$('ed-boss-enabled').checked;
   const c=readBossEditor();$('boss-error').textContent=$('ed-boss-enabled').checked&&!c?'HPは1〜999、番号は1〜7、間隔は1〜60秒。選んだ攻撃の最短間隔も確認してください。':'';
   if($('ed-boss-enabled').checked&&!c){updatePubBtn();return;}
-  editor.boss=c;editor.cleared=false;editor.clearProof=null;saveDraft();updatePubBtn();paintBossPreview();
+  editor.boss=c;editor.cleared=false;editor.clearProof=null;saveDraft();updatePubBtn();paintBossPreview();drawEditor();
 }
 $('ed-boss-enabled').onchange=changeBossEditor;
 $('ed-boss-settings').addEventListener('input',changeBossEditor);
@@ -2566,6 +2581,9 @@ function editorPlacementChar(){
   return editor.tool;
 }
 function drawEditor(){
+  document.querySelector('[data-t="W"]').hidden=!editor.boss;
+  document.querySelector('[data-t="G"]').hidden=!!editor.boss;
+  if((editor.boss && editor.tool==='G') || (!editor.boss && editor.tool==='W'))editor.tool='#';
   renderDecorTools();
   renderEditorPaletteIcons();
   const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW(), k = 640 / VW;
@@ -2576,12 +2594,12 @@ function drawEditor(){
   edCtx.strokeStyle = `rgba(255,255,255,${(.25 * Math.min(1, 16 / editor.cols)).toFixed(3)})`; edCtx.lineWidth = PX / k * .6;
   for (let x = 0; x <= w; x++){ const px = x*T - editor.cam; if (px < -1 || px > VW+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
   for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T); edCtx.lineTo(VW, y*T); edCtx.stroke(); }
-  drawCourse(edCtx, editor.rows, editor.cam, 0, {showStart: true, look: myLook(), viewW: VW, decorations: editor.decorations, fadeCourse: editor.mode==='decor'});
+  drawCourse(edCtx, editor.rows, editor.cam, 0, {hideGoal:!!editor.boss, showStart: true, look: myLook(), viewW: VW, decorations: editor.decorations, fadeCourse: editor.mode==='decor'});
   // when zoomed out, outline how much a player sees at once
   if (editor.cols > MIN_COLS){ edCtx.strokeStyle = 'rgba(255,255,255,.75)'; edCtx.lineWidth = 2 * PX / k; edCtx.setLineDash([8 * PX / k, 6 * PX / k]); edCtx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2); edCtx.setLineDash([]); }
   edCtx.setTransform(PX, 0, 0, PX, 0, 0);
   edCtx.fillStyle = 'rgba(255,255,255,.85)'; edCtx.font = 'bold 12px sans-serif';
-  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText('ゴール側 →', 320 - 8, 16); edCtx.textAlign = 'left';
+  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText(editor.boss?'次の周回 →':'ゴール側 →', 320 - 8, 16); edCtx.textAlign = 'left';
   const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VW); sc.value = editor.cam;
   $('ed-zoom-v').textContent = editor.cols <= MIN_COLS ? '等倍' : Math.round(MIN_COLS / editor.cols * 100) + '%';
   $('ed-zin').disabled = editor.cols <= MIN_COLS; $('ed-zout').disabled = editor.cols >= maxCols();

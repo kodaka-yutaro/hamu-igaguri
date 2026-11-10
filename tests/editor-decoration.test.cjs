@@ -14,8 +14,8 @@ test('course parts form a scrollable strip with the real in-course graphics bene
   assert.match(html, /\.editor-palette\{[^}]*flex-wrap:nowrap;overflow-x:auto/);
   const strip = html.slice(palette, html.indexOf('</div>', palette));
   const buttons = [...strip.matchAll(/<button[^>]+data-t="([^"]+)"[^>]*><\/button>/g)];
-  assert.equal(buttons.length, 11);
-  assert.deepEqual(buttons.map(([,tile])=>tile),['#','*','A','O','C','S','G','warp-in','warp-out','M','L']);
+  assert.equal(buttons.length, 12);
+  assert.deepEqual(buttons.map(([,tile])=>tile),['#','*','A','O','C','S','G','warp-in','warp-out','M','W','L']);
   for (const name of ['地面', 'イガグリ', 'どんぐり', 'ボール', '大砲', 'スタート', 'ゴールライン','ワープ入口','ワープ出口','ランチャー']) {
     assert.ok(strip.includes(`aria-label="${name}"`));
   }

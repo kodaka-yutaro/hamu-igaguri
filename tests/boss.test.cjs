@@ -27,7 +27,7 @@ test('body contact has a damage grace period and launcher blasts open block wall
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const engine=html.slice(html.indexOf('function makeGame(canvas, rows, hooks){'),html.indexOf('\nif (window.__hamuTest) Object.assign(window, {__makeGame'));
 function game(extra={}){
- const ctx={HamuBoss:Boss,T:32,ROWS:16,VIEW_W:320,VIEW_H:512,PX:2,itemByCh:{},decorByKey:{},WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy',performance:{now:()=>1},cancelAnimationFrame(){},sfx(){}};vm.createContext(ctx);vm.runInContext(engine,ctx);
+ const ctx={HamuBoss:Boss,T:32,ROWS:16,VIEW_W:320,VIEW_H:512,PX:2,itemByCh:{},decorByKey:{},WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy',performance:{now:()=>1},cancelAnimationFrame(){},sfx(){}};vm.createContext(ctx);vm.runInContext(engine.replace('return { jump, reset,', 'return { inspect:()=>({shots:launcherShots,camX}), hurt:takeBossHit, jump, reset,'),ctx);
  const rows=Array.from({length:16},(_,y)=>Array(40).fill(y>=13?'#':'.'));rows[12][2]='S';rows[12][3]='G';
  return ctx.makeGame(null,rows.map(r=>r.join('')),{headless:true,silent:true,manual:true,rewind:true,boss:config({hp:1,interval:60}),...extra});
 }
@@ -42,4 +42,23 @@ test('ordinary courses retain finite ammo and jump cost',()=>{const g=game({boss
 test('boss configuration participates in cloud draft conflict detection',()=>{
  const ctx={window:{},setTimeout,clearTimeout};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../backend.js'),'utf8').split('// Private, revision-checked')[0],ctx);
  const f={title:'Boss',rows:Array(16).fill('.'.repeat(40)),boss:config()};const a={format:2,files:{a:f}},b=JSON.parse(JSON.stringify(a));b.files.a.boss.hp=50;assert.notEqual(ctx.window.HamuCourseLibrary.signature(a),ctx.window.HamuCourseLibrary.signature(b));
+});
+
+const frame=g=>g.replayEvent({type:'frame',dt:.05});
+function pickup(g,x){g.rows[12]=g.rows[12].slice(0,x)+'W'+g.rows[12].slice(x+1);g._warp(x*32,394);frame(g);}
+test('evolution pickups cap at two and shots use the launcher muzzle with the battle spread',()=>{
+ const g=game();g.begin();pickup(g,4);assert.equal(g.power,1);pickup(g,6);pickup(g,8);assert.equal(g.power,2);
+ const before=g.snap;g.fireLauncher();const shots=g.inspect().shots;assert.equal(shots.length,3);assert.deepEqual(Array.from(shots,s=>s.vy),[-90,0,90]);assert.ok(shots.every(s=>s.pw===2&&Math.abs(s.x-before.x-27)<1&&Math.abs(s.y-before.y-11)<1));
+});
+test('damage removes one evolution, grace prevents multiple losses, and level zero dies',()=>{
+ const g=game();g.begin();pickup(g,4);pickup(g,6);g.hurt('test');assert.equal(g.power,1);g.hurt('test');assert.equal(g.power,1);
+ for(let i=0;i<19;i++)frame(g);g.hurt('test');assert.equal(g.power,0);assert.equal(g.state,'run');for(let i=0;i<19;i++)frame(g);g.hurt('test');assert.equal(g.state,'dead');
+});
+test('terrain burrs use the same evolution damage rule',()=>{
+ const g=game();g.begin();pickup(g,4);g.rows[12]=g.rows[12].slice(0,6)+'*'+g.rows[12].slice(7);g._warp(192,394);frame(g);assert.equal(g.power,0);assert.equal(g.state,'run');
+ const zero=game();zero.begin();zero.rows[12]=zero.rows[12].slice(0,6)+'*'+zero.rows[12].slice(7);zero._warp(192,394);frame(zero);assert.equal(zero.state,'dead');
+});
+test('boss course traverses the last columns and wraps full width retaining evolution and boss',()=>{
+ const g=game();g.begin();pickup(g,4);g._warp(39*32,394);frame(g);assert.ok(g.snap.x>=39*32);assert.equal(g.state,'run');const hp=g.bossState.hp;
+ g._warp(1279,394);frame(g);assert.ok(g.snap.x<16);assert.equal(g.power,1);assert.equal(g.bossState.hp,hp);assert.equal(g.state,'run');assert.ok(g.inspect().camX<0);
 });
