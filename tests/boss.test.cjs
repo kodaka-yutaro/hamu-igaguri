@@ -6,9 +6,10 @@ test('configuration accepts authored cycles and rejects malformed or unbounded s
  assert.deepEqual(Boss.cycle('1,2,2,1,5'),[1,2,2,1,5]);
  for(const change of [{hp:0},{hp:Infinity},{hp:1.1},{cycle:'1,0'},{cycle:''},{rageCycle:'8'},{interval:0},{rageInterval:61}])assert.equal(Boss.normalize(config(change)),null);
 });
-test('telegraph precedes attacks and the normal cycle repeats at six-second starts',()=>{
+test('telegraph precedes attacks and the next burst waits six seconds after the final shot',()=>{
  const b=Boss.create(config());advance(b,5.3);assert.equal(b.state.warning.id,1);assert.equal(b.state.executed.length,0);
- advance(b,.8);assert.deepEqual(b.state.executed,[1]);advance(b,24);assert.deepEqual(b.state.executed,[1,2,2,1,5]);
+ advance(b,.8);assert.deepEqual(b.state.executed,[1]);advance(b,6.2);assert.deepEqual(b.state.executed,[1]);assert.equal(b.state.warning.id,2);
+ advance(b,.2);assert.deepEqual(b.state.executed,[1,2]);
 });
 for(const [id,count,kind] of [[1,3,'burr'],[2,16,'block'],[3,1,'burr'],[6,80,'block'],[7,10,'burr']])test(`attack ${id} emits ${count} ${kind} objects`,()=>{
  const b=Boss.create(config({cycle:[id],interval:6}));advance(b,6+(id===7?2.1:.6));assert.equal(b.state.seq,count);assert.ok(b.state.bullets.every(x=>x.kind===kind));if(id===3)assert.equal(b.state.bullets[0].w,64);
@@ -27,13 +28,14 @@ test('body contact has a damage grace period and launcher blasts open block wall
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const engine=html.slice(html.indexOf('function makeGame(canvas, rows, hooks){'),html.indexOf('\nif (window.__hamuTest) Object.assign(window, {__makeGame'));
 function game(extra={}){
- const ctx={HamuBoss:Boss,T:32,ROWS:16,VIEW_W:320,VIEW_H:512,PX:2,itemByCh:{},decorByKey:{},WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy',performance:{now:()=>1},cancelAnimationFrame(){},sfx(){}};vm.createContext(ctx);vm.runInContext(engine.replace('return { jump, reset,', 'return { inspect:()=>({shots:launcherShots,camX}), hurt:takeBossHit, jump, reset,'),ctx);
+ const ctx={HamuBoss:Boss,T:32,ROWS:16,VIEW_W:320,VIEW_H:512,PX:2,itemByCh:{},decorByKey:{},WARP_ENTRIES:'pqrst',WARP_EXITS:'uvwxy',performance:{now:()=>1},cancelAnimationFrame(){},sfx(){}};vm.createContext(ctx);vm.runInContext(engine.replace('return { jump, reset,', 'return { inspect:()=>({shots:launcherShots,camX,blocks:boss?.state.bullets.filter(b=>b.kind===\'block\')}), placeBlock:(x,y)=>boss.state.bullets.push({id:++boss.state.seq,kind:\'block\',terrain:true,x,y,w:32,h:32,vx:0,age:0}), hurt:takeBossHit, jump, reset,'),ctx);
  const rows=Array.from({length:16},(_,y)=>Array(40).fill(y>=13?'#':'.'));rows[12][2]='S';rows[12][3]='G';
  return ctx.makeGame(null,rows.map(r=>r.join('')),{headless:true,silent:true,manual:true,rewind:true,boss:config({hp:1,interval:60}),...extra});
 }
-test('boss engine ignores goals, has unlimited shots, wins on hit and reproduces a legal replay',()=>{
- const g=game();g.jump();for(let i=0;i<36;i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'run');assert.equal(g.snap.life,15);assert.equal(g.launcherCharges,Infinity);
+test('boss engine ignores goals, spends life, wins on hit and reproduces a legal replay',()=>{
+ const g=game();g.jump();for(let i=0;i<36;i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'run');assert.equal(g.snap.life,19);assert.equal(g.launcherCharges,10);
  assert.equal(g.fireLauncher(),true);assert.equal(g.fireLauncher(),false);
+ assert.equal(g.snap.life,17);
  for(let i=0;i<15&&g.state==='run';i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'clear');assert.equal(g.bossState.hp,0);
  // Live recorded frame events are exercised in rewind.test; replay receives the exact same manual inputs here.
  const replay=game({rewind:false});replay.replayEvent({type:'jump'});for(let i=0;i<36;i++)replay.replayEvent({type:'frame',dt:.05});replay.replayEvent({type:'launcher'});for(let i=0;i<15&&replay.state==='run';i++)replay.replayEvent({type:'frame',dt:.05});assert.equal(replay.state,'clear');
@@ -61,4 +63,105 @@ test('terrain burrs use the same evolution damage rule',()=>{
 test('boss course traverses the last columns and wraps full width retaining evolution and boss',()=>{
  const g=game();g.begin();pickup(g,4);g._warp(39*32,394);frame(g);assert.ok(g.snap.x>=39*32);assert.equal(g.state,'run');const hp=g.bossState.hp;
  g._warp(1279,394);frame(g);assert.ok(g.snap.x<16);assert.equal(g.power,1);assert.equal(g.bossState.hp,hp);assert.equal(g.state,'run');assert.ok(g.inspect().camX<0);
+});
+
+for(const id of [1,4,5,7])test(`attack ${id} waits the configured recovery after completion, including rage transitions`,()=>{
+ const b=Boss.create(config({hp:4,cycle:[id],interval:1,rageCycle:[1],rageInterval:1}));
+ assert.ok(Boss.normalize(config({cycle:[id],interval:1})));
+ while(!b.state.active)b.update(1/120);
+ // Enter rage during a long attack: preserve the active attack and give it its full recovery.
+ for(let i=0;i<3;i++)b.hit(b.state.x,b.state.y);
+ while(b.state.active)b.update(1/120);
+ const end=b.state.time,n=b.state.executed.length;
+ advance(b,.95);assert.equal(b.state.executed.length,n);assert.equal(b.state.warning.id,1);
+ advance(b,.1);assert.equal(b.state.executed.length,n+1);assert.ok(b.state.time-end>=1);
+});
+for(const id of [1,7])test(`burst ${id} moves continuously and fires from the current boss height`,()=>{
+ const b=Boss.create(config({cycle:[id],interval:2})),ys=[];
+ for(let i=0;i<550;i++){
+  const seq=b.state.seq,prevY=b.state.y;b.update(1/120);
+  assert.ok(Math.abs(b.state.y-prevY)<=150*.55/120+.001);
+  if(b.state.seq>seq){const bullet=b.state.bullets.find(x=>x.id===b.state.seq);assert.ok(bullet.projectile);assert.ok(Math.abs(bullet.y+bullet.h/2-b.state.y-6)<.001);ys.push(b.state.y);}
+ }
+ assert.ok(ys.length>=3);assert.ok(Math.max(...ys)-Math.min(...ys)>2,'burst height must not freeze');
+});
+test('sweep and rush resume from a continuous height instead of snapping to the global clock',()=>{
+ const b=Boss.create(config({cycle:[4,5,7],interval:1}));
+ for(let i=0;i<3600;i++){
+  const y=b.state.y;b.update(1/120);
+  assert.ok(Math.abs(b.state.y-y)<=150*9/120+.001,`vertical teleport at ${b.state.time}`);
+ }
+ assert.ok(b.state.executed.includes(4)&&b.state.executed.includes(5)&&b.state.executed.includes(7));
+});
+test('walls cause no damage or invulnerability; flying burrs still hit',()=>{
+ const b=Boss.create(config()),p={x:90,y:200,w:22,h:22};
+ b.state.bullets.push({kind:'block',terrain:true,x:90,y:200,w:32,h:32,vx:0,age:0});
+ assert.equal(b.update(.01,p),0);assert.equal(b.state.invincible,0);
+ b.state.bullets.push({kind:'burr',projectile:true,x:90,y:200,w:32,h:32,vx:-170,age:0});
+ assert.equal(b.update(.01,p),3);
+});
+test('boss wall stops the hamster as solid terrain without consuming life or evolution',()=>{
+ const g=game({boss:config({cycle:[2],interval:1,hp:999})});g.begin();
+ for(let i=0;i<90;i++)frame(g);
+ assert.equal(g.state,'run');assert.equal(g.snap.life,20);assert.equal(g.power,0);
+ const before=g.snap.x;for(let i=0;i<15;i++)frame(g);
+ assert.equal(g.snap.x,before,'must not pass through a wall');
+ const {camX,blocks}=g.inspect();assert.ok(blocks.some(b=>Math.abs(b.x+camX-g.snap.x-22)<1));
+ assert.equal(g.fireLauncher(),true);
+ for(let i=0;i<20;i++)frame(g);
+ assert.ok(g.snap.x>before+20,'breaking the wall opens the path');
+});
+test('boss blocks support landing and stop an upward jump just like course blocks',()=>{
+ const g=game({boss:config({hp:999,interval:60})});g.begin();g._warp(69,150);g.replayEvent({type:'frame',dt:0});
+ for(const x of [96,128,160])g.placeBlock(x,200);
+ for(let i=0;i<6;i++)frame(g);assert.equal(g.snap.y,178);assert.equal(g.snap.life,20);
+ g._warp(69,232);g.replayEvent({type:'frame',dt:0});g.jump();frame(g);
+ assert.ok(g.snap.y>=232);assert.ok(g.snap.vy>=0);assert.equal(g.snap.life,19);
+});
+test('boss shooting consumes battle life cost once per press even with three projectiles, and cooldown is free',()=>{
+ const g=game({boss:config({hp:999,interval:60})});g.begin();pickup(g,4);pickup(g,6);
+ assert.equal(g.fireLauncher(),true);assert.equal(g.snap.life,18);assert.equal(g.inspect().shots.length,3);
+ assert.equal(g.fireLauncher(),false);assert.equal(g.snap.life,18);
+});
+test('boss life is finite for jumping and firing, and ordinary acorns restore it',()=>{
+ const jumper=game();for(let i=0;i<20;i++)jumper.jump();assert.equal(jumper.snap.life,0);assert.equal(jumper.state,'dead');
+ const g=game({boss:config({hp:999,interval:60})});g.rows[13]='M'.repeat(40);g.begin();
+ for(let i=0;i<10;i++){assert.equal(g.fireLauncher(),true,`shot ${i+1}: ${g.state}, life ${g.snap.life}`);if(i<9)for(let j=0;j<17;j++)frame(g);}
+ assert.equal(g.snap.life,0);assert.equal(g.state,'dead');assert.equal(g.launcherCharges,0);assert.equal(g.fireLauncher(),false);
+ const r=game();r.begin();r.jump();r.fireLauncher();assert.equal(r.snap.life,17);
+ r.rows[12]=r.rows[12].slice(0,4)+'A'+r.rows[12].slice(5);r._warp(128,394);frame(r);
+ assert.equal(r.snap.life,20);assert.equal(r.launcherCharges,10);
+});
+test('placed hazards follow the course while flying shots use their own trajectory',()=>{
+ const b=Boss.create(config({cycle:[4,1],interval:1}));advance(b,2.3);
+ const fixed=b.state.bullets.find(x=>x.terrain),x=fixed.x;b.scrollTerrain(20);assert.equal(fixed.x,x-20);
+ advance(b,1);const flying=b.state.bullets.find(x=>x.projectile),fx=flying.x;b.scrollTerrain(20);assert.equal(flying.x,fx);
+});
+test('legacy intervals migrate per step and normalized cycles survive a save/load round trip',()=>{
+ const old=Boss.normalize(config());assert.deepEqual(old.intervals,[6,6,6,6,6]);assert.deepEqual(old.rageIntervals,[4,4,4,4,4]);
+ const c=Boss.normalize({...old,intervals:[1,2.5,3,4,5],rageIntervals:[6,7,8,9,10]});
+ assert.deepEqual(Boss.normalize(JSON.parse(JSON.stringify(c))),c);
+ for(const intervals of [[],[1],Array(5).fill(0),Array(5).fill(61),Array(5).fill(Infinity)])assert.equal(Boss.normalize({...old,intervals}),null);
+ const ctx={window:{},setTimeout,clearTimeout};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../backend.js'),'utf8').split('// Private, revision-checked')[0],ctx);
+ const original={format:2,files:{a:{rows:Array(16).fill('.'.repeat(40)),title:'Boss',boss:c}}},saved=ctx.window.HamuCourseLibrary.normalize(JSON.parse(JSON.stringify(original)));
+ assert.deepEqual(Array.from(saved.files.a.boss.intervals),c.intervals);
+ const edited=JSON.parse(JSON.stringify(original));edited.files.a.boss.intervals[2]=9;
+ assert.notEqual(ctx.window.HamuCourseLibrary.signature(original),ctx.window.HamuCourseLibrary.signature(edited));
+});
+test('each attack uses its own post-attack delay across long attacks and cycle wraparound',()=>{
+ const b=Boss.create(config({cycle:[1,7,5],intervals:[1,2,3]})),starts=[],ends=[];
+ for(let i=0;i<2100;i++){
+  const count=b.state.executed.length,active=b.state.active;b.update(1/120);
+  if(b.state.executed.length>count)starts.push({id:b.state.executed.at(-1),time:b.state.time});
+  if(active&&!b.state.active)ends.push({id:active.id,time:b.state.time});
+ }
+ assert.deepEqual(starts.slice(0,4).map(x=>x.id),[1,7,5,1]);
+ for(let i=0;i<3;i++)assert.ok(Math.abs(starts[i+1].time-ends[i].time-[1,2,3][i])<.02);
+});
+test('entering rage preserves the active step recovery then uses rage step delays',()=>{
+ const b=Boss.create(config({hp:4,cycle:[7],intervals:[3],rageCycle:[1,7],rageIntervals:[1,2]}));
+ advance(b,3.2);assert.equal(b.state.active.id,7);for(let i=0;i<3;i++)b.hit(b.state.x,b.state.y);
+ while(b.state.active)b.update(1/120);advance(b,2.95);assert.deepEqual(b.state.executed,[7]);
+ advance(b,.1);assert.deepEqual(b.state.executed,[7,1]);while(b.state.active)b.update(1/120);
+ advance(b,.95);assert.deepEqual(b.state.executed,[7,1]);advance(b,.1);assert.deepEqual(b.state.executed,[7,1,7]);
 });

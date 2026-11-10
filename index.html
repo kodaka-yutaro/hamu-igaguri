@@ -276,6 +276,11 @@ input[type=range]{width:100%}
 .person .info{min-width:0;display:flex;flex-direction:column}
 .person .info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .event-list{gap:16px}
+.boss-cycle-list{display:flex;flex-direction:column;gap:8px}
+.boss-cycle-step{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;background:var(--soft);border-radius:10px}
+.boss-cycle-step select{max-width:100%;width:190px}
+.boss-cycle-step input{width:76px}
+.boss-cycle-step label{display:flex;align-items:center;gap:5px;font-size:12px}
 .event-card{display:flex;align-items:center;gap:20px;width:100%;padding:24px;text-align:left;border:2px solid var(--line);border-radius:18px;background:var(--panel);color:var(--fg);font:inherit;cursor:pointer}
 .event-card:hover,.event-card:focus-visible{border-color:var(--leaf);background:var(--soft)}
 .event-card-art{width:66px;height:100px;flex:none;position:relative;display:grid;place-items:center;background:repeating-linear-gradient(0deg,transparent 0 27px,#365a22 28px 31px),linear-gradient(90deg,#426d2a,#bfd86c 42%,#78a344 75%,#355823);border:2px solid #355823;border-radius:45% 45% 12px 12px / 10% 10% 6px 6px}
@@ -292,7 +297,7 @@ input[type=range]{width:100%}
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
-<script src="boss.js"></script>
+<script src="boss.js?v=20261110-combat2"></script>
 </head>
 <body>
 
@@ -422,11 +427,11 @@ input[type=range]{width:100%}
     <div class="card col" id="ed-boss-admin" hidden>
       <label><input type="checkbox" id="ed-boss-enabled"> バンブーハウス用ボス戦モード</label>
       <div id="ed-boss-settings" hidden class="col">
-        <p class="muted">ボス撃破で勝利。コースは周回します。Spaceでジャンプ（ライフ消費なし）、G／発射ボタンでどんぐり発射（0.8秒間隔）。進化どんぐりで2段階まで進化。被弾で1段階低下、進化0で被弾すると死亡。被弾後0.9秒無敵。</p>
+        <p class="muted">ボス撃破で勝利。基礎ライフは20、コースは周回します。Spaceでジャンプ（ライフ1消費）、G／発射ボタンでどんぐり発射（ライフ2消費・0.8秒間隔）。どんぐりを拾うとライフ全回復。進化どんぐりで2段階まで進化（1段階は赤、2段階は紫のオーラ）。被弾で1段階低下、進化0で被弾すると死亡。被弾後0.9秒無敵。</p>
         <div class="row"><label>ボスHP <input id="boss-hp" type="number" min="1" max="999" value="30"></label></div>
-        <div class="row"><label>通常の攻撃順 <input id="boss-cycle" type="text" maxlength="95" value="1,2,2,1,5"></label><label>間隔（秒） <input id="boss-interval" type="number" min="1" max="60" step="0.1" value="6"></label></div>
-        <div class="row"><label>怒り時の攻撃順 <input id="boss-rage-cycle" type="text" maxlength="95" value="7,6,4,3,5"></label><label>怒り時の間隔（秒） <input id="boss-rage-interval" type="number" min="1" max="60" step="0.1" value="4"></label></div>
-        <p class="muted">HPが半分未満になると怒り状態。番号をカンマで区切って指定（最大32個）。間隔は攻撃開始から次の開始まで。予告まで含めて一定間隔です。最短間隔：攻撃1は1.3秒、4は2秒、7は3秒、5は4秒（その他は1秒）。</p>
+        <div class="col"><strong>通常の攻撃サイクル</strong><div id="boss-cycle" class="boss-cycle-list"></div><button id="boss-cycle-add" type="button" class="btn sm" style="align-self:flex-start">攻撃を追加</button></div>
+        <div class="col"><strong>怒り時の攻撃サイクル</strong><div id="boss-rage-cycle" class="boss-cycle-list"></div><button id="boss-rage-cycle-add" type="button" class="btn sm" style="align-self:flex-start">攻撃を追加</button></div>
+        <p class="muted">上から順番に繰り返します（最大32個）。各行の「終了後」は、その攻撃が終わってから次の攻撃が始まるまでの秒数（1〜60秒）です。最初の攻撃は先頭の待ち時間後に開始。開始前0.8秒に予告し、突進は帰還してから待ちます。HPが半分未満になると怒り用の先頭へ切り替わります。</p>
         <p class="muted">1：イガグリ3発 ／ 2：縦一列の壁 ／ 3：2×2イガグリ ／ 4：急上下移動＋イガグリ配置 ／ 5：突進・画面外で2秒待って帰還 ／ 6：縦壁を横に5列 ／ 7：イガグリ10発。壁は発射したどんぐりで破壊できます。</p>
         <p id="boss-error" role="status"></p>
         <div class="row"><canvas id="boss-preview" width="240" height="240" style="width:120px;height:120px;background:#e6f0d5;border-radius:16px" aria-label="ボスの見た目"></canvas><div id="boss-look-controls" class="row"></div></div>
@@ -876,6 +881,21 @@ function drawHam(ctx, x, y, vy, dead, t, look){
   const squash = Math.max(-0.15, Math.min(0.15, vy/3000));
   ctx.scale(1 - squash, 1 + squash);
   paintHam(ctx, look, dead);
+  ctx.restore();
+}
+function drawEvolutionAura(ctx,x,y,level,time){
+  if(!level)return;
+  const rgb=level>=2?'168,67,241':'245,57,67',color=level>=2?'#ae52f6':'#f4424c';
+  const pulse=1+Math.sin(time*7)*.08;
+  ctx.save();ctx.translate(x+11,y+11);ctx.scale(pulse,pulse);
+  const glow=ctx.createRadialGradient(0,0,8,0,0,29);
+  glow.addColorStop(0,`rgba(${rgb},0.05)`);glow.addColorStop(.55,`rgba(${rgb},0.35)`);glow.addColorStop(1,`rgba(${rgb},0)`);
+  ctx.fillStyle=glow;ctx.beginPath();ctx.ellipse(0,0,30,34,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.shadowColor=color;ctx.shadowBlur=7;
+  for(let i=0;i<5;i++){
+    const phase=(time*.8+i/5)%1,side=i%2?1:-1,px=side*(17+Math.sin(time*3+i)*3),py=16-phase*38;
+    ctx.globalAlpha=(1-phase)*.8;ctx.beginPath();ctx.moveTo(px,py+5);ctx.quadraticCurveTo(px+side*5,py,px+side*2,py-6);ctx.stroke();
+  }
   ctx.restore();
 }
 function paintAvatar(canvas, look){
@@ -1333,7 +1353,7 @@ function makeGame(canvas, rows, hooks){
   else rows=rows.slice(); // explosions must not alter saved or published course data
   const originalRows=rows.slice();
   let w = rows[0].length, W = w * T;
-  const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22, LIFE_MAX = 15;
+  const SPEED = 130, GRAV = 1500, JUMP = -470, PW = 22, PH = 22;
   let p, state, camX, raf, last, t, deaths = 0, startedAt, life, taken;
   // battle only: dashes forward/back, black acorns flying forward, the rival's hamster
   const B = hooks.battle || null;
@@ -1342,9 +1362,10 @@ function makeGame(canvas, rows, hooks){
   // weapon level: 0 normal, 1 big black acorns (more damage), 2 three at once. myW: tiles I grabbed and when
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
   // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
-  let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
   const bossConfig = hooks.boss ? HamuBoss.normalize(hooks.boss) : null;
   const boss = bossConfig && !B && !gen ? HamuBoss.create(bossConfig) : null;
+  const LIFE_MAX = boss ? 20 : 15;
+  let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
   let bossFireCd=0;
   let launcherCharges=0, launcherShots=[], warpCooldown=0;
   // springs: when each spring, ball or cannon last went off. Each part only ignores the hamster
@@ -1365,6 +1386,19 @@ function makeGame(canvas, rows, hooks){
   const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
   const tileX = tx => boss ? ((tx % w) + w) % w : tx;
   const solid = (tx, ty) => !boss && (tx < 0 || tx >= w) ? true : (ty < 0 || ty >= ROWS ? false : (rows[ty][tileX(tx)] === '#' || rows[ty][tileX(tx)] === 'M'));
+  const availableShots = () => boss ? Math.ceil(life / SHOT_COST) : launcherCharges;
+  function syncLauncher(){ if(!replaying)hooks.onLauncher?.(availableShots(),boss?SHOT_COST:0); }
+  // Boss walls are solid terrain, not damage sources. Resolve them on the same axes as course blocks.
+  function collideBossBlocks(axis, delta){
+    if(!boss || !delta)return;
+    for(const b of boss.state.bullets){
+      if(b.kind!=='block')continue;
+      const bx=b.x+camX;
+      if(p.x>=bx+b.w || p.x+PW<=bx || p.y>=b.y+b.h || p.y+PH<=b.y)continue;
+      if(axis==='x'){p.x=delta>0?bx-PW:bx+b.w;kvx=0;}
+      else {p.y=delta>0?b.y-PH:b.y+b.h;p.vy=0;}
+    }
+  }
   // Bounce balls may overlap each other, but their knock-back must never push the hamster through ground blocks.
   function pushAgainstBlocks(dx, dy){
     if (dx){
@@ -1377,6 +1411,7 @@ function makeGame(canvas, rows, hooks){
         const tx = Math.floor(p.x / T);
         for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)){ p.x = (tx+1)*T; kvx = Math.max(0, kvx); break; }
       }
+      collideBossBlocks('x',dx);
     }
     if (dy){
       p.y += dy;
@@ -1388,6 +1423,7 @@ function makeGame(canvas, rows, hooks){
         const ty = Math.floor(p.y / T);
         for (let x = tx0; x <= tx1; x++) if (solid(x, ty)){ p.y = (ty+1)*T; if (p.vy < 0) p.vy = 0; break; }
       }
+      collideBossBlocks('y',dy);
     }
   }
   function reset(){
@@ -1395,14 +1431,14 @@ function makeGame(canvas, rows, hooks){
     if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     if(!gen)rows=originalRows.slice();
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=boss?Infinity:0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); if(!replaying)hooks.onLauncher?.(launcherCharges); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); syncLauncher(); }
   function clampCam(px){ return boss ? px - VIEW_W*.3 : Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state !== 'ready' && state !== 'run') return;
     if (paused){ paused = false; last = null; notify('run'); }
     remember({type: 'jump'}); hasStarted = true;
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); }
-    if (state === 'run'){ hoverT = 0; p.vy = JUMP; if(!boss)life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } if(boss)syncLauncher(); }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -1426,12 +1462,12 @@ function makeGame(canvas, rows, hooks){
     if (life <= 0){ life = 0; die('ライフ切れ'); }
   }
   function fireLauncher(){
-    if(B || state!=='run' || launcherCharges<=0 || (boss && bossFireCd>0))return false;
+    if(B || state!=='run' || availableShots()<=0 || (boss && bossFireCd>0))return false;
     if(paused){paused=false;last=null;notify('run');}
     remember({type:'launcher'});
-    if(boss){bossFireCd=SHOT_CD;for(const vy of (power>=2?[-90,0,90]:[0]))launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0,vy,pw:power});}
+    if(boss){bossFireCd=SHOT_CD;life-=SHOT_COST;for(const vy of (power>=2?[-90,0,90]:[0]))launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0,vy,pw:power});}
     else {launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});}
-    sound('fire');if(!replaying)hooks.onLauncher?.(launcherCharges);
+    sound('fire');if(life<=0){life=0;die('ライフ切れ');}syncLauncher();
     return true;
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
@@ -1561,10 +1597,13 @@ function makeGame(canvas, rows, hooks){
     if (gen && p.x > (w - 30) * T){ gen.extend(w + 60); w = rows[0].length; W = w * T; }
     const ty0 = Math.floor(p.y / T), ty1 = Math.floor((p.y + PH - 0.01) / T), tx = Math.floor((p.x + PW) / T);
     for (let ty = ty0; ty <= ty1; ty++) if (solid(tx, ty)) { p.x = tx * T - PW; break; }
+    collideBossBlocks('x',p.vx);
+    const verticalVelocity=p.vy;
     p.y += p.vy * dt;
     const tx0 = Math.floor(p.x / T), tx1 = Math.floor((p.x + PW - 0.01) / T);
     if (p.vy > 0){ const ty = Math.floor((p.y + PH) / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && (boss || (x >= 0 && x < w))){ p.y = ty*T - PH; p.vy = 0; break; } }
     else if (p.vy < 0){ const ty = Math.floor(p.y / T); for (let x = tx0; x <= tx1; x++) if (ty >= 0 && solid(x, ty) && (boss || (x >= 0 && x < w))){ p.y = (ty+1)*T; p.vy = 0; break; } }
+    collideBossBlocks('y',verticalVelocity);
     // the top edge of the screen is a ceiling
     if (p.y < 0){ p.y = 0; if (p.vy < 0) p.vy = 0; }
     const cx = p.x + PW/2, cy = p.y + PH/2;
@@ -1577,10 +1616,10 @@ function makeGame(canvas, rows, hooks){
           if(exit){p.x=exit.x*T+(T-PW)/2;p.y=exit.y*T+(T-PH)/2;p.vy=0;kvx=0;cannon=null;warpCooldown=.6;sound('power');return;}
         }
         if(c==='L' && !B && !taken.has(x*ROWS+y) && Math.hypot(cx-(x*T+T/2),cy-(y*T+T/2))<24){
-          taken.add(x*ROWS+y);launcherCharges=boss?Infinity:2;sound('item');if(!replaying)hooks.onLauncher?.(launcherCharges);
+          taken.add(x*ROWS+y);launcherCharges=2;sound('item');syncLauncher();
         }
         if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) {if(boss){takeBossHit('イガグリに当たった');if(state!=='run')return;}else return die('イガグリに当たった');}
-        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); }
+        if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); if(boss)syncLauncher(); }
         // spring: a big bounce that costs no life
         // bounce ball: knocks you away hard from wherever you touch it
         if (c === 'O' && ready(x*ROWS + y, .18)){
@@ -1651,14 +1690,18 @@ function makeGame(canvas, rows, hooks){
       }
       for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V * (s.dir || 1)));
     }
-    if (!cannon && !(hurtT > 0 && Math.floor(t * 20) % 2) && !(ghostT > 0 && Math.floor(t * 12) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if (!cannon && !(hurtT > 0 && Math.floor(t * 20) % 2) && !(ghostT > 0 && Math.floor(t * 12) % 2)) {
+      if(boss && state!=='dead')drawEvolutionAura(ctx,p.x-camX,p.y,power,t);
+      drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    }
     if(boss)HamuBoss.draw(ctx,boss,paintHam,cleanBossLook(bossConfig.look),drawBurr,drawBlock);
     drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
-    if(boss){ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.fillText(`進化 ${power}/2  ${power===2?'3方向発射':power===1?'大きなどんぐり':'通常どんぐり'}`,10,35);}else drawLife(life / maxLife);
+    drawLife(life / maxLife);
+    if(boss){HamuBoss.drawHud(ctx,boss);ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.fillText(`進化 ${power}/2  ${power===2?'3方向発射':power===1?'大きなどんぐり':'通常どんぐり'}`,10,56);}
     if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
@@ -1672,7 +1715,9 @@ function makeGame(canvas, rows, hooks){
       elapsed += dt;
       let acc = dt;
       while (acc > 0){ const s = Math.min(acc, 1/120); step(s); acc -= s; if (state !== 'run') break; }
-      camX = clampCam(p.x);
+      const nextCamX = clampCam(p.x);
+      if(boss)boss.scrollTerrain(nextCamX-camX);
+      camX = nextCamX;
     }
     if (state === 'dead'){ p.vy += GRAV*dt*0.6; p.y += p.vy*dt*0.3; }
     stepFx(dt);
@@ -1703,7 +1748,7 @@ function makeGame(canvas, rows, hooks){
       trace = prefix; overflow = false; hasStarted = prefix.some(e => e.type === 'jump');
       rewindCount++; deaths = attempts; paused = state === 'run'; last = null;
       startedAt = performance.now() - elapsed * 1000;
-    } finally { replaying = false; hooks.onLauncher?.(launcherCharges); }
+    } finally { replaying = false; syncLauncher(); }
     draw(); notify(paused ? 'rewound' : 'ready'); return true;
   }
   function rewind(seconds){
@@ -1741,7 +1786,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
   reset(); if (hooks.checkpoint) loadCheckpoint(hooks.checkpoint); if (!hooks.manual) raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get bossState(){return boss?JSON.parse(JSON.stringify(boss.state)):null;}, get launcherCharges(){return launcherCharges;}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
+  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get bossState(){return boss?JSON.parse(JSON.stringify(boss.state)):null;}, get launcherCharges(){return availableShots();}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
     rewind, mark, resume, restoreCheckpoint(){ return checkpoint ? restoreAt(checkpoint, checkpoint.route) : false; }, replayEvent,
     get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {index: checkpoint.index, time: checkpoint.time, dist: checkpoint.dist}, count: rewindCount, overflow}; },
     get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
@@ -1898,10 +1943,10 @@ function patchMe(patch){
 
 /* ---------- player overlay ---------- */
 let game = null, current = null, lastClear = {sec: 0, deaths: 0};
-function showLauncherAmmo(n){
+function showLauncherAmmo(n, cost=0){
   const button=$('pl-launcher');button.hidden=!n;
-  button.textContent=n===Infinity?'発射 ∞（G）':`発射 ×${n}`;
-  button.setAttribute('aria-label',n===Infinity?'どんぐりを前方に発射':'ランチャーを前方に発射');
+  button.textContent=cost?`発射 −${cost}ライフ（G）`:`発射 ×${n}`;
+  button.setAttribute('aria-label',cost?`どんぐりを前方に発射（ライフ${cost}消費）`:'ランチャーを前方に発射');
 }
 function openPlayer(course, mode){
   current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
@@ -2232,7 +2277,7 @@ function renderSheet(first){
       rateDisplay(c.id, true),
       friendClearDisplay(c.id, true),
       thumb(c.rows,c.decorations),
-      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
+      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。ジャンプでライフ1、発射でライフ2を消費し、どんぐりを拾うと全回復します。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
@@ -2328,12 +2373,41 @@ function bossTintContext(ctx,color){
 function readBossEditor(){
   if(!$('ed-boss-enabled').checked)return null;
   const look={};document.querySelectorAll('[data-boss-part]').forEach(n=>look[n.dataset.bossPart]=n.value);
-  return HamuBoss.normalize({hp:$('boss-hp').value,cycle:$('boss-cycle').value,interval:$('boss-interval').value,rageCycle:$('boss-rage-cycle').value,rageInterval:$('boss-rage-interval').value,look:cleanBossLook(look)});
+  const normal=readBossCycle('boss-cycle'),rage=readBossCycle('boss-rage-cycle');
+  return HamuBoss.normalize({hp:$('boss-hp').value,cycle:normal.cycle,intervals:normal.intervals,rageCycle:rage.cycle,rageIntervals:rage.intervals,look:cleanBossLook(look)});
 }
+function readBossCycle(id){
+  const rows=[...$(id).querySelectorAll('[data-boss-step]')];
+  return {cycle:rows.map(r=>Number(r.querySelector('[data-boss-attack]').value)),intervals:rows.map(r=>Number(r.querySelector('[data-boss-wait]').value))};
+}
+function refreshBossCycle(id){
+  const rows=[...$(id).children],name=id==='boss-cycle'?'通常':'怒り時';
+  rows.forEach((row,i)=>{
+    row.querySelector('[data-boss-number]').textContent=(i+1)+'.';
+    row.querySelector('[data-boss-attack]').setAttribute('aria-label',`${name}の攻撃${i+1}`);
+    row.querySelector('[data-boss-wait]').setAttribute('aria-label',`${name}の攻撃${i+1}の終了後の待ち時間`);
+    row.querySelector('[data-boss-remove]').disabled=rows.length===1;
+    row.querySelector('[data-boss-up]').disabled=i===0;
+    row.querySelector('[data-boss-down]').disabled=i===rows.length-1;
+  });
+  $(id+'-add').disabled=rows.length>=32;
+}
+function appendBossStep(id,attack,wait){
+  const box=$(id);if(box.children.length>=32)return;
+  const select=el('select',{'data-boss-attack':''});
+  HamuBoss.attacks.forEach((text,i)=>{if(i)select.append(el('option',{value:i,text:`${i}：${text}`}));});select.value=attack;
+  const delay=el('input',{'data-boss-wait':'',type:'number',min:1,max:60,step:.1,value:wait});
+  const row=el('div',{class:'boss-cycle-step','data-boss-step':''},el('b',{'data-boss-number':''}),select,el('label',{},'終了後',delay,'秒'));
+  const move=direction=>{const sibling=direction<0?row.previousElementSibling:row.nextElementSibling;if(sibling){if(direction<0)box.insertBefore(row,sibling);else box.insertBefore(sibling,row);refreshBossCycle(id);changeBossEditor();}};
+  row.append(el('button',{type:'button',class:'btn sm','data-boss-up':'','aria-label':'この攻撃を前へ',text:'↑',onclick:()=>move(-1)}),el('button',{type:'button',class:'btn sm','data-boss-down':'','aria-label':'この攻撃を後へ',text:'↓',onclick:()=>move(1)}),el('button',{type:'button',class:'btn sm','data-boss-remove':'',text:'削除',onclick:()=>{if(box.children.length>1){row.remove();refreshBossCycle(id);changeBossEditor();}}}));
+  box.append(row);refreshBossCycle(id);
+}
+function renderBossCycle(id,cycle,intervals){$(id).replaceChildren();cycle.forEach((attack,i)=>appendBossStep(id,attack,intervals[i]));}
+for(const id of ['boss-cycle','boss-rage-cycle'])$(id+'-add').onclick=()=>{appendBossStep(id,1,id==='boss-cycle'?6:4);changeBossEditor();};
 function paintBossPreview(){const cv=$('boss-preview'),ctx=cv.getContext('2d');ctx.clearRect(0,0,240,240);ctx.save();ctx.translate(120,140);ctx.scale(4,4);const look={};document.querySelectorAll('[data-boss-part]').forEach(n=>look[n.dataset.bossPart]=n.value);paintHam(ctx,cleanBossLook(look));ctx.restore();}
 function loadBossEditor(){
-  const c=editor.boss||HamuBoss.defaults;$('ed-boss-enabled').checked=!!editor.boss;$('ed-boss-settings').hidden=!editor.boss;
-  for(const [id,key] of [['hp','hp'],['cycle','cycle'],['interval','interval'],['rage-cycle','rageCycle'],['rage-interval','rageInterval']])$('boss-'+id).value=Array.isArray(c[key])?c[key].join(','):c[key];
+  const c=HamuBoss.normalize(editor.boss||HamuBoss.defaults);$('ed-boss-enabled').checked=!!editor.boss;$('ed-boss-settings').hidden=!editor.boss;
+  $('boss-hp').value=c.hp;renderBossCycle('boss-cycle',c.cycle,c.intervals);renderBossCycle('boss-rage-cycle',c.rageCycle,c.rageIntervals);
   const box=$('boss-look-controls');box.replaceChildren();const look=cleanBossLook(c.look);
   for(const [key,label] of Object.entries(BOSS_COLORS)){const input=el('input',{type:'color',value:look[key],'data-boss-part':key,'aria-label':'ボスの'+label+'の色'});box.append(el('label',{class:'col',style:'gap:3px'},label,input));}
   for(const key of ['eyes','cheek','hat','outfit','acc']){const input=el('select',{'data-boss-part':key,'aria-label':'ボスの'+PARTS[key].label});for(const [val,name] of PARTS[key].opts)input.append(el('option',{value:val,text:name}));input.value=look[key];box.append(el('label',{class:'col',style:'gap:3px'},PARTS[key].label,input));}
@@ -2342,7 +2416,7 @@ function loadBossEditor(){
 function changeBossEditor(){
   if(!social.isOwner)return;
   $('ed-boss-settings').hidden=!$('ed-boss-enabled').checked;
-  const c=readBossEditor();$('boss-error').textContent=$('ed-boss-enabled').checked&&!c?'HPは1〜999、番号は1〜7、間隔は1〜60秒。選んだ攻撃の最短間隔も確認してください。':'';
+  const c=readBossEditor();$('boss-error').textContent=$('ed-boss-enabled').checked&&!c?'HPは1〜999、番号は1〜7、攻撃終了から次の開始までの間隔は1〜60秒で指定してください。':'';
   if($('ed-boss-enabled').checked&&!c){updatePubBtn();return;}
   editor.boss=c;editor.cleared=false;editor.clearProof=null;saveDraft();updatePubBtn();paintBossPreview();drawEditor();
 }
