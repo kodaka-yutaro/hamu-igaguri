@@ -32,10 +32,10 @@ function game(extra={}){
  const rows=Array.from({length:16},(_,y)=>Array(40).fill(y>=13?'#':'.'));rows[12][2]='S';rows[12][3]='G';
  return ctx.makeGame(null,rows.map(r=>r.join('')),{headless:true,silent:true,manual:true,rewind:true,boss:config({hp:1,interval:60}),...extra});
 }
-test('boss engine ignores goals, spends life, wins on hit and reproduces a legal replay',()=>{
- const g=game();g.jump();for(let i=0;i<36;i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'run');assert.equal(g.snap.life,19);assert.equal(g.launcherCharges,10);
+test('boss engine ignores goals, fires without life cost, wins on hit and reproduces a legal replay',()=>{
+ const g=game();g.jump();for(let i=0;i<36;i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'run');assert.equal(g.snap.life,20);assert.equal(g.launcherCharges,Infinity);
  assert.equal(g.fireLauncher(),true);assert.equal(g.fireLauncher(),false);
- assert.equal(g.snap.life,17);
+ assert.equal(g.snap.life,20);
  for(let i=0;i<15&&g.state==='run';i++)g.replayEvent({type:'frame',dt:.05});assert.equal(g.state,'clear');assert.equal(g.bossState.hp,0);
  // Live recorded frame events are exercised in rewind.test; replay receives the exact same manual inputs here.
  const replay=game({rewind:false});replay.replayEvent({type:'jump'});for(let i=0;i<36;i++)replay.replayEvent({type:'frame',dt:.05});replay.replayEvent({type:'launcher'});for(let i=0;i<15&&replay.state==='run';i++)replay.replayEvent({type:'frame',dt:.05});assert.equal(replay.state,'clear');
@@ -116,21 +116,22 @@ test('boss blocks support landing and stop an upward jump just like course block
  for(const x of [96,128,160])g.placeBlock(x,200);
  for(let i=0;i<6;i++)frame(g);assert.equal(g.snap.y,178);assert.equal(g.snap.life,20);
  g._warp(69,232);g.replayEvent({type:'frame',dt:0});g.jump();frame(g);
- assert.ok(g.snap.y>=232);assert.ok(g.snap.vy>=0);assert.equal(g.snap.life,19);
+ assert.ok(g.snap.y>=232);assert.ok(g.snap.vy>=0);assert.equal(g.snap.life,20);
 });
-test('boss shooting consumes battle life cost once per press even with three projectiles, and cooldown is free',()=>{
+test('boss shooting is free even with three projectiles and still respects the cooldown',()=>{
  const g=game({boss:config({hp:999,interval:60})});g.begin();pickup(g,4);pickup(g,6);
- assert.equal(g.fireLauncher(),true);assert.equal(g.snap.life,18);assert.equal(g.inspect().shots.length,3);
- assert.equal(g.fireLauncher(),false);assert.equal(g.snap.life,18);
+ assert.equal(g.fireLauncher(),true);assert.equal(g.snap.life,20);assert.equal(g.inspect().shots.length,3);
+ assert.equal(g.fireLauncher(),false);assert.equal(g.snap.life,20);
 });
-test('boss life is finite for jumping and firing, and ordinary acorns restore it',()=>{
- const jumper=game();for(let i=0;i<20;i++)jumper.jump();assert.equal(jumper.snap.life,0);assert.equal(jumper.state,'dead');
- const g=game({boss:config({hp:999,interval:60})});g.rows[13]='M'.repeat(40);g.begin();
- for(let i=0;i<10;i++){assert.equal(g.fireLauncher(),true,`shot ${i+1}: ${g.state}, life ${g.snap.life}`);if(i<9)for(let j=0;j<17;j++)frame(g);}
- assert.equal(g.snap.life,0);assert.equal(g.state,'dead');assert.equal(g.launcherCharges,0);assert.equal(g.fireLauncher(),false);
- const r=game();r.begin();r.jump();r.fireLauncher();assert.equal(r.snap.life,17);
- r.rows[12]=r.rows[12].slice(0,4)+'A'+r.rows[12].slice(5);r._warp(128,394);frame(r);
- assert.equal(r.snap.life,20);assert.equal(r.launcherCharges,10);
+test('boss jumps and shots never exhaust life or ammo; damage still follows evolution',()=>{
+ const jumper=game();for(let i=0;i<100;i++)jumper.jump();assert.equal(jumper.state,'run');assert.equal(jumper.snap.life,20);
+ const g=game({boss:config({hp:999,interval:60})});g.begin();
+ for(let i=0;i<30;i++){
+  g.rows[13]='M'.repeat(40);assert.equal(g.fireLauncher(),true,`shot ${i+1}: ${g.state}`);
+  for(let j=0;j<17;j++)frame(g);
+ }
+ assert.equal(g.state,'run');assert.equal(g.snap.life,20);assert.equal(g.launcherCharges,Infinity);
+ g.hurt('test');assert.equal(g.state,'dead');assert.equal(g.fireLauncher(),false);
 });
 test('placed hazards follow the course while flying shots use their own trajectory',()=>{
  const b=Boss.create(config({cycle:[4,1],interval:1}));advance(b,2.3);

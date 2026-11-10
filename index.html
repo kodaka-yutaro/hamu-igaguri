@@ -164,6 +164,10 @@ html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:10
 .warp-controls{padding:7px 12px;border:1.5px solid var(--line);border-radius:10px;background:var(--soft);align-items:center;gap:10px}
 .warp-controls select{font-weight:800;min-width:70px}
 .editor-stage{isolation:isolate}
+@media (min-width:900px) and (pointer:fine){
+  .wrap:has(#view-make:not([hidden]) #course-editor:not([hidden])){max-width:none}
+  .stage.tall.editor-stage{width:min(100%,calc((100dvh - 150px) * var(--editor-ratio,.625)))}
+}
 .editor-eraser{position:absolute;z-index:2;top:8px;right:8px;width:44px;height:44px;border:2px solid #fff9;border-radius:12px;background:#fffdf0ee;color:#33291d;display:grid;place-items:center;padding:8px;cursor:pointer;box-shadow:0 3px 12px #0004;touch-action:manipulation}
 .editor-eraser svg{width:26px;height:26px}
 .editor-eraser[aria-pressed="true"]{background:#f5a64b;color:#21180e;border-color:#32281e}
@@ -427,7 +431,7 @@ input[type=range]{width:100%}
     <div class="card col" id="ed-boss-admin" hidden>
       <label><input type="checkbox" id="ed-boss-enabled"> バンブーハウス用ボス戦モード</label>
       <div id="ed-boss-settings" hidden class="col">
-        <p class="muted">ボス撃破で勝利。基礎ライフは20、コースは周回します。Spaceでジャンプ（ライフ1消費）、G／発射ボタンでどんぐり発射（ライフ2消費・0.8秒間隔）。どんぐりを拾うとライフ全回復。進化どんぐりで2段階まで進化（1段階は赤、2段階は紫のオーラ）。被弾で1段階低下、進化0で被弾すると死亡。被弾後0.9秒無敵。</p>
+        <p class="muted">ボス撃破で勝利。ハムのHPはなく、コースは周回します。Spaceでジャンプ、G／発射ボタンでどんぐり発射（弾数無制限・0.8秒間隔）。ジャンプも発射もライフを消費しません。進化どんぐりで2段階まで進化（1段階は赤、2段階は紫のオーラ）。被弾で1段階低下、進化0で被弾すると死亡。被弾後0.9秒無敵。</p>
         <div class="row"><label>ボスHP <input id="boss-hp" type="number" min="1" max="999" value="30"></label></div>
         <div class="col"><strong>通常の攻撃サイクル</strong><div id="boss-cycle" class="boss-cycle-list"></div><button id="boss-cycle-add" type="button" class="btn sm" style="align-self:flex-start">攻撃を追加</button></div>
         <div class="col"><strong>怒り時の攻撃サイクル</strong><div id="boss-rage-cycle" class="boss-cycle-list"></div><button id="boss-rage-cycle-add" type="button" class="btn sm" style="align-self:flex-start">攻撃を追加</button></div>
@@ -1386,8 +1390,8 @@ function makeGame(canvas, rows, hooks){
   const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
   const tileX = tx => boss ? ((tx % w) + w) % w : tx;
   const solid = (tx, ty) => !boss && (tx < 0 || tx >= w) ? true : (ty < 0 || ty >= ROWS ? false : (rows[ty][tileX(tx)] === '#' || rows[ty][tileX(tx)] === 'M'));
-  const availableShots = () => boss ? Math.ceil(life / SHOT_COST) : launcherCharges;
-  function syncLauncher(){ if(!replaying)hooks.onLauncher?.(availableShots(),boss?SHOT_COST:0); }
+  const availableShots = () => boss ? Infinity : launcherCharges;
+  function syncLauncher(){ if(!replaying)hooks.onLauncher?.(availableShots()); }
   // Boss walls are solid terrain, not damage sources. Resolve them on the same axes as course blocks.
   function collideBossBlocks(axis, delta){
     if(!boss || !delta)return;
@@ -1438,7 +1442,7 @@ function makeGame(canvas, rows, hooks){
     if (paused){ paused = false; last = null; notify('run'); }
     remember({type: 'jump'}); hasStarted = true;
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); }
-    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } if(boss)syncLauncher(); }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; if(!boss)life -= 1; sound('jump'); if (!boss && life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -1465,9 +1469,9 @@ function makeGame(canvas, rows, hooks){
     if(B || state!=='run' || availableShots()<=0 || (boss && bossFireCd>0))return false;
     if(paused){paused=false;last=null;notify('run');}
     remember({type:'launcher'});
-    if(boss){bossFireCd=SHOT_CD;life-=SHOT_COST;for(const vy of (power>=2?[-90,0,90]:[0]))launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0,vy,pw:power});}
+    if(boss){bossFireCd=SHOT_CD;for(const vy of (power>=2?[-90,0,90]:[0]))launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0,vy,pw:power});}
     else {launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});}
-    sound('fire');if(life<=0){life=0;die('ライフ切れ');}syncLauncher();
+    sound('fire');syncLauncher();
     return true;
   }
   // a black acorn the rival fired; lag (seconds) moves it to where it is by now
@@ -1700,8 +1704,8 @@ function makeGame(canvas, rows, hooks){
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
-    drawLife(life / maxLife);
-    if(boss){HamuBoss.drawHud(ctx,boss);ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.fillText(`進化 ${power}/2  ${power===2?'3方向発射':power===1?'大きなどんぐり':'通常どんぐり'}`,10,56);}
+    if(!boss)drawLife(life / maxLife);
+    if(boss){HamuBoss.drawHud(ctx,boss);ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.fillText(`進化 ${power}/2  ${power===2?'3方向発射':power===1?'大きなどんぐり':'通常どんぐり'}`,10,35);}
     if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
@@ -1943,10 +1947,10 @@ function patchMe(patch){
 
 /* ---------- player overlay ---------- */
 let game = null, current = null, lastClear = {sec: 0, deaths: 0};
-function showLauncherAmmo(n, cost=0){
+function showLauncherAmmo(n){
   const button=$('pl-launcher');button.hidden=!n;
-  button.textContent=cost?`発射 −${cost}ライフ（G）`:`発射 ×${n}`;
-  button.setAttribute('aria-label',cost?`どんぐりを前方に発射（ライフ${cost}消費）`:'ランチャーを前方に発射');
+  button.textContent=n===Infinity?'発射 ∞（G）':`発射 ×${n}`;
+  button.setAttribute('aria-label',n===Infinity?'どんぐりを前方に発射':'ランチャーを前方に発射');
 }
 function openPlayer(course, mode){
   current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
@@ -2277,7 +2281,7 @@ function renderSheet(first){
       rateDisplay(c.id, true),
       friendClearDisplay(c.id, true),
       thumb(c.rows,c.decorations),
-      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。ジャンプでライフ1、発射でライフ2を消費し、どんぐりを拾うと全回復します。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
+      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。ハムのHPはなく、ジャンプと発射はライフ消費なし・弾数無制限です（発射は0.8秒間隔）。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
@@ -2610,9 +2614,17 @@ function undoEditor(){
 }
 const edCtx = $('ed-canvas').getContext('2d');
 const MIN_COLS = 10;
-const maxCols = () => Math.max(MIN_COLS, Math.min(60, editor.rows[0].length));
+const desktopEditor = matchMedia('(min-width:900px) and (pointer:fine)');
+const maxCols = () => Math.max(MIN_COLS, Math.min(desktopEditor.matches ? Infinity : 60, editor.rows[0].length));
 const viewW = () => editor.cols * T;
 function clampCam(){ editor.cam = Math.max(0, Math.min(editor.rows[0].length*T - viewW(), editor.cam)); }
+let editorResizeFrame;
+addEventListener('resize',()=>{
+  cancelAnimationFrame(editorResizeFrame);
+  editorResizeFrame=requestAnimationFrame(()=>{
+    if(editor.rows && !$('course-editor').hidden && !$('view-make').hidden)drawEditor();
+  });
+});
 function renderDecorTools(){
   const box=$('ed-decor');if(!box)return;
   const likes=likesReceived(social.uid);
@@ -2660,7 +2672,12 @@ function drawEditor(){
   if((editor.boss && editor.tool==='G') || (!editor.boss && editor.tool==='W'))editor.tool='#';
   renderDecorTools();
   renderEditorPaletteIcons();
-  const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW(), k = 640 / VW;
+  editor.cols=Math.max(MIN_COLS,Math.min(maxCols(),editor.cols));
+  $('ed-stage').style.setProperty('--editor-ratio',String(editor.cols / ROWS));
+  const w = editor.rows[0].length, cv = $('ed-canvas'), VW = viewW();
+  const canvasWidth=desktopEditor.matches ? Math.max(640,Math.round(cv.getBoundingClientRect().width * PX)) : 640;
+  if(cv.width!==canvasWidth)cv.width=canvasWidth;
+  const k = cv.width / VW;
   const h = Math.round(VIEW_H * k); if (cv.height !== h) cv.height = h;
   clampCam();
   edCtx.setTransform(k, 0, 0, k, 0, 0);
@@ -2673,7 +2690,7 @@ function drawEditor(){
   if (editor.cols > MIN_COLS){ edCtx.strokeStyle = 'rgba(255,255,255,.75)'; edCtx.lineWidth = 2 * PX / k; edCtx.setLineDash([8 * PX / k, 6 * PX / k]); edCtx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2); edCtx.setLineDash([]); }
   edCtx.setTransform(PX, 0, 0, PX, 0, 0);
   edCtx.fillStyle = 'rgba(255,255,255,.85)'; edCtx.font = 'bold 12px sans-serif';
-  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText(editor.boss?'次の周回 →':'ゴール側 →', 320 - 8, 16); edCtx.textAlign = 'left';
+  edCtx.fillText('← スタート側', 8, 16); edCtx.textAlign = 'right'; edCtx.fillText(editor.boss?'次の周回 →':'ゴール側 →', cv.width / PX - 8, 16); edCtx.textAlign = 'left';
   const sc = $('ed-scroll'); sc.max = Math.max(0, w*T - VW); sc.value = editor.cam;
   $('ed-zoom-v').textContent = editor.cols <= MIN_COLS ? '等倍' : Math.round(MIN_COLS / editor.cols * 100) + '%';
   $('ed-zin').disabled = editor.cols <= MIN_COLS; $('ed-zout').disabled = editor.cols >= maxCols();
