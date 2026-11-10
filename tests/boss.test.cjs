@@ -166,3 +166,19 @@ test('entering rage preserves the active step recovery then uses rage step delay
  advance(b,.1);assert.deepEqual(b.state.executed,[7,1]);while(b.state.active)b.update(1/120);
  advance(b,.95);assert.deepEqual(b.state.executed,[7,1]);advance(b,.1);assert.deepEqual(b.state.executed,[7,1,7]);
 });
+test('evolution HP gauge follows pickups, grace time and fatal damage without charging actions',()=>{
+ const g=game({boss:config({hp:999,interval:60})});g.begin();
+ const hp=()=>Boss.playerHp(g.power,g.state==='dead');
+ assert.equal(hp(),1);pickup(g,4);assert.equal(hp(),2);pickup(g,6);assert.equal(hp(),3);
+ g.jump();g.fireLauncher();assert.equal(hp(),3);
+ g.hurt('test');assert.equal(hp(),2);g.hurt('test');assert.equal(hp(),2);
+ for(let i=0;i<19;i++)frame(g);g.hurt('test');assert.equal(hp(),1);
+ for(let i=0;i<19;i++)frame(g);g.hurt('test');assert.equal(hp(),0);
+});
+test('HP HUD draws three segments with the appropriate remaining count',()=>{
+ for(let level=0;level<=2;level++){
+ const fills=[],labels=[],ctx={save(){},restore(){},fillRect(x,y,w,h){fills.push({x,y,w,h,color:this.fillStyle});},fillText(t){labels.push(t);}};
+ Boss.drawPlayerHud(ctx,level);assert.ok(labels.includes(`ハム HP ${level+1}/3`));
+ const segments=fills.filter(r=>r.y===32);assert.equal(segments.length,3);assert.equal(segments.filter(r=>r.color!=='#655454').length,level+1);
+ }
+});

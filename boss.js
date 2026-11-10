@@ -105,5 +105,13 @@ function drawHud(ctx,boss){
  ctx.fillStyle='#655454';ctx.fillRect(210,32,96,5);ctx.fillStyle=s.rage?'#fa593e':'#9bc553';ctx.fillRect(210,32,96*s.hp/s.maxHp,5);
  ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.fillText(`${s.rage?'怒 BOSS':'BOSS'}  ${s.hp}/${s.maxHp}`,210,25);ctx.restore();
 }
-const api={attacks,minimumInterval,defaults,cycle,normalize,create,draw,drawHud};if(typeof module!=='undefined')module.exports=api;root.HamuBoss=api;
+function playerHp(power,dead=false){return dead?0:1+Math.max(0,Math.min(2,Math.floor(Number(power)||0)));}
+function drawPlayerHud(ctx,power,dead=false){
+ const hp=playerHp(power,dead),color=hp===3?'#b982ff':hp===2?'#ff756d':'#96d86a';
+ ctx.save();ctx.fillStyle='#24191cdd';ctx.fillRect(8,12,180,47);
+ ctx.fillStyle='#fff';ctx.font='bold 10px sans-serif';ctx.fillText(`ハム HP ${hp}/3`,14,26);
+ for(let i=0;i<3;i++){ctx.fillStyle=i<hp?color:'#655454';ctx.fillRect(14+i*55,32,51,7);}
+ ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.fillText(`進化 ${Math.max(0,hp-1)}/2 · ${hp===3?'3方向発射':hp===2?'大きなどんぐり':'通常どんぐり'}`,14,51);ctx.restore();
+}
+const api={attacks,minimumInterval,defaults,cycle,normalize,create,draw,drawHud,playerHp,drawPlayerHud};if(typeof module!=='undefined')module.exports=api;root.HamuBoss=api;
 })(typeof window!=='undefined'?window:globalThis);
