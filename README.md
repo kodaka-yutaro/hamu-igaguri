@@ -104,3 +104,28 @@ node tests/account.test.cjs
 ```
 
 参考: [Supabase: Sign in with Google](https://supabase.com/docs/guides/auth/social-login/auth-google)、[Anonymous Sign-Ins](https://supabase.com/docs/guides/auth/auth-anonymous)、[Identity Linking](https://supabase.com/docs/guides/auth/auth-identity-linking)、[Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)
+
+
+## バンブーハウス用ボス戦
+
+運営の「つくる」→コース編集→「バンブーハウス用ボス戦モード」で設定します。
+HP（1〜999）、通常・怒り時の攻撃番号列と開始間隔（1〜60秒）、各部の色、全衣装を保存できます。
+例: 通常 `1,2,2,1,5`・6秒。HPが半分未満になると怒り用の先頭から切り替わります。
+予告0.8秒を含めて攻撃開始は等間隔です。攻撃の完了を守るため、1は1.3秒、4は2秒、7は3秒、5は4秒以上が必要です。
+
+1. イガグリを0.22秒ごとに3発
+2. 縦一列（16マス）のブロック壁
+3. 2×2マスの巨大イガグリ1発
+4. 高速上下移動し、口元からイガグリを配置
+5. 左へ突進、画面外で2秒待機して右から帰還
+6. 縦一列の壁を横に5列
+7. イガグリを0.22秒ごとに10発
+
+ボスは右端に半身を出した3×3マスの判定で左を向きます。予告、被弾、怒り、突進の演出は `boss.js`。
+ボス戦では地形を周回し、ゴールラインではクリアしません。G／発射ボタンのランチャーは無制限（0.35秒間隔）、命中1回でボスHPを1減らします。
+ジャンプはライフ消費なし。ボスの弾・生成壁・体に触れると3ダメージ、0.9秒の被弾猶予があります。通常の地形ギミックは従来のルールです。
+撃破のテスト確認後、公式ボス戦として公開できます。下書き同期・複製・巻き戻しにも設定を保持します。
+`supabase/schema.sql` の追加restrictive policiesがボスコースの作成・変更・削除を運営だけに制限します。
+本番DBには `restrict_boss_course_writes_to_operators` を適用済みです。
+
+バンブーハウスの階選択画面自体は別のプレビュー機能です。この変更はボス戦コース形式・作成・プレイを提供し、階への自動割り当ては行いません。

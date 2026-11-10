@@ -281,6 +281,7 @@ input[type=range]{width:100%}
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
+<script src="boss.js"></script>
 </head>
 <body>
 
@@ -393,6 +394,19 @@ input[type=range]{width:100%}
       </div>
     </div>
     <p class="muted" id="ed-hint"></p>
+    <div class="card col" id="ed-boss-admin" hidden>
+      <label><input type="checkbox" id="ed-boss-enabled"> バンブーハウス用ボス戦モード</label>
+      <div id="ed-boss-settings" hidden class="col">
+        <p class="muted">ボス撃破で勝利。コースは周回します。Spaceでジャンプ（ライフ消費なし）、G／発射ボタンで無限ランチャー（0.35秒間隔）。敵の攻撃・接触は3ダメージ、被弾後0.9秒無敵。</p>
+        <div class="row"><label>ボスHP <input id="boss-hp" type="number" min="1" max="999" value="30"></label></div>
+        <div class="row"><label>通常の攻撃順 <input id="boss-cycle" type="text" maxlength="95" value="1,2,2,1,5"></label><label>間隔（秒） <input id="boss-interval" type="number" min="1" max="60" step="0.1" value="6"></label></div>
+        <div class="row"><label>怒り時の攻撃順 <input id="boss-rage-cycle" type="text" maxlength="95" value="7,6,4,3,5"></label><label>怒り時の間隔（秒） <input id="boss-rage-interval" type="number" min="1" max="60" step="0.1" value="4"></label></div>
+        <p class="muted">HPが半分未満になると怒り状態。番号をカンマで区切って指定（最大32個）。間隔は攻撃開始から次の開始まで。予告まで含めて一定間隔です。最短間隔：攻撃1は1.3秒、4は2秒、7は3秒、5は4秒（その他は1秒）。</p>
+        <p class="muted">1：イガグリ3発 ／ 2：縦一列の壁 ／ 3：2×2イガグリ ／ 4：急上下移動＋イガグリ配置 ／ 5：突進・画面外で2秒待って帰還 ／ 6：縦壁を横に5列 ／ 7：イガグリ10発。壁はランチャーで破壊できます。</p>
+        <p id="boss-error" role="status"></p>
+        <div class="row"><canvas id="boss-preview" width="240" height="240" style="width:120px;height:120px;background:#e6f0d5;border-radius:16px" aria-label="ボスの見た目"></canvas><div id="boss-look-controls" class="row"></div></div>
+      </div>
+    </div>
     <div class="card col" id="ed-op" hidden style="gap:8px">
       <div class="row"><span class="badge op">運営</span><label class="row" for="ed-kind">公開先 <select id="ed-kind"><option value="">みんなのコース</option><option value="official">公式コース</option><option value="piece">エンドレス用パーツ</option></select></label></div>
       <p class="muted" id="ed-kind-note" style="margin:0"></p>
@@ -644,7 +658,7 @@ function shade(hex, f){ const n = parseInt(hex.slice(1), 16); let r = n >> 16, g
 // Special full-body transformation: the same gameplay hitbox, a kangaroo appearance.
 function paintKangaroo(ctx, look, dead){
   // Keep the hamster's original proportions, facial expression and drawing style.
-  const L={...look,body:'#be925f',belly:'#f5dfbf',outfit:'none',hat:'none'};
+  const L={...look,body:look.earColor?look.body:'#be925f',belly:look.earColor?look.belly:'#f5dfbf',outfit:'none',hat:'none'};
   ctx.save();
   // Curled tail, tucked behind the familiar round body.
   ctx.strokeStyle='#a9784b';ctx.lineWidth=4;ctx.lineCap='round';
@@ -782,7 +796,7 @@ function paintFruitHat(ctx,key){
 
 // draws the hamster centered at (0,0), facing left, body ~30x24
 function paintHam(ctx, look, dead){
-  const L = look || DEFAULT_LOOK, C = L.color;
+  const L = look || DEFAULT_LOOK, C = L.color, baseCtx=ctx;
   if (L.outfit === 'kangaroo') { paintKangaroo(ctx, L, dead); return; }
   const bodyPath = () => { ctx.beginPath(); ctx.ellipse(0, 1, 15, 12, 0, 0, 7); };
   if (L.outfit === 'cape'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(0, -4); ctx.quadraticCurveTo(22, 0, 20, 14); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill(); }
@@ -793,21 +807,22 @@ function paintHam(ctx, look, dead){
     if (L.outfit === 'shirt') ctx.fillRect(-16, 3, 32, 12); else { ctx.fillRect(-16, 4, 32, 6); ctx.fillStyle = 'rgba(255,255,255,.35)'; for (let i = -14; i < 16; i += 5) ctx.fillRect(i, 4, 2, 6); }
     ctx.restore();
   }
-  ctx.fillStyle = shade(L.body, -0.12); ctx.beginPath(); ctx.arc(-4, -10, 4.5, 0, 7); ctx.arc(6, -10, 4.5, 0, 7); ctx.fill();
-  ctx.fillStyle = '#f7a3a3'; ctx.beginPath(); ctx.arc(-4, -10, 2.2, 0, 7); ctx.fill();
+  ctx.fillStyle = L.earColor || shade(L.body, -0.12); ctx.beginPath(); ctx.arc(-4, -10, 4.5, 0, 7); ctx.arc(6, -10, 4.5, 0, 7); ctx.fill();
+  ctx.fillStyle = L.noseColor || '#f7a3a3'; ctx.beginPath(); ctx.arc(-4, -10, 2.2, 0, 7); ctx.fill();
   if (L.outfit === 'scarf'){ ctx.fillStyle = C; ctx.beginPath(); ctx.ellipse(-1, 3, 12, 2.6, 0, 0, 7); ctx.fill(); ctx.fillRect(5, 3, 4, 9); }
   if (L.outfit === 'tie'){ ctx.fillStyle = C; ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(-4, 2); ctx.lineTo(-3.5, 10); ctx.lineTo(-5.5, 12); ctx.lineTo(-7.5, 10); ctx.closePath(); ctx.fill(); }
   // face
-  ctx.fillStyle = '#2b1d12'; ctx.strokeStyle = '#2b1d12'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+  ctx.fillStyle = L.eyeColor || '#2b1d12'; ctx.strokeStyle = L.eyeColor || '#2b1d12'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
   if (dead){ ctx.font = 'bold 9px sans-serif'; ctx.fillText('x', -12, -1); }
   else if (L.eyes === 'smile'){ ctx.beginPath(); ctx.arc(-9, -1, 2.4, Math.PI*1.1, Math.PI*1.9); ctx.stroke(); }
   else if (L.eyes === 'sparkle'){ ctx.beginPath(); ctx.arc(-9, -2, 2.9, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-10, -3, 1, 0, 7); ctx.fill(); }
   else if (L.eyes === 'sleepy'){ ctx.beginPath(); ctx.moveTo(-11.5, -2); ctx.lineTo(-6.5, -2); ctx.stroke(); }
-  else if (L.eyes === 'wide'){ ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-9, -2, 3.2, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#2b1d12'; ctx.beginPath(); ctx.arc(-9.5, -2, 1.5, 0, 7); ctx.fill(); }
+  else if (L.eyes === 'wide'){ ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-9, -2, 3.2, 0, 7); ctx.fill(); ctx.stroke(); ctx.fillStyle = L.eyeColor || '#2b1d12'; ctx.beginPath(); ctx.arc(-9.5, -2, 1.5, 0, 7); ctx.fill(); }
   else { ctx.beginPath(); ctx.arc(-9, -2, 2.2, 0, 7); ctx.fill(); }
-  ctx.fillStyle = '#f7a3a3'; ctx.beginPath(); ctx.arc(-14, 2, 2, 0, 7); ctx.fill();
-  if (L.cheek !== 'none'){ ctx.fillStyle = L.cheek === 'orange' ? 'rgba(240,140,60,.5)' : 'rgba(240,120,140,.45)'; ctx.beginPath(); ctx.ellipse(-6, 3, 3, 2, 0, 0, 7); ctx.fill(); }
+  ctx.fillStyle = L.noseColor || '#f7a3a3'; ctx.beginPath(); ctx.arc(-14, 2, 2, 0, 7); ctx.fill();
+  if (L.cheek !== 'none'){ ctx.fillStyle = L.cheekColor || (L.cheek === 'orange' ? 'rgba(240,140,60,.5)' : 'rgba(240,120,140,.45)'); ctx.beginPath(); ctx.ellipse(-6, 3, 3, 2, 0, 0, 7); ctx.fill(); }
   // accessories
+  if(L.accColor)ctx=bossTintContext(baseCtx,L.accColor);
   if (L.acc === 'glasses' || L.acc === 'shades'){
     ctx.strokeStyle = '#2b1d12'; ctx.lineWidth = 1.2;
     for (const gx of [-9, -2.5]){ ctx.beginPath(); ctx.arc(gx, -2, 3.4, 0, 7); if (L.acc === 'shades'){ ctx.fillStyle = 'rgba(20,20,30,.85)'; ctx.fill(); } ctx.stroke(); }
@@ -818,6 +833,7 @@ function paintHam(ctx, look, dead){
   if (L.acc === 'bandage'){ ctx.save(); ctx.translate(3, -5); ctx.rotate(-0.5); ctx.fillStyle = '#f2c79a'; ctx.fillRect(-5, -2, 10, 4); ctx.fillStyle = '#e0a874'; ctx.fillRect(-1.5, -2, 3, 4); ctx.restore(); }
   if (itemByKey[L.acc]) paintGear(ctx, L.acc);
   // hats
+  ctx=L.hatColor?bossTintContext(baseCtx,L.hatColor):baseCtx;
   if (fruitByKey[L.hat]) paintFruitHat(ctx,L.hat);
   if (L.hat === 'acorn'){ ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(1, -11, 11, 6, 0, Math.PI, 0); ctx.lineTo(12, -10); ctx.lineTo(-10, -10); ctx.fill(); ctx.fillRect(0, -20, 2, 4); }
   if (L.hat === 'crown'){ ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.moveTo(-7, -11); ctx.lineTo(-8, -21); ctx.lineTo(-3, -16); ctx.lineTo(1, -23); ctx.lineTo(5, -16); ctx.lineTo(10, -21); ctx.lineTo(9, -11); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.arc(1, -14, 1.6, 0, 7); ctx.fill(); }
@@ -1302,6 +1318,9 @@ function makeGame(canvas, rows, hooks){
   let power = 0, myW = new Map(), zoneAt = 0, catchUp = 0;
   // battle: two stocks (one miss is forgiven), a bigger life bar from H, rear shots from R
   let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
+  const bossConfig = hooks.boss ? HamuBoss.normalize(hooks.boss) : null;
+  const boss = bossConfig && !B && !gen ? HamuBoss.create(bossConfig) : null;
+  let bossFireCd=0;
   let launcherCharges=0, launcherShots=[], warpCooldown=0;
   // springs: when each spring, ball or cannon last went off. Each part only ignores the hamster
   // for a moment after its own bounce, so a fast hamster still hits the next one in its path
@@ -1317,7 +1336,7 @@ function makeGame(canvas, rows, hooks){
   const find = ch => { for (let y = 0; y < ROWS; y++){ const x = rows[y].indexOf(ch); if (x >= 0) return {x, y}; } return null; };
   let S = find('S') || {x: w-3, y: 5};
   const G = find('G') || {x: 0, y: 5};
-  const goalX = gen ? Infinity : G.x * T;
+  const goalX = gen || boss ? Infinity : G.x * T;
   const dist = () => Math.max(0, Math.floor((p.x - S.x*T - 5) / T));
   const solid = (tx, ty) => tx < 0 || tx >= w ? true : (ty < 0 || ty >= ROWS ? false : (rows[ty][tx] === '#' || rows[ty][tx] === 'M'));
   // Bounce balls may overlap each other, but their knock-back must never push the hamster through ground blocks.
@@ -1346,18 +1365,18 @@ function makeGame(canvas, rows, hooks){
     }
   }
   function reset(){
-    paused = false; elapsed = 0;
+    paused = false; elapsed = 0; if(boss)boss.reset(); bossFireCd=0;
     if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     if(!gen)rows=originalRows.slice();
-    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); if(!replaying)hooks.onLauncher?.(launcherCharges); }
+    p = {x: S.x*T + 5, y: S.y*T + T - PH, vx: SPEED, vy: 0}; life = LIFE_MAX; taken = new Set(); state = 'ready'; shots = []; fx = []; wantDash = null; power = 0; myW = new Map(); zoneAt = 0; catchUp = 0; maxLife = LIFE_MAX; stocks = B ? 2 : 1; ghostT = hoverT = 0; rear = false; springs = new Map(); kvx = 0; cannon = null; dashT = dashCd = shotCd = hurtT = shake = wantFire = 0; launcherCharges=boss?Infinity:0; launcherShots=[]; warpCooldown=0; camX = clampCam(p.x); t = 0; draw(); notify('ready'); if(!replaying)hooks.onLauncher?.(launcherCharges); }
   function clampCam(px){ return Math.max(0, Math.min(W - VIEW_W, px - VIEW_W*0.3)); }
   function jump(){
     if (state !== 'ready' && state !== 'run') return;
     if (paused){ paused = false; last = null; notify('run'); }
     remember({type: 'jump'}); hasStarted = true;
     if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); }
-    if (state === 'run'){ hoverT = 0; p.vy = JUMP; life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
+    if (state === 'run'){ hoverT = 0; p.vy = JUMP; if(!boss)life -= 1; sound('jump'); if (life <= 0){ life = 0; die('ライフ切れ'); } }
   }
   // a press that lands during a cooldown is kept for a moment and goes off as soon as it can,
   // so jump, dash and fire can be mashed together without any of them getting lost
@@ -1381,10 +1400,10 @@ function makeGame(canvas, rows, hooks){
     if (life <= 0){ life = 0; die('ライフ切れ'); }
   }
   function fireLauncher(){
-    if(B || state!=='run' || launcherCharges<=0)return false;
+    if(B || state!=='run' || launcherCharges<=0 || (boss && bossFireCd>0))return false;
     if(paused){paused=false;last=null;notify('run');}
     remember({type:'launcher'});
-    launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});
+    if(boss)bossFireCd=.35;else launcherCharges--;launcherShots.push({x:p.x+PW+5,y:p.y+PH/2,age:0});
     sound('fire');if(!replaying)hooks.onLauncher?.(launcherCharges);
     return true;
   }
@@ -1461,6 +1480,7 @@ function makeGame(canvas, rows, hooks){
   function stepLauncherShots(dt){
     for(const s of launcherShots){
       s.x+=540*dt;s.age+=dt;
+      if(boss){const hit=boss.hit(s.x-camX,s.y);if(hit){s.gone=true;detonateLauncher(s.x,s.y);if(boss.state.hp<=0){win();return;}continue;}}
       const x=Math.floor(s.x/T),y=Math.floor(s.y/T);
       if(x<0 || x>=w || y<0 || y>=ROWS || s.age>2.8){s.gone=true;continue;}
       if(rows[y][x]==='M'){s.gone=true;detonateLauncher(s.x,s.y);}else if(launcherTarget(rows[y][x])){s.gone=true;detonateLauncher(s.x,s.y);}
@@ -1482,7 +1502,9 @@ function makeGame(canvas, rows, hooks){
       stepShots(dt); if (state !== 'run') return;
     } else p.vx = SPEED;
     warpCooldown=Math.max(0,warpCooldown-dt);
+    if(boss){bossFireCd=Math.max(0,bossFireCd-dt);hurtT=Math.max(0,hurtT-dt);const damage=boss.update(dt,{x:p.x-camX,y:p.y,w:PW,h:PH});if(damage){life=Math.max(0,life-damage);hurtT=.5;burst(p.x+PW/2,p.y+PH/2,true,damage);sound('hit');if(life<=0){die('ボスの攻撃に当たった');return;}}}
     if(!B)stepLauncherShots(dt);
+    if(state!=='run')return;
     // inside a cannon: held in the barrel, then shot up and forward
     if (cannon){
       cannon.t -= dt; p.x = cannon.x * T + (T - PW) / 2; p.y = cannon.y * T + (T - PH) / 2; p.vy = 0;
@@ -1517,7 +1539,7 @@ function makeGame(canvas, rows, hooks){
           if(exit){p.x=exit.x*T+(T-PW)/2;p.y=exit.y*T+(T-PH)/2;p.vy=0;kvx=0;cannon=null;warpCooldown=.6;sound('power');return;}
         }
         if(c==='L' && !B && !taken.has(x*ROWS+y) && Math.hypot(cx-(x*T+T/2),cy-(y*T+T/2))<24){
-          taken.add(x*ROWS+y);launcherCharges=2;sound('item');if(!replaying)hooks.onLauncher?.(launcherCharges);
+          taken.add(x*ROWS+y);launcherCharges=boss?Infinity:2;sound('item');if(!replaying)hooks.onLauncher?.(launcherCharges);
         }
         if (c === '*' && ghostT <= 0 && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 21) return die('イガグリに当たった');
         if (c === 'A' && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 22){ taken.add(x*ROWS + y); life = maxLife; sound('acorn'); }
@@ -1544,6 +1566,8 @@ function makeGame(canvas, rows, hooks){
         if (c === 'W' && B && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sound('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sound('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
+    // Boss courses repeat their terrain; only defeating the boss can clear them.
+    if(boss && p.x>=(w-2)*T){p.x=S.x*T+5;camX=clampCam(p.x);taken.clear();rows=originalRows.slice();launcherShots=[];springs.clear();cannon=null;}
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
@@ -1590,6 +1614,7 @@ function makeGame(canvas, rows, hooks){
       for (const s of shots) drawBlackAcorn(ctx, s.x - camX, s.y, t, s.pw ? 1.4 : 1, Math.atan2(s.vy || 0, SHOT_V * (s.dir || 1)));
     }
     if (!cannon && !(hurtT > 0 && Math.floor(t * 20) % 2) && !(ghostT > 0 && Math.floor(t * 12) % 2)) drawHam(ctx, p.x - camX, p.y, p.vy, state === 'dead', t, hooks.look);
+    if(boss)HamuBoss.draw(ctx,boss,paintHam,cleanBossLook(bossConfig.look),drawBurr,drawBlock);
     drawFx();
     if (B && dashT > 0){ ctx.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 1; i <= 3; i++) ctx.fillRect(p.x - camX - dashDir * i * 7 + (dashDir > 0 ? -4 : 26), p.y + 4 + i * 4, 10, 2); }
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
@@ -1599,7 +1624,8 @@ function makeGame(canvas, rows, hooks){
     if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
     if (B && B.rival && B.rival.life != null){ const f = B.rival.life / (B.rival.maxLife || LIFE_MAX), x = 58, y = 46; ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(x-2, y-2, 114, 10); ctx.fillStyle = '#c98a45'; ctx.fillRect(x, y, 110*f, 6); ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.fillText('あいて', 10, y + 7); if (B.rival.stocks != null) ctx.fillText(`のこり${B.rival.stocks}`, 176, y + 7); }
     if (B && power){ ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(8, 60, 118, 18); drawBlackAcorn(ctx, 20, 69, 0, .8, 0); ctx.fillStyle = '#ffd23c'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(power >= 2 ? '3連発' : '大きい黒どんぐり', 32, 73); }
-    if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
+    if (boss && hooks.hud) hooks.hud('boss', deaths);
+    else if (hooks.hud) hooks.hud(gen ? dist() : Math.max(0, Math.ceil((goalX - p.x - PW/2) / T)), deaths);
   }
   // Replay and live play use this same integration and collision code, including frame substeps.
   function simulateFrame(dt){
@@ -1650,18 +1676,18 @@ function makeGame(canvas, rows, hooks){
   }
   function mark(){
     if (!canRewind || state !== 'run' || overflow) return false;
-    const next = {index: trace.length, time: elapsed, dist: dist(), rows: originalRows.join('\n'), route: trace.map(e => ({...e}))};
+    const next = {index: trace.length, time: elapsed, dist: dist(), rows: originalRows.join('\n'), boss:bossConfig, route: trace.map(e => ({...e}))};
     if (hooks.onSaveCheckpoint && hooks.onSaveCheckpoint(next) === false) return false;
     checkpoint = next;
     hooks.onRewindInfo && hooks.onRewindInfo(); return true;
   }
   function loadCheckpoint(saved){
-    if (!canRewind || !saved || saved.rows !== originalRows.join('\n') || !Array.isArray(saved.route) || !saved.route.length || saved.route.length > MAX_TRACE) return false;
-    const check = makeGame(null, rows.slice(), {manual:true, headless:true, silent:true});
+    if (!canRewind || !saved || saved.rows !== originalRows.join('\n') || JSON.stringify(saved.boss||null)!==JSON.stringify(bossConfig) || !Array.isArray(saved.route) || !saved.route.length || saved.route.length > MAX_TRACE) return false;
+    const check = makeGame(null, rows.slice(), {manual:true, headless:true, silent:true, boss:bossConfig});
     try {
       for (const event of saved.route) if (!check.replayEvent(event)) return false;
       if (check.state !== 'run') return false;
-      checkpoint = {index: saved.route.length, time: check.time, dist: check.snap.dist, rows: saved.rows, route: saved.route.map(e => ({...e}))};
+      checkpoint = {index: saved.route.length, time: check.time, dist: check.snap.dist, rows: saved.rows, boss:bossConfig, route: saved.route.map(e => ({...e}))};
       return true;
     } finally { check.stop(); }
   }
@@ -1677,7 +1703,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
   reset(); if (hooks.checkpoint) loadCheckpoint(hooks.checkpoint); if (!hooks.manual) raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get launcherCharges(){return launcherCharges;}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
+  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get bossState(){return boss?JSON.parse(JSON.stringify(boss.state)):null;}, get launcherCharges(){return launcherCharges;}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
     rewind, mark, resume, restoreCheckpoint(){ return checkpoint ? restoreAt(checkpoint, checkpoint.route) : false; }, replayEvent,
     get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {index: checkpoint.index, time: checkpoint.time, dist: checkpoint.dist}, count: rewindCount, overflow}; },
     get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
@@ -1687,9 +1713,9 @@ function makeGame(canvas, rows, hooks){
 if (window.__hamuTest) Object.assign(window, {__makeGame: makeGame, __endless: endlessCourse, __toPiece: toPiece});
 // A clear is witnessed by a legal, uninterrupted replay in a fresh ordinary engine.
 // No checkpoint snapshots, warps, resource refills or special collision rules enter verification.
-async function verifyCourseRoute(rows, route, cancelled = () => false){
+async function verifyCourseRoute(rows, route, cancelled = () => false, boss = null){
   if (!Array.isArray(route) || !route.length || route.length > 240000 || !route.some(e => e && e.type === 'jump')) return false;
-  const verifier = makeGame(null, rows.slice(), {manual: true, headless: true, silent: true});
+  const verifier = makeGame(null, rows.slice(), {manual: true, headless: true, silent: true, boss});
   try {
     for (let i = 0; i < route.length; i++){
       if (cancelled() || !verifier.replayEvent(route[i])) return false;
@@ -1836,7 +1862,7 @@ function patchMe(patch){
 let game = null, current = null, lastClear = {sec: 0, deaths: 0};
 function showLauncherAmmo(n){
   const button=$('pl-launcher');button.hidden=!n;
-  button.textContent=`発射 ×${n}`;
+  button.textContent=n===Infinity?'発射 ∞（G）':`発射 ×${n}`;
 }
 function openPlayer(course, mode){
   current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
@@ -1862,7 +1888,7 @@ function openPlayer(course, mode){
   }
   const operatorTest = mode === 'test' && social.isOwner === true && $('ed-admin-test').checked;
   const savedPoint = operatorTest ? savedTestCheckpoint(current.draftId) : null;
-  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], rewind: operatorTest, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = `ゴールまで ${left}マス　ミス ${d}` });
+  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], boss:course.boss, rewind: operatorTest, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = left==='boss'?`ボス撃破でクリア　ミス ${d}`:`ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
 }
 function savedTestCheckpoint(id){
@@ -1995,8 +2021,8 @@ function onState(s, info){
     if (current.mode === 'test'){
       if (game && game.rewindInfo.enabled){ finishRewindTest(game, current, info); return; }
       editor.clearProof = null;
-      editor.cleared = current.draftId === activeDraftId && c.rows.join('\n') === editor.rows.join('\n');
-      updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return;
+      editor.cleared = current.draftId === activeDraftId && c.rows.join('\n') === editor.rows.join('\n') && JSON.stringify(c.boss||null)===JSON.stringify(editor.boss||null);
+      updatePubBtn(); btns.push(['エディタにもどる', closePlayer, true]); showMsg(c.boss?'ボス撃破！':'クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns); return;
     }
     if (social.db && social.canWrite){
       const label = () => `${likedByMe(c.id) ? 'いいね済み' : 'いいね！'} ${likeCount(c.id)}`;
@@ -2004,21 +2030,21 @@ function onState(s, info){
     }
     btns.push(['コメントする', () => { closePlayer(); openCourse(c.id); }]);
     btns.push(['Xでシェア', () => shareX(`「${c.title || '名前のないコース'}」を${info.sec.toFixed(1)}秒でクリア！🐹 きみもクリアできる？`, courseUrl(c.id))]);
-    showMsg('クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
+    showMsg(c.boss?'ボス撃破！':'クリア！', `${info.sec.toFixed(1)}秒・ミス ${info.deaths}回`, btns);
     const cur = current;
     recordClear(c, info.sec).then(() => { checkTitleAwards(); renderMe(); if(!formDirty)syncForm(); });
   }
 }
 async function finishRewindTest(played, attempt, info){
   const rows = attempt.course.rows.slice(), route = played.route, fingerprint = rows.join('\n');
-  const stale = () => game !== played || current !== attempt || !social.isOwner || activeDraftId !== attempt.draftId || editor.rows.join('\n') !== fingerprint;
+  const stale = () => game !== played || current !== attempt || !social.isOwner || activeDraftId !== attempt.draftId || editor.rows.join('\n') !== fingerprint || JSON.stringify(attempt.course.boss||null)!==JSON.stringify(editor.boss||null);
   editor.cleared = false; editor.clearProof = null; updatePubBtn();
   showMsg('通しクリアを確認中…', '成功した操作を、通常の判定で最初から再現しています');
   let ok = false;
-  try { ok = await verifyCourseRoute(rows, route, stale); } catch { ok = false; }
+  try { ok = await verifyCourseRoute(rows, route, stale, attempt.course.boss); } catch { ok = false; }
   if (stale()) return;
   if (ok){
-    editor.clearProof = {rows: fingerprint, route, method: 'ordinary-replay-v1'};
+    editor.clearProof = {rows: fingerprint, boss:attempt.course.boss||null, route, method: 'ordinary-replay-v1'};
     editor.cleared = true; updatePubBtn();
     showMsg('通しクリアを確認！', `巻き戻しなしでもゴールできる操作を確認しました。${info.sec.toFixed(1)}秒`, [['エディタにもどる', closePlayer, true], ['もう一回', () => game.reset()]]);
   } else {
@@ -2140,7 +2166,7 @@ const drafts = {};
 function markOfficial(){
   const op = c => isOp(c.author);
   for (const c of social.allCourses) c.official = c.wantOfficial && op(c);
-  social.courses = social.allCourses.filter(c => c.kind !== 'piece');
+  social.courses = social.allCourses.filter(c => c.kind !== 'piece' && (!c.boss || op(c)));
   social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows,c.decorations)})).filter(c => c.piece);
 }
 function courseById(id){ return social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
@@ -2162,11 +2188,12 @@ function renderSheet(first){
     const cleared = myClears()[c.id];
     box.append(
       el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
-      el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
+      el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: c.boss?'公式ボス戦':'公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
       (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
       rateDisplay(c.id, true),
       friendClearDisplay(c.id, true),
       thumb(c.rows,c.decorations),
+      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでランチャー。ボス戦ではジャンプのライフ消費なし・弾数無制限です。'}) : null,
       el('div', {class: 'row'},
         el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
         likeButton(c),
@@ -2243,7 +2270,45 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { rows: null, decorations: [], mode: 'course', tool: '#', courseTool: '#', decorTool: 'a', decorSize: 1, warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+const editor = { boss:null, rows: null, decorations: [], mode: 'course', tool: '#', courseTool: '#', decorTool: 'a', decorSize: 1, warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+
+const BOSS_COLORS={body:'体',belly:'おなか',earColor:'耳',noseColor:'鼻・耳の内側',eyeColor:'目',cheekColor:'ほっぺ',color:'衣装',hatColor:'帽子',accColor:'小物'};
+function cleanBossLook(value){
+  const l=cleanLook(value), defaults={earColor:'#ca9859',noseColor:'#f7a3a3',eyeColor:'#2b1d12',cheekColor:'#ed9da1',hatColor:'#e5b637',accColor:'#574165'};
+  for(const k in BOSS_COLORS)l[k]=/^#[0-9a-f]{6}$/i.test(value?.[k]||'')?value[k]:(defaults[k]||l[k]);
+  return l;
+}
+function bossTintContext(ctx,color){
+  return new Proxy(ctx,{get(target,key){const v=Reflect.get(target,key,target);return typeof v==='function'?v.bind(target):v;},set(target,key,value){
+    if((key==='fillStyle'||key==='strokeStyle')&&typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)){
+      const n=parseInt(value.slice(1),16),light=((n>>16)*.3+((n>>8)&255)*.59+(n&255)*.11)/255;
+      value=shade(color,(light-.55)*.65);
+    }return Reflect.set(target,key,value,target);
+  }});
+}
+function readBossEditor(){
+  if(!$('ed-boss-enabled').checked)return null;
+  const look={};document.querySelectorAll('[data-boss-part]').forEach(n=>look[n.dataset.bossPart]=n.value);
+  return HamuBoss.normalize({hp:$('boss-hp').value,cycle:$('boss-cycle').value,interval:$('boss-interval').value,rageCycle:$('boss-rage-cycle').value,rageInterval:$('boss-rage-interval').value,look:cleanBossLook(look)});
+}
+function paintBossPreview(){const cv=$('boss-preview'),ctx=cv.getContext('2d');ctx.clearRect(0,0,240,240);ctx.save();ctx.translate(120,140);ctx.scale(4,4);const look={};document.querySelectorAll('[data-boss-part]').forEach(n=>look[n.dataset.bossPart]=n.value);paintHam(ctx,cleanBossLook(look));ctx.restore();}
+function loadBossEditor(){
+  const c=editor.boss||HamuBoss.defaults;$('ed-boss-enabled').checked=!!editor.boss;$('ed-boss-settings').hidden=!editor.boss;
+  for(const [id,key] of [['hp','hp'],['cycle','cycle'],['interval','interval'],['rage-cycle','rageCycle'],['rage-interval','rageInterval']])$('boss-'+id).value=Array.isArray(c[key])?c[key].join(','):c[key];
+  const box=$('boss-look-controls');box.replaceChildren();const look=cleanBossLook(c.look);
+  for(const [key,label] of Object.entries(BOSS_COLORS)){const input=el('input',{type:'color',value:look[key],'data-boss-part':key,'aria-label':'ボスの'+label+'の色'});box.append(el('label',{class:'col',style:'gap:3px'},label,input));}
+  for(const key of ['eyes','cheek','hat','outfit','acc']){const input=el('select',{'data-boss-part':key,'aria-label':'ボスの'+PARTS[key].label});for(const [val,name] of PARTS[key].opts)input.append(el('option',{value:val,text:name}));input.value=look[key];box.append(el('label',{class:'col',style:'gap:3px'},PARTS[key].label,input));}
+  $('boss-error').textContent='';paintBossPreview();
+}
+function changeBossEditor(){
+  if(!social.isOwner)return;
+  $('ed-boss-settings').hidden=!$('ed-boss-enabled').checked;
+  const c=readBossEditor();$('boss-error').textContent=$('ed-boss-enabled').checked&&!c?'HPは1〜999、番号は1〜7、間隔は1〜60秒。選んだ攻撃の最短間隔も確認してください。':'';
+  if($('ed-boss-enabled').checked&&!c){updatePubBtn();return;}
+  editor.boss=c;editor.cleared=false;editor.clearProof=null;saveDraft();updatePubBtn();paintBossPreview();
+}
+$('ed-boss-enabled').onchange=changeBossEditor;
+$('ed-boss-settings').addEventListener('input',changeBossEditor);
 function blankCourse(w){
   const g = Array.from({length: ROWS}, () => Array(w).fill('.'));
   g[7][2] = 'S'; g[7][w-3] = 'G';
@@ -2270,15 +2335,16 @@ function loadDraft(){
   store.set('hi-course-active', activeDraftId);
   if (d){ const converted = HamuDecorations.fromCourse(d); editor.rows = converted.rows; editor.decorations = converted.decorations; $('ed-title').value = d.title; }
   else { editor.rows = blankCourse(40); editor.decorations = []; $('ed-title').value = 'わたしのコース'; }
+  editor.boss=d?HamuBoss.normalize(d.boss):null; loadBossEditor();
   syncWidth(); editor.cam = 0; editor.undo = []; updateUndoBtn();
 }
 function saveDraft(){
   if (!activeDraftId) return;
   const library = courseLibrary(), previous = library.files[activeDraftId];
   if (!previous || previous.deleted) return;
-  const value = {rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), title: $('ed-title').value.slice(0, 30)};
+  const value = {boss:editor.boss, rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), title: $('ed-title').value.slice(0, 30)};
   if (previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n') &&
-      JSON.stringify(previous.decorations || []) === JSON.stringify(value.decorations)) return;
+      JSON.stringify(previous.decorations || []) === JSON.stringify(value.decorations) && JSON.stringify(previous.boss||null)===JSON.stringify(value.boss)) return;
   library.files[activeDraftId] = {...previous, ...value, updatedAt: Date.now()};
   store.set('hi-draft', value); store.set('hi-course-library', library);
   if (draftSync) draftSync.changed();
@@ -2299,7 +2365,7 @@ function openCourseFile(id){
 function addCourseFile(value){
   saveDraft(); const library = courseLibrary(), id = newId();
   const converted = HamuDecorations.fromCourse(value);
-  library.files[id] = {rows: converted.rows, decorations: converted.decorations, title: value.title.slice(0, 30), updatedAt: Date.now()};
+  library.files[id] = {boss:social.isOwner?HamuBoss.normalize(value.boss):null,rows: converted.rows, decorations: converted.decorations, title: value.title.slice(0, 30), updatedAt: Date.now()};
   if (new TextEncoder().encode(JSON.stringify(library)).length > 220000) return toast('下書きの保存容量がいっぱいです。新しいコースを追加できません。');
   store.set('hi-course-library', library);
   if (draftSync) draftSync.changed();
@@ -2344,10 +2410,10 @@ function renderCourseFiles(){
     const title = file.title || '名前のないコース';
     list.append(el('article', {class: 'course-file'}, courseFilePreview(file), el('div', {class: 'course-file-body'},
       el('button', {class: 'course-file-title', text: title, onclick: () => openCourseFile(id)}),
-      el('span', {class: 'muted', text: `${file.rows[0].length}マス · ${file.updatedAt ? ago(file.updatedAt) + ' 更新' : '引き継いだ下書き'}`}),
+      el('span', {class: 'muted', text: `${file.boss?'ボス戦 · ':''}${file.rows[0].length}マス · ${file.updatedAt ? ago(file.updatedAt) + ' 更新' : '引き継いだ下書き'}`}),
       el('div', {class: 'row'},
         el('button', {class: 'btn primary sm', text: '編集する', 'aria-label': `${title}を編集`, onclick: () => openCourseFile(id)}),
-        el('button', {class: 'btn sm', text: '複製', 'aria-label': `${title}を複製`, onclick: () => addCourseFile({rows: file.rows, decorations: file.decorations, title: title.slice(0, 26) + ' コピー'})}),
+        el('button', {class: 'btn sm', text: '複製', 'aria-label': `${title}を複製`, onclick: () => addCourseFile({rows: file.rows, decorations: file.decorations, boss:file.boss, title: title.slice(0, 26) + ' コピー'})}),
         el('button', {class: 'btn sm', text: 'ゴミ箱へ', 'aria-label': `${title}をゴミ箱へ`, onclick: () => moveCourseFile(id, true)})))));
   }
   $('course-file-trash-count').textContent = `（${trash.length}件）`;
@@ -2409,7 +2475,7 @@ function startDraftSync(api){
   setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
 }
 
-function editorSnapshot(){ return {rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
+function editorSnapshot(){ return {bossFingerprint:JSON.stringify(editor.boss||null), rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
   if (!s || (s.rows.join('\n') === editor.rows.join('\n') && JSON.stringify(s.decorations) === JSON.stringify(editor.decorations))) return;
@@ -2422,8 +2488,8 @@ function undoEditor(){
   if (!s) return;
   editor.rows = s.rows.slice();
   editor.decorations = s.decorations.map(d=>({...d}));
-  editor.cleared = s.cleared;
-  editor.clearProof = s.clearProof || null;
+  editor.cleared = s.cleared && (s.bossFingerprint||'null')===JSON.stringify(editor.boss||null);
+  editor.clearProof = editor.cleared ? s.clearProof || null : null;
   syncWidth();
   editor.cols = Math.min(editor.cols, maxCols());
   editor.cam = s.cam;
@@ -2607,27 +2673,31 @@ $('ed-new').onclick = () => {
   pushUndo(beforeClear); updatePubBtn(); drawEditor(); saveDraft();
 };
 function validate(){
+  if(editor.boss && !social.isOwner)return 'ボス戦の編集・公開は運営専用です';
+  if(social.isOwner && $('ed-boss-enabled').checked && !readBossEditor())return 'ボスHP・攻撃順・間隔を確認してください';
   const all = editor.rows.join('');
   if (!all.includes('S')) return 'スタートを置いてください';
-  if (!all.includes('G')) return 'ゴールラインを置いてください';
+  if (!editor.boss && !all.includes('G')) return 'ゴールラインを置いてください';
   for(let i=0;i<5;i++){
     if(all.includes(WARP_ENTRIES[i])!==all.includes(WARP_EXITS[i]))return `ワープ${i+1}の入口と出口を両方置いてください`;
   }
   if (edKind() === 'piece'){ const pc = toPiece(editor.rows); if (!pc) return 'エンドレス用パーツはスタートより右にゴールラインを置いてください'; if (pc.rows[0].length > 40) return 'エンドレス用パーツは40マスまでにしてください'; }
   return null;
 }
-function remix(c){ saveDraft(); setTab('make'); addCourseFile({rows: c.rows, decorations:c.decorations, title: ((c.title || '') + ' アレンジ').slice(0, 30)}); }
-$('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice(), decorations:editor.decorations.map(d=>({...d}))}, 'test'); };
+function remix(c){ saveDraft(); setTab('make'); addCourseFile({rows: c.rows, decorations:c.decorations, boss:social.isOwner?c.boss:null, title: ((c.title || '') + ' アレンジ').slice(0, 30)}); }
+$('ed-test').onclick = () => { const err = validate(); if (err) return toast(err); openPlayer({title: ($('ed-title').value || 'テストプレイ') + '（テスト）', rows: editor.rows.slice(), decorations:editor.decorations.map(d=>({...d})),boss:editor.boss}, 'test'); };
 // the operator can publish a course as an official one, or as a piece that endless mode mixes in
-const edKind = () => social.isOwner ? $('ed-kind').value : '';
+const edKind = () => social.isOwner ? (editor.boss?'boss':$('ed-kind').value) : '';
 function renderEdOp(){
   $('ed-op').hidden = !social.isOwner;
+  $('ed-boss-admin').hidden = !social.isOwner;
+  $('ed-kind').disabled = !!editor.boss;
   $('ed-test-options').hidden = !social.isOwner;
   if (!social.isOwner) $('ed-admin-test').checked = false;
   if (!social.isOwner) return;
   const k = edKind();
-  $('ed-pub').textContent = k === 'official' ? '公式コースとして公開' : k === 'piece' ? 'エンドレスに追加' : '公開する';
-  $('ed-kind-note').textContent = k === 'official' ? '公式バッジつきで、みんなのコースの一覧に並びます。'
+  $('ed-pub').textContent = k === 'boss' ? 'ボス戦を公開' : k === 'official' ? '公式コースとして公開' : k === 'piece' ? 'エンドレスに追加' : '公開する';
+  $('ed-kind-note').textContent = k === 'boss' ? 'ボス戦は公式コースとして公開されます。ボス設定を変更できるのは運営だけです。' : k === 'official' ? '公式バッジつきで、みんなのコースの一覧に並びます。'
     : k === 'piece' ? 'スタートの列からゴールラインの列までを切り出して、エンドレスの150マス以降にときどき混ぜます。ゴールラインを置いた高さが、パーツを抜けたあとのイガグリのすき間の高さになります。'
     : '運営アカウントなので、公式コースやエンドレス用パーツとしても公開できます。';
   const box = $('ed-pieces'); box.replaceChildren();
@@ -2639,12 +2709,13 @@ $('ed-kind').onchange = () => updatePubBtn();
 function updatePubBtn(){
   renderEdOp();
   const err = validate();
-  const proofMatches = !editor.clearProof || editor.clearProof.rows === editor.rows.join('\n');
+  const proofMatches = !editor.clearProof || (editor.clearProof.rows === editor.rows.join('\n') && JSON.stringify(editor.clearProof.boss||null)===JSON.stringify(editor.boss||null));
   const ok = !err && editor.cleared && proofMatches && $('ed-title').value.trim() && social.canWrite && social.uid;
   $('ed-pub').disabled = !ok;
   $('ed-hint').textContent = err ? err
     : !social.db ? 'オンライン機能につながっていないため公開できません。テストプレイは自由にできます。'
     : !social.canWrite ? 'このページは閲覧のみのため公開できません。テストプレイは自由にできます。'
+    : !editor.cleared && editor.boss ? 'テストプレイでボスを倒すと公開できます。'
     : !editor.cleared ? 'ハムスターは左のスタートから右へ走ります。テストプレイでゴールラインまでクリアすると公開できます。'
     : !$('ed-title').value.trim() ? 'コースの名前を入れてください。'
     : 'クリア確認ずみ。公開できます！';
@@ -2656,7 +2727,7 @@ function renderPubConfirm(box){
   const go = el('button', {class: 'btn primary', text: kind === 'piece' ? 'この名前で追加' : 'この名前で公開'});
   go.onclick = () => { closeSheet(); publishCourse(); };
   box.append(
-    el('h2', {style: 'padding-right:70px', text: kind === 'piece' ? 'エンドレス用パーツとして追加します' : kind === 'official' ? '公式コースとして公開します' : 'この名前で公開しますか？'}),
+    el('h2', {style: 'padding-right:70px', text: kind === 'piece' ? 'エンドレス用パーツとして追加します' : kind === 'boss' ? 'バンブーハウス用ボス戦を公開します' : kind === 'official' ? '公式コースとして公開します' : 'この名前で公開しますか？'}),
     el('p', {class: 'muted', style: 'margin:0', text: 'コース名'}),
     el('p', {style: 'margin:0;font-size:22px;font-weight:800;overflow-wrap:anywhere', text: `「${title}」`}),
     thumb(editor.rows,editor.decorations),
@@ -2664,18 +2735,19 @@ function renderPubConfirm(box){
     el('div', {class: 'row'}, go, el('button', {class: 'btn', text: '名前を変える', onclick: () => { closeSheet(); const t = $('ed-title'); t.focus(); t.select(); }})));
 }
 async function publishCourse(){
-  if ($('ed-pub').disabled) return;
+  if ($('ed-pub').disabled || (editor.boss && !social.isOwner)) return;
   $('ed-pub').disabled = true;
   try {
-    const rows = editor.rows.slice(), fingerprint = rows.join('\n'), draftId = activeDraftId, proof = editor.clearProof, uid = social.uid;
+    const rows = editor.rows.slice(), fingerprint = rows.join('\n'), draftId = activeDraftId, proof = editor.clearProof, uid = social.uid, bossFingerprint=JSON.stringify(editor.boss||null);
     if (proof){
-      const stale = () => activeDraftId !== draftId || social.uid !== uid || !social.isOwner || editor.rows.join('\n') !== fingerprint;
-      if (proof.rows !== fingerprint || !await verifyCourseRoute(rows, proof.route, stale) || stale()) {
+      const stale = () => activeDraftId !== draftId || social.uid !== uid || !social.isOwner || editor.rows.join('\n') !== fingerprint || JSON.stringify(editor.boss||null)!==bossFingerprint;
+      if (proof.rows !== fingerprint || JSON.stringify(proof.boss||null)!==bossFingerprint || !await verifyCourseRoute(rows, proof.route, stale, editor.boss) || stale()) {
         editor.cleared = false; editor.clearProof = null; updatePubBtn();
         toast('通しクリアを再確認できませんでした。もう一度テストしてください。'); return;
       }
     }
     const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows, decorations:(editor.decorations || []).map(d=>({...d})), author: social.uid, createdAt: Date.now() };
+    if(kind==='boss'){doc.boss=HamuBoss.normalize(editor.boss);doc.official=true;}
     if (kind === 'official') doc.official = true;
     if (kind === 'piece') doc.kind = 'piece';
     await social.db.collection('courses').add(doc);
@@ -2730,7 +2802,7 @@ function courseCard(c){
   const card = el('article', {class: 'card click', tabindex: 0, onclick: () => openCourse(c.id), onkeydown: e => { if (e.key === 'Enter') openCourse(c.id); }},
     thumb(c.rows,c.decorations),
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
-    el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: '公式'}) : whoChip(c.author, 22),
+    el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: c.boss?'ボス戦':'公式'}) : whoChip(c.author, 22),
       el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
     rateDisplay(c.id),
     friendClearDisplay(c.id),
@@ -3419,7 +3491,7 @@ $('db-state').textContent = '公式コースを表示中';
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
     social.coursesLoaded = true;
-    const all = snap.docs.map(d => { const v = d.data(); const rows=Array.isArray(v.rows) && v.rows.length===ROWS?v.rows.map(String):null; return {id:d.id,title:String(v.title || ''),rows,decorations:rows?HamuDecorations.normalize(rows,v.decorations):[],author:v.author || null,createdAt:+v.createdAt || 0,wantOfficial:!!v.official,kind:v.kind==='piece'?'piece':''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    const all = snap.docs.map(d => { const v = d.data(); const rows=Array.isArray(v.rows) && v.rows.length===ROWS?v.rows.map(String):null; return {id:d.id,title:String(v.title || ''),rows,decorations:rows?HamuDecorations.normalize(rows,v.decorations):[],boss:HamuBoss.normalize(v.boss),author:v.author || null,createdAt:+v.createdAt || 0,wantOfficial:!!v.official,kind:v.kind==='piece'?'piece':''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     social.allCourses = all; markOfficial(); updatePubBtn();
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();

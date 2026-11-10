@@ -18,7 +18,7 @@
     if (courseValid(v)) return {format: 2, files: {legacy: {...copy(v), updatedAt: 0}}};
     throw new Error('Invalid course library');
   }
-  const fileSignature = f => f ? JSON.stringify({title: f.title, rows: f.rows, decorations: f.decorations || [], deleted: !!f.deleted}) : '';
+  const fileSignature = f => f ? JSON.stringify({title: f.title, rows: f.rows, decorations: f.decorations || [], boss: f.boss || null, deleted: !!f.deleted}) : '';
   const signature = v => JSON.stringify(Object.entries(normalize(v).files).sort(([a], [b]) => a.localeCompare(b)).map(([id, f]) => [id, fileSignature(f)]));
   function merge(base, local, remote, choice) {
     const b = normalize(base).files, l = normalize(local).files, r = normalize(remote).files;

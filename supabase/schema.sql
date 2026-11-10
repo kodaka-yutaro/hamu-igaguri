@@ -68,3 +68,12 @@ create policy "admins readable by everyone" on public.admins for select using (t
 do $$ begin
   alter publication supabase_realtime add table public.docs;
 exception when duplicate_object then null; end $$;
+
+-- Boss course creation, modification and deletion are operator-only.
+-- Restrictive rules supplement existing author/owner rules.
+drop policy if exists "boss courses insert operators only" on public.docs;
+create policy "boss courses insert operators only" on public.docs as restrictive for insert to authenticated with check (col <> 'courses' or coalesce(data->'boss','null'::jsonb) = 'null'::jsonb or public.is_admin());
+drop policy if exists "boss courses update operators only" on public.docs;
+create policy "boss courses update operators only" on public.docs as restrictive for update to authenticated using (col <> 'courses' or coalesce(data->'boss','null'::jsonb) = 'null'::jsonb or public.is_admin()) with check (col <> 'courses' or coalesce(data->'boss','null'::jsonb) = 'null'::jsonb or public.is_admin());
+drop policy if exists "boss courses delete operators only" on public.docs;
+create policy "boss courses delete operators only" on public.docs as restrictive for delete to authenticated using (col <> 'courses' or coalesce(data->'boss','null'::jsonb) = 'null'::jsonb or public.is_admin());
