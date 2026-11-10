@@ -275,6 +275,17 @@ input[type=range]{width:100%}
 .person{display:flex;gap:10px;align-items:center}
 .person .info{min-width:0;display:flex;flex-direction:column}
 .person .info b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.event-list{gap:16px}
+.event-card{display:flex;align-items:center;gap:20px;width:100%;padding:24px;text-align:left;border:2px solid var(--line);border-radius:18px;background:var(--panel);color:var(--fg);font:inherit;cursor:pointer}
+.event-card:hover,.event-card:focus-visible{border-color:var(--leaf);background:var(--soft)}
+.event-card-art{width:66px;height:100px;flex:none;position:relative;display:grid;place-items:center;background:repeating-linear-gradient(0deg,transparent 0 27px,#365a22 28px 31px),linear-gradient(90deg,#426d2a,#bfd86c 42%,#78a344 75%,#355823);border:2px solid #355823;border-radius:45% 45% 12px 12px / 10% 10% 6px 6px}
+.event-card-art canvas{width:64px;height:64px;margin-top:38px;filter:drop-shadow(0 3px 2px #1b351966)}
+.event-card-copy{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.event-card-copy strong{font-family:var(--display);font-weight:400;font-size:clamp(17px,3.5vw,23px);line-height:1.5}
+.event-card-copy small{color:var(--muted)}
+.event-coming-soon{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-weight:800;color:var(--leaf)}
+.event-coming-soon span{padding:3px 10px;border-radius:99px;background:var(--soft);border:1px solid var(--line);font-size:12px}
+@media(max-width:560px){.event-card{gap:14px;padding:18px 14px}.event-card-art{width:54px;height:92px}.event-card-art canvas{width:54px;height:54px}.event-card-copy small{font-size:12px;line-height:1.6}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
@@ -303,8 +314,21 @@ input[type=range]{width:100%}
     <button id="tab-make" role="tab" aria-selected="false">つくる</button>
     <button id="tab-people" role="tab" aria-selected="false">みんな</button>
     <button id="tab-board" role="tab" aria-selected="false">けいじばん</button>
+    <button id="tab-event" aria-label="イベント" aria-controls="view-event" role="tab" aria-selected="false">❗</button>
     <button id="tab-me" role="tab" aria-selected="false">マイページ</button>
   </nav>
+
+  <section id="view-event" class="col event-list" role="tabpanel" aria-labelledby="tab-event" hidden>
+    <h2 style="margin:0">イベント一覧</h2>
+    <button id="event-bamboo" class="event-card" type="button" aria-disabled="true" aria-describedby="event-bamboo-status">
+      <span class="event-card-art" aria-hidden="true"><canvas id="event-bamboo-avatar" width="120" height="120"></canvas></span>
+      <span class="event-card-copy">
+        <strong>バンブーハウスチャレンジ</strong>
+        <small>ハムと一緒に、竹のてっぺんをめざそう！</small>
+        <span id="event-bamboo-status" class="event-coming-soon"><time datetime="2026-11-15">11/15〜</time><span>近日公開</span></span>
+      </span>
+    </button>
+  </section>
 
   <section id="view-play" class="col" style="gap:14px">
     <div class="card endless" id="endless"></div>
@@ -3272,7 +3296,7 @@ function renderAccount(){
 }
 
 /* ---------- tabs & render ---------- */
-const TABS = ['play','make','people','board','me'];
+const TABS = ['play','make','people','board','event','me'];
 let tab = 'play';
 function setTab(name){
   tab = name;
@@ -3282,6 +3306,7 @@ function setTab(name){
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
+$('event-bamboo').onclick = () => toast('11/15〜公開予定です。お楽しみに！');
 let renderQueued = false, deepCourse = new URLSearchParams(location.search).get('c');
 function renderAll(){
   if (renderQueued) return; renderQueued = true;
@@ -3292,6 +3317,7 @@ function renderAll(){
     if (tab === 'play'){ renderEndless(); renderList(); }
     if (tab === 'people') renderPeople();
     if (tab === 'board') renderBoard();
+    if (tab === 'event') paintAvatar($('event-bamboo-avatar'), myLook());
     if (tab === 'me'){ syncForm(); renderMe(); }
     if (sheet) renderSheet();
     // a shared link (?c=<course id>) opens that course once it has loaded
@@ -3519,3 +3545,4 @@ $('db-state').textContent = '公式コースを表示中';
 
 </body>
 </html>
+
