@@ -62,7 +62,9 @@ function create(config){
  function hit(x,y,r=7){
   if(s.hp<=0)return false;
   const shot={x:x-r,y:y-r,w:r*2,h:r*2};
-  const block=s.bullets.find(b=>b.kind==='block'&&overlap(shot,b));
+  const target=s.bullets.find(b=>!b.gone&&overlap(shot,b));
+  if(target&&target.kind!=='block'){s.bullets=s.bullets.filter(b=>b!==target);return 'burr';}
+  const block=target;
   if(block){s.bullets=s.bullets.filter(b=>b.kind!=='block'||Math.hypot(b.x+16-x,b.y+16-y)>55);return 'block';}
   if(overlap(shot,rect())){s.hp=Math.max(0,s.hp-1);s.hitFlash=.16;
    if(!s.rage && s.hp>0 && s.hp<c.hp/2){s.rage=true;s.rageFlash=1.3;s.index=0;s.warning=null;if(!s.executed.length)s.next=s.time+c.rageIntervals[0];}

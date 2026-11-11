@@ -25,3 +25,24 @@ test('shared course statistics remain separate by event mode',()=>{
  h.ctx.social.people.set('other',{bambooGreenFamily:{stats:{[key]:{attempts:4,clears:1,players:{other:12}}}}});
  assert.equal(h.ctx.bambooCombinedStats('challenge',1,courses[0].id).people,1);assert.equal(h.ctx.bambooCombinedStats('marathon',1,courses[0].id).attempts,0);
 });
+
+test('operator settings save all floors and selected boss appearance, reject non-operator writes',async()=>{
+ const h=setup(Date.parse('2026-11-16T00:00Z'));h.ctx.HamuBoss=require('../boss.js');h.ctx.HamuDecorations=require('../decorations.js');h.ctx.renderAll=()=>{};
+ const boss=JSON.parse(JSON.stringify(courses[9]));boss.id='custom-boss';boss.boss.look.body='#112233';boss.official=true;
+ let saved=null;Object.assign(h.ctx.social,{isOwner:true,canWrite:true,courses:[boss],db:{doc:p=>{assert.equal(p,'meta/bamboo-green-family');return {set:async data=>{saved=data;}};}}});
+ vm.runInContext('bambooSettingsLoaded=true;renderBambooSettings()',h.ctx);
+ h.$('bamboo-setting-10').value=boss.id;
+ // The minimal DOM mock indexes nodes separately from el().
+ for(let n=1;n<10;n++)h.$('bamboo-setting-'+n).value=courses[n-1].id;
+ await h.$('bamboo-settings-save').onclick();assert.equal(Object.keys(saved.courses).length,10);
+ h.ctx.renderBamboo();assert.equal(h.avatars.findLast(x=>x.cv===h.$('bamboo-boss-marker')).look.body,'#112233');
+ h.ctx.social.isOwner=false;saved=null;await h.$('bamboo-settings-save').onclick();assert.equal(saved,null);
+});
+test('invalid final floor and failed save preserve existing assignments',async()=>{
+ const h=setup(Date.parse('2026-11-16T00:00Z'));h.ctx.HamuBoss=require('../boss.js');h.ctx.HamuDecorations=require('../decorations.js');h.ctx.renderAll=()=>{};
+ assert.equal(h.ctx.normalizeBambooCourse(courses[0],10),null);
+ Object.assign(h.ctx.social,{isOwner:true,canWrite:true,courses:[],db:{doc:()=>({set:async()=>{throw Error('offline')}})}});
+ vm.runInContext('bambooSettingsLoaded=true;bambooSettingsDirty=true',h.ctx);
+ for(let n=1;n<=10;n++)h.$('bamboo-setting-'+n).value=courses[n-1].id;
+ await h.$('bamboo-settings-save').onclick();assert.match(h.$('bamboo-settings-status').textContent,/保存できません/);assert.equal(vm.runInContext('bambooSettingsDirty',h.ctx),true);assert.equal(vm.runInContext('bambooCourse(10).id',h.ctx),courses[9].id);
+});

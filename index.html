@@ -358,7 +358,7 @@ input[type=range]{width:100%}
 @media(max-width:600px){.bamboo-layout{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:18px 8px 18px 2px}.bamboo-map{padding-left:8px;padding-right:10px;height:clamp(440px,62dvh,560px)}.bamboo-marker{width:48px;height:48px}.bamboo-floor:nth-child(3):after,.bamboo-floor:nth-child(8):after{width:18px;right:-15px;box-shadow:5px -6px 0 -1px #7e9f45}.bamboo-floor:nth-child(6):after{width:16px;left:-14px;box-shadow:none}.bamboo-course{gap:8px}.bamboo-course-card .meta{flex-wrap:wrap;gap:4px 8px}.bamboo-course-heading{flex-wrap:wrap;gap:0}.bamboo-actions .btn{padding:5px 7px}.bamboo-event{padding:12px}.event-card{padding:18px 14px;gap:14px}.bamboo-top{gap:6px}.bamboo-help{text-align:left}}
 @media(prefers-reduced-motion:reduce){.bamboo-marker{transition:none}}
 
-.bamboo-map{padding-top:64px}.bamboo-boss-marker{position:absolute;top:-67px;left:50%;transform:translateX(-50%);width:76px;height:76px;pointer-events:none;z-index:4}.bamboo-gift{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 1px 1px #1115);pointer-events:none}
+.bamboo-map{padding-top:80px}.bamboo-boss-marker{position:absolute;top:-68px;left:50%;transform:translateX(-50%);width:76px;height:76px;pointer-events:none;z-index:4}.bamboo-gift{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 1px 1px #1115);pointer-events:none}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
@@ -443,6 +443,13 @@ input[type=range]{width:100%}
   </section>
 
   <section id="view-make" class="col" hidden>
+    <details id="bamboo-settings" class="card col" hidden>
+      <summary>運営：バンブーチャレンジのコース設定</summary>
+      <p class="muted">各階の公開済みコースを選んで保存してください。10階はボス戦です。チャレンジとマラソンに共通で反映されます。</p>
+      <div id="bamboo-settings-floors" class="col"></div>
+      <button id="bamboo-settings-save" class="btn primary" type="button">コース設定を保存</button>
+      <p id="bamboo-settings-status" role="status"></p>
+    </details>
     <div id="ed-draft-state" class="row muted" role="status" aria-live="polite">下書きはこの端末に保存されます</div>
     <div id="ed-draft-backup" class="row" hidden></div>
     <div id="course-library" class="col">
@@ -2367,7 +2374,7 @@ function markOfficial(){
   social.courses = social.allCourses.filter(c => c.kind !== 'piece' && (!c.boss || op(c)));
   social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows,c.decorations)})).filter(c => c.piece);
 }
-function courseById(id){ return window.HAMU_BAMBOO_COURSES.find(c=>c.id===id) || social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
+function courseById(id){ return Object.values(bambooAssignments).find(c=>c.id===id) || window.HAMU_BAMBOO_COURSES.find(c=>c.id===id) || social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
 function renderSheet(first){
   if (!sheet) return;
   const box = $('sheet');
@@ -3523,7 +3530,41 @@ const bambooReleaseAt=Date.parse('2026-11-15T10:00:00+09:00');
 const bambooReleased=()=>window.HAMU_BAMBOO_PREVIEW===true||Date.now()>=bambooReleaseAt;
 let bamboo=HamuBamboo.create(store.get(BAMBOO_KEY));
 const bambooName=mode=>mode==='marathon'?'バンブーマラソン':'バンブーハウスチャレンジ';
-const bambooCourse=floor=>window.HAMU_BAMBOO_COURSES[floor-1];
+let bambooAssignments={},bambooSettingsDirty=false,bambooSettingsSaving=false,bambooSettingsLoaded=false;
+const bambooCourse=floor=>bambooAssignments[floor]||window.HAMU_BAMBOO_COURSES[floor-1];
+function normalizeBambooCourse(value,floor){
+ if(!value||typeof value.id!=='string'||!Array.isArray(value.rows)||value.rows.length!==16)return null;
+ const rows=value.rows;if(!rows.every(r=>typeof r==='string'&&r.length===rows[0].length)||rows[0].length<1||rows[0].length>150)return null;
+ const boss=HamuBoss.normalize(value.boss);if(floor===10&&!boss)return null;
+ return {id:value.id,title:String(value.title||'').slice(0,60),rows:rows.slice(),decorations:HamuDecorations.normalize(rows,value.decorations),boss,official:true,author:value.author||null,floor};
+}
+function renderBambooSettings(){
+ const panel=$('bamboo-settings');panel.hidden=!social.isOwner;
+ if(!social.isOwner||bambooSettingsDirty||bambooSettingsSaving)return;
+ const box=$('bamboo-settings-floors');box.replaceChildren();
+ for(let floor=1;floor<=10;floor++){
+  const current=bambooCourse(floor),options=new Map();
+  for(const c of [window.HAMU_BAMBOO_COURSES[floor-1],current,...(social.courses||[]).filter(c=>c.official)])if(floor!==10||c.boss)options.set(c.id,c);
+  const select=el('select',{id:'bamboo-setting-'+floor,'aria-label':floor+'階のコース',style:'max-width:100%;flex:1;min-width:0'});
+  for(const c of options.values())select.append(el('option',{value:c.id,text:c.title+(c.boss?'（ボス戦）':'')}));
+  select.value=current.id;select.onchange=()=>{bambooSettingsDirty=true;$('bamboo-settings-status').textContent='変更はまだ保存されていません';};
+  box.append(el('label',{class:'row'},el('span',{text:floor+'階'}),select));
+ }
+ $('bamboo-settings-save').disabled=!bambooSettingsLoaded||!social.canWrite;
+}
+$('bamboo-settings-save').onclick=async()=>{
+ if(!social.isOwner||!social.canWrite||!social.db||!bambooSettingsLoaded||bambooSettingsSaving)return;
+ const courses={};
+ for(let floor=1;floor<=10;floor++){
+  const id=$('bamboo-setting-'+floor).value;
+  const source=[bambooCourse(floor),...(social.courses||[]).filter(c=>c.official),window.HAMU_BAMBOO_COURSES[floor-1]].find(c=>c.id===id);
+  const c=normalizeBambooCourse(source,floor);if(!c){$('bamboo-settings-status').textContent=floor+'階のコースを選び直してください';return;}courses[floor]=c;
+ }
+ bambooSettingsSaving=true;$('bamboo-settings-save').disabled=true;
+ try{await social.db.doc('meta/bamboo-green-family').set({courses,updatedAt:Date.now()});bambooAssignments=courses;bambooSettingsDirty=false;$('bamboo-settings-status').textContent='保存しました。バンブーチャレンジに反映されました。';renderAll();}
+ catch(e){$('bamboo-settings-status').textContent='保存できませんでした。通信と運営権限を確認して、もう一度お試しください。';}
+ finally{bambooSettingsSaving=false;$('bamboo-settings-save').disabled=false;renderBambooSettings();}
+};
 let bambooSavedAt=Number(store.get(BAMBOO_KEY)?.savedAt)||0,bambooHydratedUid=null;
 function saveBamboo(){bambooSavedAt=Date.now();const value={...bamboo.state,active:null,savedAt:bambooSavedAt};store.set(BAMBOO_KEY,value);if(social.uid&&social.canWrite&&social.peopleLoaded)patchMe({bambooGreenFamily:value});}
 function hydrateBamboo(){
@@ -3719,7 +3760,7 @@ let tab = 'play';
 function setTab(name){
   tab = name;
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
-  if (name === 'make'){ showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
+  if (name === 'make'){ renderBambooSettings(); showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
   if(name==='event')showEventList();
   renderAll();
@@ -3734,6 +3775,7 @@ function renderAll(){
     await resolveNames();
     renderHeader();
     if (tab === 'play'){ renderEndless(); renderList(); }
+    if (tab === 'make') renderBambooSettings();
     if (tab === 'people') renderPeople();
     if (tab === 'board') renderBoard();
     if(tab==='event'&&!$('bamboo-challenge').hidden)renderBamboo();
@@ -3951,6 +3993,10 @@ $('db-state').textContent = '公式コースを表示中';
     social.board = snap.docs.map(d => { const v = d.data(); return {id: d.id, title: String(v.title || ''), text: String(v.text || ''), author: v.author || null, at: +v.at || 0}; });
     renderAll();
   }, fail);
+  db.doc('meta/bamboo-green-family').onSnapshot(s=>{
+    const next={};for(let floor=1;floor<=10;floor++){const c=normalizeBambooCourse(s.exists?s.data().courses?.[floor]:null,floor);if(c)next[floor]=c;}
+    bambooAssignments=next;bambooSettingsLoaded=true;renderAll();
+  },()=>{$('bamboo-settings-status').textContent='コース設定を読み込めませんでした。再読み込みしてください。';});
   const site = db.doc('meta/site'); let claimed = false;
   site.onSnapshot(s => {
     social.ownerId = s.exists ? (s.data().ownerId || null) : null; markOfficial(); renderHeader();

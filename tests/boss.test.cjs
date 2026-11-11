@@ -182,3 +182,9 @@ test('HP HUD draws three segments with the appropriate remaining count',()=>{
  const segments=fills.filter(r=>r.y===32);assert.equal(segments.length,3);assert.equal(segments.filter(r=>r.color!=='#655454').length,level+1);
  }
 });
+
+for(const id of [1,3,4,7])test(`player shots destroy boss attack ${id} without damaging the boss`,()=>{
+ const b=Boss.create(config({cycle:[id],interval:1}));advance(b,1.1);const shot=b.state.bullets[0];assert.ok(shot);
+ const hp=b.state.hp;assert.equal(b.hit(shot.x+shot.w/2,shot.y+shot.h/2),'burr');assert.ok(!b.state.bullets.includes(shot));assert.equal(b.state.hp,hp);
+ assert.equal(b.update(0,{x:shot.x,y:shot.y,w:8,h:8}),0);
+});
