@@ -141,7 +141,7 @@ test('cancelled or stale verification cannot grant a clear and leaves no animati
 function openHooks(isOwner, mode, operatorTest = true){
   let captured;
   const nodes = new Map([['ed-admin-test', {checked:operatorTest}]]);
-  const ctx = {social:{isOwner}, activeDraftId:'draft-a', game:null, current:null,
+  const ctx = {leaveBambooAttempt(){},paintBambooLives(){},social:{isOwner}, activeDraftId:'draft-a', game:null, current:null,
     $:id=>{if(!nodes.has(id))nodes.set(id,{style:{},focus(){}});return nodes.get(id);},
     document:{body:{style:{}}}, fitPlayer(){},renderRewindControls(){},savedTestCheckpoint(){return null;},saveTestCheckpoint(){},myLook:()=>({}),onState(){},showLauncherAmmo(){},
     makeGame(_cv,_rows,hooks){captured=hooks;return {stop(){}};}};

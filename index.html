@@ -297,11 +297,75 @@ input[type=range]{width:100%}
 .event-coming-soon span{padding:3px 10px;border-radius:99px;background:var(--soft);border:1px solid var(--line);font-size:12px}
 @media(max-width:560px){.event-card{gap:14px;padding:18px 14px}.event-card-art{width:54px;height:92px}.event-card-art canvas{width:54px;height:54px}.event-card-copy small{font-size:12px;line-height:1.6}}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+/* Event list and bamboo challenge: the complete tower stays beside the standard course card. */
+.event-list{gap:16px}
+.event-card{display:flex;align-items:center;gap:20px;width:100%;padding:24px;text-align:left;border:2px solid var(--line);border-radius:18px;background:var(--panel);color:var(--fg);font:inherit;cursor:pointer}
+.event-card:hover{border-color:var(--leaf);background:var(--soft)}
+.event-card-art{width:66px;height:100px;flex:none;position:relative;display:grid;place-items:center;background:repeating-linear-gradient(0deg,transparent 0 27px,#365a22 28px 31px),linear-gradient(90deg,#426d2a,#bfd86c 42%,#78a344 75%,#355823);border:2px solid #355823;border-radius:45% 45% 12px 12px / 10% 10% 6px 6px}
+.event-card-art canvas{width:64px;height:64px;margin-top:38px;filter:drop-shadow(0 3px 2px #1b351966)}
+.event-card-copy{display:flex;flex-direction:column;gap:7px;flex:1;min-width:0}
+.event-card-copy strong{font-family:var(--display);font-weight:400;font-size:clamp(17px,3.5vw,23px);line-height:1.5}
+.event-card-copy small{color:var(--muted)}
+.event-card-arrow{font-size:28px;color:var(--leaf)}
+.bamboo-event{width:100%;gap:14px}
+.bamboo-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.bamboo-top h2{font-size:clamp(17px,3.5vw,22px)}
+.bamboo-progress{font-size:13px;color:var(--leaf);font-weight:800;white-space:nowrap}
+.bamboo-layout{display:grid;grid-template-columns:110px minmax(0,1fr);gap:clamp(18px,5vw,64px);padding:22px clamp(8px,2vw,24px);border-radius:22px;background:radial-gradient(ellipse at 8% 80%,#cae4aa66,transparent 55%),var(--soft);align-items:center}
+.bamboo-map{height:clamp(450px,66dvh,640px);position:relative;padding:12px 22px 6px 8px;touch-action:none;user-select:none}
+.bamboo-tower{height:100%;position:relative;display:flex;flex-direction:column;border:2px solid #30461c;border-radius:40% 40% 18% 18% / 2% 2% 1% 1%;background:repeating-linear-gradient(94deg,transparent 0 9px,#29451922 10px 11px),linear-gradient(90deg,#436c28,#b9d66b 30%,#94ba4d 62%,#3b6427);box-shadow:inset 6px 0 #d7e48a66,inset -6px 0 #28491e44,4px 5px 0 #263d1518}
+.bamboo-tower:before{content:"";position:absolute;left:-2px;right:-2px;top:-9px;height:18px;border:2px solid #30461c;border-radius:50%;background:radial-gradient(ellipse,#41582b 45%,#a5c35c 50%,#d9e5a0 64%,#5b7e32 70%);z-index:2}
+.bamboo-floor{flex:1;min-height:0;width:100%;position:relative;border:0;border-bottom:5px solid #426c2b;border-radius:0 0 45% 45% / 0 0 12% 12%;box-shadow:0 2px 0 #cfdd7f,inset 0 -2px #c1d770;background:transparent;color:#223b18;font:800 12px var(--body);text-align:right;padding:3px 5px;cursor:pointer}
+.bamboo-floor.locked{color:#304b29aa;background:#183f162b}
+.bamboo-floor.cleared{background:#d6eb7e44}
+.bamboo-floor.selected{background:#f6e59a77;outline:2px solid #fff1a1;outline-offset:-4px}
+.bamboo-floor-label{position:absolute;right:5px;top:4px;font-size:11px}
+.bamboo-floor:nth-child(3):after,.bamboo-floor:nth-child(6):after,.bamboo-floor:nth-child(8):after{content:"";position:absolute;width:30px;height:9px;right:-26px;bottom:8px;transform:rotate(-25deg);border-radius:0 100% 0 100%;background:#477638;box-shadow:8px -9px 0 -1px #7e9f45,12px 7px 0 -1px #40612c;pointer-events:none}
+.bamboo-floor:nth-child(6):after{right:auto;left:-23px;transform:rotate(200deg)}
+.bamboo-marker{position:absolute;left:50%;width:58px;height:58px;transform:translate(-50%,50%);z-index:3;pointer-events:none;transition:bottom .55s ease;filter:drop-shadow(0 3px 2px #21351066)}
+.bamboo-course{min-width:0;width:100%;max-width:420px;justify-self:center;display:flex;flex-direction:column;gap:10px}
+.bamboo-course-heading{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.bamboo-course-heading strong{font-size:18px}.bamboo-course-heading small{font-size:11px;color:var(--muted)}
+.bamboo-course-card .card{width:100%}
+.bamboo-actions{display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}
+.bamboo-actions .btn{font-size:12px}
+.bamboo-help{margin:0;font-size:12px;color:var(--muted);text-align:center}
+.bamboo-test{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.bamboo-test summary{cursor:pointer}.bamboo-test .row{margin-top:10px}
+.bamboo-mode-switch{display:flex;flex-wrap:wrap;gap:8px}.bamboo-mode-switch [aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.bamboo-mode-note{margin:0;font-size:12px;color:var(--muted)}
+.bamboo-lives{display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:13px;font-weight:800}
+.bamboo-life{display:inline-grid;place-items:center;width:30px;height:30px;border:2px solid currentColor;border-radius:5px;color:#67a64c;background:#ffffff1a;font-size:27px;line-height:1}
+.bamboo-life.lost{color:#d93d51;background:#d93d5114}
+.bamboo-run-status{margin:0;padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-weight:800;font-size:13px}
+.bamboo-event.marathon{border-color:#ad8a42;background:#f1ecfa}
+.bamboo-event.marathon .bamboo-top h2{color:#573491}.bamboo-event.marathon .bamboo-progress{color:#77541c}
+.bamboo-event.marathon .bamboo-layout{background:radial-gradient(ellipse at 15% 45%,#895ba96b,transparent 60%),radial-gradient(ellipse at 90% 5%,#bc934045,transparent 50%),linear-gradient(145deg,#141c37,#332347 65%,#17223d);border:1px solid #ac904f;box-shadow:inset 0 0 0 5px #ddbb7512}
+.bamboo-event.marathon .bamboo-course-heading{color:#f8e7b4}.bamboo-event.marathon .bamboo-course-heading small{color:#e3d3ee}
+.bamboo-event.marathon .bamboo-tower{border-color:#d3ad5a;background:repeating-linear-gradient(94deg,transparent 0 9px,#f6d69333 10px 11px),linear-gradient(90deg,#2f2446,#9b68ba 32%,#674081 65%,#271c3c);box-shadow:inset 5px 0 #d8aef866,inset -5px 0 #22163277,0 0 24px #b88c4c55}
+.bamboo-event.marathon .bamboo-tower:before{border-color:#e3bc67;background:radial-gradient(ellipse,#2b1c40 44%,#9671b5 50%,#f3d28d 64%,#77532e 70%)}
+.bamboo-event.marathon .bamboo-floor{color:#fff2c9;border-bottom-color:#a58143;box-shadow:0 2px 0 #e5c477,inset 0 -2px #e5c47755}
+.bamboo-event.marathon .bamboo-floor.locked{color:#b9a6cb;background:#08051d55}
+.bamboo-event.marathon .bamboo-floor.cleared{background:#bb8bda33}
+.bamboo-event.marathon .bamboo-floor.selected{background:#e3b95a77;outline-color:#fff1ba}
+.bamboo-event.marathon .bamboo-floor:after{background:#c59b51;box-shadow:8px -9px 0 -1px #e2c179,12px 7px 0 -1px #916a36}
+.bamboo-event.marathon .bamboo-marker{filter:drop-shadow(0 0 7px #f1bdff)}
+#pl-bamboo-lives{justify-content:center;padding:5px 0 9px;color:#fff}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .bamboo-event.marathon{background:#242132}}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .bamboo-event.marathon .bamboo-top h2{color:#d5b8ff}}
+:root[data-theme="dark"] .bamboo-event.marathon{background:#242132}
+:root[data-theme="dark"] .bamboo-event.marathon .bamboo-top h2{color:#d5b8ff}
+@media(max-width:600px){.bamboo-layout{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:18px 8px 18px 2px}.bamboo-map{padding-left:8px;padding-right:10px;height:clamp(440px,62dvh,560px)}.bamboo-marker{width:48px;height:48px}.bamboo-floor:nth-child(3):after,.bamboo-floor:nth-child(8):after{width:18px;right:-15px;box-shadow:5px -6px 0 -1px #7e9f45}.bamboo-floor:nth-child(6):after{width:16px;left:-14px;box-shadow:none}.bamboo-course{gap:8px}.bamboo-course-card .meta{flex-wrap:wrap;gap:4px 8px}.bamboo-course-heading{flex-wrap:wrap;gap:0}.bamboo-actions .btn{padding:5px 7px}.bamboo-event{padding:12px}.event-card{padding:18px 14px;gap:14px}.bamboo-top{gap:6px}.bamboo-help{text-align:left}}
+@media(prefers-reduced-motion:reduce){.bamboo-marker{transition:none}}
+
+.bamboo-map{padding-top:64px}.bamboo-boss-marker{position:absolute;top:-67px;left:50%;transform:translateX(-50%);width:76px;height:76px;pointer-events:none;z-index:4}.bamboo-gift{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 1px 1px #1115);pointer-events:none}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
+<script src="bamboo.js?v=20261111-green"></script>
+<script src="bamboo-courses.js?v=20261111-green"></script>
 <script src="boss.js?v=20261110-evolution-hp"></script>
 </head>
 <body>
@@ -328,18 +392,40 @@ input[type=range]{width:100%}
     <button id="tab-me" role="tab" aria-selected="false">マイページ</button>
   </nav>
 
-  <section id="view-event" class="col event-list" role="tabpanel" aria-labelledby="tab-event" hidden>
-    <h2 style="margin:0">イベント一覧</h2>
-    <button id="event-bamboo" class="event-card" type="button" aria-disabled="true" aria-describedby="event-bamboo-status">
-      <span class="event-card-art" aria-hidden="true"><canvas id="event-bamboo-avatar" width="120" height="120"></canvas></span>
-      <span class="event-card-copy">
-        <strong>バンブーハウスチャレンジ</strong>
-        <small>ハムと一緒に、竹のてっぺんをめざそう！</small>
-        <span id="event-bamboo-status" class="event-coming-soon"><time datetime="2026-11-15">11/15〜</time><span>近日公開</span></span>
-      </span>
-    </button>
+  <section id="view-event" class="col" hidden>
+    <div id="event-list" class="col event-list">
+      <div><h2>イベント一覧</h2><p class="muted" style="margin:4px 0 0">挑戦したいイベントを選ぼう。</p></div>
+      <button id="event-bamboo" class="event-card" type="button">
+        <span class="event-card-art" aria-hidden="true"><canvas id="event-bamboo-avatar" width="120" height="120"></canvas></span>
+        <span class="event-card-copy"><small>全10階のチャレンジ</small><strong>バンブーハウスチャレンジ</strong><small>グリーンファミリー編</small><span>ハムと一緒に、竹のてっぺんをめざそう！</span><small id="event-bamboo-progress">0 / 10階 クリア</small></span>
+        <span class="event-card-arrow" aria-hidden="true">›</span>
+      </button>
+    </div>
+    <div id="bamboo-challenge" class="card col bamboo-event" hidden>
+      <div><button class="linkbtn" id="bamboo-back" type="button">‹ イベント一覧</button></div>
+      <div class="bamboo-top"><h2 id="bamboo-title">バンブーハウスチャレンジ</h2><span class="bamboo-progress" id="bamboo-progress" aria-live="polite">0 / 10階 クリア</span></div>
+      <p class="bamboo-mode-note">グリーンファミリー編</p>
+      <div class="bamboo-mode-switch" role="group" aria-label="バンブーのモード"><button id="bamboo-mode-challenge" class="btn sm" aria-pressed="true">チャレンジ</button><button id="bamboo-mode-marathon" class="btn sm" aria-pressed="false" disabled>バンブーマラソン</button></div>
+      <p id="bamboo-mode-note" class="bamboo-mode-note">全10階をクリアすると、バンブーマラソンが解放されます。</p>
+      
+      <div id="bamboo-lives" class="bamboo-lives" aria-live="polite" hidden></div>
+      <div id="bamboo-run-status" class="bamboo-run-status" hidden></div>
+      <button id="bamboo-restart" class="btn primary" type="button" hidden>1階からやり直す</button>
+      <div class="bamboo-layout">
+        <div class="bamboo-map" id="bamboo-map" aria-label="竹の全体図。すべての階の情報を見られます">
+          <div class="bamboo-tower" id="bamboo-tower"></div>
+        </div>
+        <div class="bamboo-course">
+          <div class="bamboo-course-heading"><strong id="bamboo-floor-title">1階</strong><small id="bamboo-floor-status">挑戦中</small></div>
+          <div id="bamboo-course-card" class="bamboo-course-card" aria-live="polite"></div>
+          <div class="bamboo-actions"><button class="btn sm" id="bamboo-prev" type="button">↓ 下の階</button><button class="btn sm" id="bamboo-next" type="button">上の階 ↑</button></div>
+        </div>
+      </div>
+      <p class="bamboo-help">ハムは解放済みの最上階にいます。選択中の階は明るい枠で表示。未解放の階も選んでコースやクリア率を見られます。</p>
+      <p class="bamboo-mode-note">グリーンファミリー編・全10階。進行・記録はモードごとに保存されます。</p>
+      <details class="bamboo-test"><summary>動作確認用の操作</summary><p>下の確認操作は統計に入りません。確認用のクリアでは賞品は獲得しません。</p><div class="row"><button class="btn sm" id="bamboo-sample-clear" type="button">確認用：この階をクリア</button><button class="btn sm" id="bamboo-sample-miss" type="button">確認用：この階でミス</button><button class="btn sm" id="bamboo-sample-unlock" type="button">確認用：マラソンを解放</button><button class="btn sm" id="bamboo-reset" type="button">進行をリセット</button></div></details>
+    </div>
   </section>
-
   <section id="view-play" class="col" style="gap:14px">
     <div class="card endless" id="endless"></div>
     <div id="play-account-hint" class="account-hint" hidden></div>
@@ -531,6 +617,7 @@ input[type=range]{width:100%}
       <div class="banner" id="pl-banner" hidden></div>
       <div class="msg" id="pl-msg" hidden><div class="big" id="pl-big"></div><div id="pl-sub"></div><div class="gain" id="pl-gain" hidden></div><div class="btns" id="pl-btns"></div><div id="pl-account-hint" class="account-hint" hidden></div></div>
     </div>
+    <div id="pl-bamboo-lives" class="bamboo-lives" hidden></div>
     <div class="ctrl" id="pl-ctrl" hidden>
       <button id="ct-back" aria-label="うしろにダッシュ">◀</button><button id="ct-fwd" aria-label="まえにダッシュ">▶</button>
       <button id="ct-fire" class="fire">黒どんぐり</button>
@@ -556,7 +643,7 @@ const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false
 const localMemory = new Map();
 const readLocal = k => { if (localMemory.has(k)) return localMemory.get(k); try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
 const writeLocal = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); localMemory.delete(k); return true; } catch { localMemory.set(k, v); return false; } };
-const hamsterKeys = new Set(['hi-award-notices', 'hi-title-awards', 'hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
+const hamsterKeys = new Set(['hi-bamboo-green-family-v1', 'hi-award-notices', 'hi-title-awards', 'hi-endless', 'hi-wins', 'hi-items', 'hi-clears', 'hi-course-runs', 'hi-look', 'hi-name', 'hi-draft', 'hi-draft-sync', 'hi-draft-backup', 'hi-course-library', 'hi-course-active', 'hi-course-library-sync', 'hi-course-library-backup', 'hi-test-checkpoints', 'hi-noti-seen', 'hi-maker', 'hi-auth-nudge-after']);
 let localOwner = readLocal('hi-local-owner');
 if (!localOwner) {
   try {
@@ -650,6 +737,21 @@ const ITEMS = [
 const itemByCh = Object.fromEntries(ITEMS.map(i => [i.ch, i]));
 const itemByKey = Object.fromEntries(ITEMS.map(i => [i.key, i]));
 // draws one tableware item relative to the hamster's head (head top is around y = -11, face looks left)
+function paintBambooGear(ctx,key){
+  ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
+  if(key==='bambooCrown'||key==='bambooCrownPurple'){
+    const purple=key==='bambooCrownPurple';
+    for(let i=0;i<5;i++){
+      const x=-11+i*5,h=[10,15,19,15,10][i];
+      ctx.fillStyle=purple?(i%2?'#8050ae':'#ba85df'):(i%2?'#689b39':'#91bb4b');ctx.strokeStyle=purple?'#512f70':'#315c26';ctx.lineWidth=.8;
+      ctx.beginPath();ctx.rect(x,-11-h,4.5,h);ctx.fill();ctx.stroke();
+      ctx.strokeStyle=purple?'#e6c7ff':'#cbe68a';for(let y=-14;y>-11-h;y-=5){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+4.5,y);ctx.stroke();}
+    }
+    ctx.fillStyle='#cfac4f';ctx.fillRect(-12,-13,26,3);ctx.strokeStyle='#82632c';ctx.strokeRect(-12,-13,26,3);
+    ctx.fillStyle=purple?'#8550ac':'#346b32';ctx.beginPath();ctx.ellipse(13,-20,6,2,-.7,0,7);ctx.ellipse(-11,-19,5,2,.7,0,7);ctx.fill();
+  }
+  ctx.restore();
+}
 function paintGear(ctx, key){
   if (key === 'pan'){ ctx.fillStyle = '#8a5a3c'; ctx.save(); ctx.translate(11, -14); ctx.rotate(-0.25); ctx.fillRect(0, -1.8, 14, 3.6); ctx.restore(); ctx.fillStyle = '#3a3a40'; ctx.beginPath(); ctx.ellipse(1, -11, 12.5, 7, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#5b5b63'; ctx.fillRect(-11.5, -12, 25, 2.6); ctx.fillStyle = '#ffffff55'; ctx.beginPath(); ctx.ellipse(-3, -15, 4, 1.6, -0.3, 0, 7); ctx.fill(); }
   if (key === 'chawan'){ ctx.fillStyle = '#f7f2ea'; ctx.strokeStyle = '#a89c88'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(1, -11, 11.5, 9, 0, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#2f6fd0'; ctx.fillRect(-10, -15, 22, 2.2); ctx.beginPath(); ctx.arc(-3, -9.5 - 7, 1.1, 0, 7); ctx.arc(5, -16.5, 1.1, 0, 7); ctx.fill(); ctx.fillStyle = '#e6ddd0'; ctx.fillRect(-4, -22, 10, 2.5); }
@@ -672,7 +774,7 @@ const PARTS = {
   belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
-  hat:    { label: 'ぼうし', opts: [['none','なし'],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}],...FRUITS.map(f => [f.key,`${f.name}`,{clear:f.n}])] },
+  hat:    { label: 'ぼうし', opts: [['none','なし'],['bambooCrown','竹の冠',{event:'bambooCrown'}],['bambooCrownPurple','竹の冠（紫）',{event:'bambooCrownPurple'}],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}],...FRUITS.map(f => [f.key,`${f.name}`,{clear:f.n}])] },
   outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき'],['kangaroo','🦘 カンガルーに変身',{clear:200}]] },
   color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
   acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう'],['hashi','おはし',{item: 'hashi'}],['fork','フォーク',{item: 'fork'}]] },
@@ -869,6 +971,7 @@ function paintHam(ctx, look, dead){
   if (itemByKey[L.acc]) paintGear(ctx, L.acc);
   // hats
   ctx=L.hatColor?bossTintContext(baseCtx,L.hatColor):baseCtx;
+  if(['bambooCrown','bambooCrownPurple'].includes(L.hat))paintBambooGear(ctx,L.hat);
   if (fruitByKey[L.hat]) paintFruitHat(ctx,L.hat);
   if (L.hat === 'acorn'){ ctx.fillStyle = '#6e4a24'; ctx.beginPath(); ctx.ellipse(1, -11, 11, 6, 0, Math.PI, 0); ctx.lineTo(12, -10); ctx.lineTo(-10, -10); ctx.fill(); ctx.fillRect(0, -20, 2, 4); }
   if (L.hat === 'crown'){ ctx.fillStyle = '#f0c050'; ctx.beginPath(); ctx.moveTo(-7, -11); ctx.lineTo(-8, -21); ctx.lineTo(-3, -16); ctx.lineTo(1, -23); ctx.lineTo(5, -16); ctx.lineTo(10, -21); ctx.lineTo(9, -11); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#d9412b'; ctx.beginPath(); ctx.arc(1, -14, 1.6, 0, 7); ctx.fill(); }
@@ -1901,6 +2004,7 @@ async function syncCourseRuns(){
   if (saved) return syncCourseRuns();
 }
 function trackCourseRun(state){
+  if(current&&Number.isInteger(current.bambooFloor))return;
   if (!current || current.mode !== 'play' || !current.course.id) return;
   if (state === 'ready'){ current.countedRun = false; return; }
   if (state !== 'run' && state !== 'clear') return;
@@ -1953,8 +2057,12 @@ function showLauncherAmmo(n){
   button.textContent=n===Infinity?'発射 ∞（G）':`発射 ×${n}`;
   button.setAttribute('aria-label',n===Infinity?'どんぐりを前方に発射':'ランチャーを前方に発射');
 }
-function openPlayer(course, mode){
-  current = {course, mode, draftId: mode === 'test' ? activeDraftId : null};
+function openPlayer(course, mode, context={}){
+  if(course.id?.startsWith('bamboo-green-')&&!Number.isInteger(context.bambooFloor))return toast('イベントの階を選んでください');
+  if(Number.isInteger(context.bambooFloor)&&!bambooCanPlay(context.bambooMode,context.bambooFloor))return toast(bambooBlockedReason(context.bambooMode,context.bambooFloor));
+  leaveBambooAttempt();
+  current = {course, mode,bambooFloor:mode==='play'?context.bambooFloor:undefined,bambooMode:context.bambooMode, draftId: mode === 'test' ? activeDraftId : null};
+  paintBambooLives($('pl-bamboo-lives'),Number.isInteger(current.bambooFloor)&&current.bambooMode==='marathon');
   $('pl-rewind').hidden = true;
   showLauncherAmmo(0);
   $('pl-title').textContent = course.title || '名前のないコース';
@@ -1991,7 +2099,7 @@ function saveTestCheckpoint(point){
   catch { toast('保存容量が足りません。前の再開地点を残しました'); return false; }
   toast('再開地点を保存しました。次のプレイでも使えます'); return true;
 }
-function closePlayer(){ if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; showLauncherAmmo(0); if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
+function closePlayer(){ leaveBambooAttempt();$('pl-bamboo-lives').hidden=true; if (inBattle()) battleQuit(); $('pl-ctrl').hidden = true; $('pl-rewind').hidden = true; showLauncherAmmo(0); if (game) game.stop(); game = null; $('overlay').hidden = true; document.body.style.overflow = ''; current = null; }
 function renderRewindControls(){
   const allowed = current && current.mode === 'test' && social.isOwner === true && game && game.rewindInfo.enabled;
   $('pl-rewind').hidden = !allowed;
@@ -2016,7 +2124,7 @@ function fitPlayer(){
   if ($('overlay').hidden) return;
   const vv = window.visualViewport, vw = vv ? vv.width : innerWidth, vh = vv ? vv.height : innerHeight;
   const cs = getComputedStyle($('overlay')), padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-  const barH = document.querySelector('.player .bar').offsetHeight + 10 + ($('pl-ctrl').hidden ? 0 : $('pl-ctrl').offsetHeight + 10) + ($('pl-rewind').hidden ? 0 : $('pl-rewind').offsetHeight + 10);
+  const barH = document.querySelector('.player .bar').offsetHeight + 10 + ($('pl-ctrl').hidden ? 0 : $('pl-ctrl').offsetHeight + 10) + ($('pl-rewind').hidden ? 0 : $('pl-rewind').offsetHeight + 10)+($('pl-bamboo-lives').hidden?0:$('pl-bamboo-lives').offsetHeight);
   const w = Math.max(160, Math.min(520, vw - padX, (vh - padY - barH) * VIEW_W / VIEW_H));
   const st = $('pl-stage'); st.style.width = Math.floor(w) + 'px'; st.style.minWidth = '0';
 }
@@ -2088,6 +2196,7 @@ async function recordClear(course, sec){
   return t && (!titleFor(before) || titleFor(before).n !== t.n) ? t : null;
 }
 function onState(s, info){
+  if(current&&Number.isInteger(current.bambooFloor)&&bambooPlayerState(s,info))return;
   trackCourseRun(s);
   renderRewindControls();
   if (s === 'ready') showMsg('タップでスタート', current?.course?.boss?'Space / ↑ / タップでジャンプ・Gでどんぐり発射':'Space / ↑ / タップでジャンプ・Gでランチャー発射');
@@ -2145,7 +2254,7 @@ function press(e){
   if (!game) return;
   if (e) e.preventDefault();
   if (inBattle()){ if (e && e.pointerType === 'touch') return; if (game.state === 'run' && !battle.result) game.jump(); return; }
-  if (game.state === 'dead'){ if (current && current.mode === 'test' && social.isOwner && game.rewindInfo.enabled) rewindTest(2); else game.reset(); return; }
+  if (game.state === 'dead'){ if(current&&Number.isInteger(current.bambooFloor)){retryBamboo();return;} if (current && current.mode === 'test' && social.isOwner && game.rewindInfo.enabled) rewindTest(2); else game.reset(); return; }
   if (game.state === 'clear') return;
   game.jump();
 }
@@ -2197,10 +2306,10 @@ addEventListener('keydown', e => {
 
 /* ---------- sheets (course detail, profile) ---------- */
 let sheet = null;
-function openSheet(kind, id){ sheet = {kind, id}; $('sheet-bg').hidden = false; renderSheet(true); }
+function openSheet(kind, id, context={}){ sheet = {kind, id,...context}; $('sheet-bg').hidden = false; renderSheet(true); }
 function closeSheet(){ sheet = null; $('sheet-bg').hidden = true; $('sheet').replaceChildren(); }
 $('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) closeSheet(); });
-const openCourse = (id, toComments) => { openSheet('course', id); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
+const openCourse = (id, toComments, context={}) => { openSheet('course', id,context); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
 const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
 // the operator gets this badge everywhere their name shows up
 // operators: everyone in the admins table, plus the one registered in meta/site from before
@@ -2258,7 +2367,7 @@ function markOfficial(){
   social.courses = social.allCourses.filter(c => c.kind !== 'piece' && (!c.boss || op(c)));
   social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows,c.decorations)})).filter(c => c.piece);
 }
-function courseById(id){ return social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
+function courseById(id){ return window.HAMU_BAMBOO_COURSES.find(c=>c.id===id) || social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
 function renderSheet(first){
   if (!sheet) return;
   const box = $('sheet');
@@ -2274,6 +2383,7 @@ function renderSheet(first){
   if (sheet.kind === 'course'){
     const c = courseById(sheet.id);
     if (!c){ box.append(el('p', {text: 'このコースは削除されました。'})); return; }
+    if(c.id.startsWith('bamboo-green-')){if(!Number.isInteger(sheet.bambooFloor)){box.append(el('p',{text:'イベントの階を選んでください'}));return;}renderBambooSheet(box,c,sheet);return;}
     const cleared = myClears()[c.id];
     box.append(
       el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
@@ -2415,7 +2525,7 @@ function loadBossEditor(){
   $('boss-hp').value=c.hp;renderBossCycle('boss-cycle',c.cycle,c.intervals);renderBossCycle('boss-rage-cycle',c.rageCycle,c.rageIntervals);
   const box=$('boss-look-controls');box.replaceChildren();const look=cleanBossLook(c.look);
   for(const [key,label] of Object.entries(BOSS_COLORS)){const input=el('input',{type:'color',value:look[key],'data-boss-part':key,'aria-label':'ボスの'+label+'の色'});box.append(el('label',{class:'col',style:'gap:3px'},label,input));}
-  for(const key of ['eyes','cheek','hat','outfit','acc']){const input=el('select',{'data-boss-part':key,'aria-label':'ボスの'+PARTS[key].label});for(const [val,name] of PARTS[key].opts)input.append(el('option',{value:val,text:name}));input.value=look[key];box.append(el('label',{class:'col',style:'gap:3px'},PARTS[key].label,input));}
+  for(const key of ['eyes','cheek','hat','outfit','acc']){const input=el('select',{'data-boss-part':key,'aria-label':'ボスの'+PARTS[key].label});for(const [val,name] of PARTS[key].opts)input.append(el('option',{value:val,text:name}));input.value=look[key];if(key==='hat')input.onchange=()=>{if(['bambooCrown','bambooCrownPurple'].includes(input.value)){const color=box.querySelector('[data-boss-part=hatColor]');if(color)color.value=input.value==='bambooCrown'?'#689b39':'#9856c0';}};box.append(el('label',{class:'col',style:'gap:3px'},PARTS[key].label,input));}
   $('boss-error').textContent='';paintBossPreview();
 }
 function changeBossEditor(){
@@ -2931,7 +3041,8 @@ function thumb(rows,decorations=[]){
   c.className = 'thumb'; c.setAttribute('aria-hidden', 'true');
   return c;
 }
-function courseCard(c){
+function courseCard(c,context={}){
+  if(Number.isInteger(context.bambooFloor))return bambooCourseCard(c,context);
   const cleared = myClears()[c.id] != null;
   const card = el('article', {class: 'card click', tabindex: 0, onclick: () => openCourse(c.id), onkeydown: e => { if (e.key === 'Enter') openCourse(c.id); }},
     thumb(c.rows,c.decorations),
@@ -3046,12 +3157,13 @@ function buildParts(){
   const opts = el('div',{class:'dress-grid',role:'group','aria-label':part.label});
   const clears = clearCount(myClears());
   for (const [val,label,need] of part.opts){
-    const locked = !!(need && ((need.item && !myItems()[need.item]) || (need.clear && clears < need.clear)));
-    const hint = need?.clear ? `${need.clear}種類クリアで解放（${clears}/${need.clear}）` : need?.item ? `エンドレス${itemByKey[need.item].d}マスで拾う` : '';
+    if(need?.event&&!bamboo.state.rewards[need.event])continue;
+    const locked = !!(need && ((need.event && !bamboo.state.rewards[need.event]) || (need.item && !myItems()[need.item]) || (need.clear && clears < need.clear)));
+    const hint = need?.event ? (need.event==='bambooCrown'?'バンブーチャレンジ全10階クリアで獲得':'バンブーマラソン全10階完走で獲得') : need?.clear ? `${need.clear}種類クリアで解放（${clears}/${need.clear}）` : need?.item ? `エンドレス${itemByKey[need.item].d}マスで拾う` : '';
     const b = el('button',{class:'opt'+(part.swatch?' swatch':'')+(locked?' locked':''),'aria-pressed':String(draftLook[key]===val),'aria-label':label+(locked?' 未解放 '+hint:''),title:locked?hint:label,
       onclick:()=>{if(locked)return toast(hint);draftLook={...draftLook,[key]:val};formDirty=true;buildParts();paintAvatar($('mk-preview'),draftLook);$('mk-state').textContent='未保存の変更があります';}});
     if(part.swatch){b.style.background=val;b.title=label;}
-    else {b.append(el('span',{text:locked?'🔒':'' ,style:'font-size:18px'}),el('span',{text:label}));if(locked)b.append(el('small',{class:'muted',text:need?.clear?`${clears}/${need.clear} クリア`:'エンドレスで入手'}));}
+    else {b.append(el('span',{text:locked?'🔒':'' ,style:'font-size:18px'}),el('span',{text:label}));if(locked)b.append(el('small',{class:'muted',text:need?.event?'イベントのクリア賞品':need?.clear?`${clears}/${need.clear} クリア`:'エンドレスで入手'}));}
     opts.append(b);
   }
   box.append(el('div',{class:'part'},el('b',{text:part.label}),opts));
@@ -3405,6 +3517,202 @@ function renderAccount(){
   if (focused && box.querySelector('#' + focused)) $(focused).focus({preventScroll: true});
 }
 
+/* ---------- Bamboo house event sample ---------- */
+const BAMBOO_KEY='hi-bamboo-green-family-v1';
+const bambooReleaseAt=Date.parse('2026-11-15T10:00:00+09:00');
+const bambooReleased=()=>window.HAMU_BAMBOO_PREVIEW===true||Date.now()>=bambooReleaseAt;
+let bamboo=HamuBamboo.create(store.get(BAMBOO_KEY));
+const bambooName=mode=>mode==='marathon'?'バンブーマラソン':'バンブーハウスチャレンジ';
+const bambooCourse=floor=>window.HAMU_BAMBOO_COURSES[floor-1];
+let bambooSavedAt=Number(store.get(BAMBOO_KEY)?.savedAt)||0,bambooHydratedUid=null;
+function saveBamboo(){bambooSavedAt=Date.now();const value={...bamboo.state,active:null,savedAt:bambooSavedAt};store.set(BAMBOO_KEY,value);if(social.uid&&social.canWrite&&social.peopleLoaded)patchMe({bambooGreenFamily:value});}
+function hydrateBamboo(){
+ if(!social.uid||!social.peopleLoaded||bambooHydratedUid===social.uid)return;
+ bambooHydratedUid=social.uid;const local=store.get(BAMBOO_KEY),remote=me()?.bambooGreenFamily;
+ const best=(Number(remote?.savedAt)||0)>(Number(local?.savedAt)||0)?remote:local;
+ bamboo=HamuBamboo.create(best);bambooSavedAt=Number(best?.savedAt)||0;
+ if(best){store.set(BAMBOO_KEY,best);if(best===local&&(!remote||Number(local.savedAt)>Number(remote.savedAt)))patchMe({bambooGreenFamily:{...best,active:null}});}
+}
+function bambooCombinedStats(mode,floor,courseId){
+ const key=JSON.stringify([mode,floor,String(courseId)]),entries=new Map();
+ for(const [uid,p] of social.people)if(p.bambooGreenFamily?.stats?.[key])entries.set(uid,p.bambooGreenFamily.stats[key]);
+ entries.set(social.uid||'this-device',bamboo.stats(mode,floor,courseId));
+ let attempts=0,clears=0;const times=[];
+ for(const v of entries.values()){attempts+=Math.max(0,Number(v.attempts)||0);clears+=Math.max(0,Number(v.clears)||0);const t=Object.values(v.players||{}).filter(n=>Number.isFinite(n)&&n>=0);if(t.length)times.push(Math.min(...t));}
+ return {attempts,clears,people:times.length,best:times.length?Math.min(...times):null,rate:attempts?100*clears/attempts:null};
+}
+const bambooCanPlay=(mode,floor)=>bambooReleased()&&mode===bamboo.state.mode&&bamboo.canPlay(mode,floor);
+function notifyBambooReward(){
+  const notices=Object.entries(bamboo.state.rewards).filter(([,owned])=>owned).map(([key])=>({id:'bamboo:'+key,kind:'イベント',name:key==='bambooCrown'?'バンブーチャレンジ制覇':'バンブーマラソン完走',at:Date.now(),rewards:[key==='bambooCrown'?'竹の冠':'竹の冠（紫）']}));
+  const added=saveAwardNotices(notices);if(added.length)toast(added.map(n=>n.rewards[0]).join('・')+'を獲得！');
+}
+function bambooBlockedReason(mode,floor){
+  if(!bambooReleased())return '11/15（日）10:00公開（日本時間）';
+  if(mode==='marathon'){
+    if(!bamboo.unlocked())return 'チャレンジ全10階クリアで解放';
+    if(bamboo.state.marathon.misses===3)return '3ミスで終了。1階からやり直そう';
+    if(bamboo.state.marathon.finished)return '完走済み。もう一度1階から挑戦できます';
+    if(floor<bamboo.top(mode))return 'この周回では通過済み・情報のみ';
+    return `${bamboo.top(mode)}階から順番に挑戦してください`;
+  }
+  return `${floor-1}階クリアで挑戦できます`;
+}
+function bambooStatsView(mode,floor,c){
+  const s=bambooCombinedStats(mode,floor,c.id);
+  return el('div',{class:'col',style:'gap:5px','data-bamboo-stats':mode},
+    el('small',{class:'muted',text:mode==='marathon'?'マラソンの記録':'チャレンジの記録'}),
+    el('div',{class:'meta'},el('span',{text:`クリア ${s.people}人`}),el('span',{text:s.best==null?'最速 —':`最速 ${s.best.toFixed(1)}秒`})),
+    el('div',{class:'meta'},el('b',{text:rateLabel(s)}),el('span',{text:s.attempts?`${s.clears}回クリア / ${s.attempts}回挑戦`:'まだ挑戦の記録がありません'})));
+}
+function bambooCourseCard(c,context){
+  const {bambooFloor:floor,bambooMode:mode}=context,can=bambooCanPlay(mode,floor);
+  return el('article',{class:'card click',tabindex:0,onclick:()=>openCourse(c.id,false,context),onkeydown:e=>{if(e.key==='Enter'&&e.target===e.currentTarget)openCourse(c.id,false,context);}},
+    thumb(c.rows,c.decorations),el('h3',{text:c.title}),
+    el('div',{class:'meta'},el('span',{class:'badge',text:'公式'}),el('span',{text:sizeName(c)})),
+    bambooStatsView(mode,floor,c),
+    el('p',{class:'muted',style:'margin:0;font-size:12px',text:can?'カードを押して「あそぶ」から挑戦':bambooBlockedReason(mode,floor)}),
+    el('div',{class:'row'},likeButton(c),el('button',{class:'like',text:`コメント ${commentsFor('c:'+c.id).length}`,onclick:e=>{e.stopPropagation();openCourse(c.id,true,context);}})));
+}
+function renderBambooSheet(box,c,context){
+  const {bambooFloor:floor,bambooMode:mode}=context,can=bambooCanPlay(mode,floor);
+  box.append(el('h2',{text:`${floor}階 · ${c.title}`,style:'padding-right:70px'}),
+    el('p',{class:'muted',text:bambooName(mode)}),bambooStatsView(mode,floor,c),thumb(c.rows,c.decorations),
+    el('div',{class:'row'},el('button',{class:'btn primary',text:can?'あそぶ':'挑戦できません',disabled:!can,onclick:()=>openPlayer(c,'play',context)}),likeButton(c)),
+    el('p',{class:'muted',text:can?(mode==='marathon'?'1階から順番に挑戦。3ミスで1階からやり直しです。':'クリアすると次の階が開きます。'):bambooBlockedReason(mode,floor)}),
+    el('small',{class:'muted',text:'クリア回数 ÷ 挑戦回数（リトライ・途中終了を含む）。チャレンジとマラソンの記録は別集計です。オンライン接続時に同期します。'}),
+    el('h2',{text:`コメント ${commentsFor('c:'+c.id).length}`,id:'cm-head'}),commentBlock('c:'+c.id),composer('c:'+c.id,'コースの感想を書く','cm-'+c.id));
+}
+function paintBambooLives(box,visible){
+  box.hidden=!visible;if(!visible)return;
+  const misses=bamboo.state.marathon.misses;
+  box.setAttribute('aria-label',`残り${3-misses}回・ミス${misses}回`);
+  box.replaceChildren(el('span',{text:'残機'}),...[0,1,2].map(i=>el('span',{class:'bamboo-life'+(i<misses?' lost':''),'aria-hidden':'true',text:i<misses?'×':''})),el('span',{text:`残り ${3-misses}回`}));
+}
+function showEventList(){
+  $('event-bamboo').setAttribute('aria-disabled',String(!bambooReleased()));
+  $('event-list').hidden=false;$('bamboo-challenge').hidden=true;
+  $('event-bamboo-progress').textContent=!bambooReleased()?'11/15（日）10:00公開（日本時間）':bamboo.state.cleared+' / 10階 クリア'+(bamboo.unlocked()?' · マラソン解放済み':'');
+  paintAvatar($('event-bamboo-avatar'),myLook());
+  requestAnimationFrame(()=>$('event-list').scrollIntoView({block:'nearest'}));
+}
+function openBamboo(){
+  if(!bambooReleased())return toast('11/15（日）10:00公開（日本時間）です。お楽しみに！');
+  $('event-list').hidden=true;$('bamboo-challenge').hidden=false;renderBamboo();
+  requestAnimationFrame(()=>$('bamboo-challenge').scrollIntoView({block:'start'}));
+}
+function renderBamboo(){
+  if(!bambooReleased())return;
+  document.querySelector('.bamboo-test').hidden=window.HAMU_BAMBOO_PREVIEW!==true;
+  const {mode,selected,cleared,marathon}=bamboo.state,isMarathon=mode==='marathon',top=bamboo.top();
+  $('bamboo-challenge').classList.toggle('marathon',isMarathon);
+  $('bamboo-title').textContent=bambooName(mode);
+  for(const m of ['challenge','marathon'])$('bamboo-mode-'+m).setAttribute('aria-pressed',String(mode===m));
+  $('bamboo-mode-marathon').disabled=!bamboo.unlocked();
+  $('bamboo-mode-note').textContent=isMarathon?'3ミスする前に全10階を走破しよう。2ミスまでは続行、3ミスで1階からやり直し。':bamboo.unlocked()?'全10階クリア！ バンブーマラソンに切り替えられます。':'全10階をクリアすると、バンブーマラソンが解放されます。';
+  paintBambooLives($('bamboo-lives'),isMarathon);
+  $('bamboo-run-status').hidden=!isMarathon;
+  $('bamboo-run-status').textContent=marathon.finished?'全10階完走！ おめでとう！':marathon.misses===3?'3ミスでチャレンジ終了。次は1階からスタート！':`${marathon.floor}階に挑戦中 · コースはチャレンジと共通です`;
+  $('bamboo-restart').hidden=!isMarathon||(!marathon.finished&&marathon.misses<3);
+  $('bamboo-restart').textContent=marathon.finished?'もう一度1階から挑戦':'1階からやり直す';
+  const tower=$('bamboo-tower');let marker=$('bamboo-marker');
+  if(!marker){
+    for(let floor=10;floor>=1;floor--){
+      const room=el('button',{type:'button',class:'bamboo-floor','data-floor':floor},el('span',{class:'bamboo-floor-label',text:floor}));
+      if(floor===10)room.append(el('span',{class:'bamboo-gift',text:'🎁','aria-label':'10階クリアの賞品'}));
+      room.onclick=()=>{if(performance.now()>=bambooSuppressClickUntil)selectBambooFloor(floor);};tower.append(room);
+    }
+    marker=el('canvas',{id:'bamboo-marker',class:'bamboo-marker',width:120,height:120});tower.append(marker);
+  }
+  for(const room of tower.querySelectorAll('.bamboo-floor')){
+    const floor=Number(room.dataset.floor),unlocked=floor<=top;
+    room.disabled=false;room.classList.toggle('locked',!unlocked);
+    room.classList.toggle('cleared',isMarathon?(marathon.finished||floor<top):floor<=cleared);
+    room.classList.toggle('selected',floor===selected);room.setAttribute('aria-pressed',String(floor===selected));
+    room.setAttribute('aria-label',floor+'階 '+(bambooCanPlay(mode,floor)?'挑戦可能':unlocked?'情報を見る':'未解放・情報を見る'));
+  }
+  let bossMarker=$('bamboo-boss-marker');if(!bossMarker){bossMarker=el('canvas',{id:'bamboo-boss-marker',class:'bamboo-boss-marker',width:160,height:160,'aria-label':'10階のボス'});tower.append(bossMarker);}
+  paintAvatar(bossMarker,cleanBossLook(bambooCourse(10).boss?.look));
+  marker.style.bottom=((top-.5)*10)+'%';marker.setAttribute('aria-label','ハムの現在地：解放済み最上階の'+top+'階');paintAvatar(marker,myLook());
+  $('bamboo-progress').textContent=isMarathon?(marathon.finished?'全10階 完走':`${marathon.misses===3?0:marathon.floor-1} / 10階 通過`):cleared+' / 10階 クリア';
+  $('bamboo-floor-title').textContent=selected+'階';
+  $('bamboo-floor-status').textContent=bambooCanPlay(mode,selected)?(!isMarathon&&selected<=cleared?'クリア済み・再挑戦可':'挑戦可能'):bambooBlockedReason(mode,selected);
+  $('bamboo-prev').disabled=selected<=1;$('bamboo-next').disabled=selected>=10;
+  $('bamboo-sample-clear').disabled=!bambooCanPlay(mode,selected);
+  $('bamboo-sample-miss').disabled=!isMarathon||!bambooCanPlay(mode,selected);
+  $('bamboo-sample-unlock').disabled=bamboo.unlocked();
+  const course=bambooCourse(selected);
+  $('bamboo-course-card').replaceChildren(courseCard(course,{bambooFloor:selected,bambooMode:mode}));
+}
+function selectBambooFloor(floor){if(!bamboo.select(floor))return false;saveBamboo();renderBamboo();return true;}
+function switchBambooMode(mode){if(!bamboo.switchMode(mode))return false;saveBamboo();renderBamboo();return true;}
+function returnToBamboo(floor){closePlayer();closeSheet();if(floor)bamboo.select(floor);saveBamboo();openBamboo();}
+function leaveBambooAttempt(){
+  if(!current||!Number.isInteger(current.bambooFloor))return;
+  bamboo.abandon();saveBamboo();renderBamboo();
+  if(sheet&&Number.isInteger(sheet.bambooFloor))renderSheet();
+}
+function retryBamboo(){
+  if(!current)return;
+  const {bambooFloor:floor,bambooMode:mode}=current;
+  if(!bambooCanPlay(mode,floor))return returnToBamboo(bamboo.top(mode));
+  openPlayer(bambooCourse(floor),'play',{bambooFloor:floor,bambooMode:mode});
+}
+function restartBamboo(play=false){
+  closePlayer();closeSheet();if(!bamboo.restart())return;saveBamboo();openBamboo();
+  if(play)openPlayer(bambooCourse(1),'play',{bambooFloor:1,bambooMode:'marathon'});
+}
+function bambooPlayerState(s,info={}){
+  const {bambooFloor:floor,bambooMode:mode}=current;
+  if(s==='ready'){current.bambooAttempt=null;paintBambooLives($('pl-bamboo-lives'),mode==='marathon');return false;}
+  if(s==='run'&&!current.bambooAttempt){
+    current.bambooAttempt=bamboo.begin(mode,floor,current.course.id);saveBamboo();return false;
+  }
+  if(s!=='dead'&&s!=='clear')return false;
+  const result=bamboo.finish(current.bambooAttempt,s==='clear'?'clear':'miss',info.sec||0);
+  if(!result)return true;
+  current.bambooAttempt=null;saveBamboo();notifyBambooReward();renderBamboo();paintBambooLives($('pl-bamboo-lives'),mode==='marathon');
+  if(sheet&&Number.isInteger(sheet.bambooFloor))renderSheet();
+  if(s==='dead'){
+    const over=result.gameOver;
+    showMsg(over?'3ミス！ 1階からやり直し':'ミス！',`${info.why||''}${mode==='marathon'?` · 残り ${3-bamboo.state.marathon.misses}回`:''}`,
+      [[over?'1階からやり直す':'もう一回',over?()=>restartBamboo(true):retryBamboo,true],['竹にもどる',()=>returnToBamboo(over?1:floor)]]);
+  }else{
+    const btns=[['竹にもどる',()=>returnToBamboo(floor)]];
+    if(floor<10)btns.unshift(['次の階へ',()=>returnToBamboo(floor+1),true]);
+    if(mode==='challenge'&&result.unlocked)btns.push(['バンブーマラソンへ',()=>{closePlayer();closeSheet();switchBambooMode('marathon');openBamboo();},true]);
+    if(result.finished)btns.push(['もう一度1階から',()=>restartBamboo(),true]);
+    showMsg(result.finished?'バンブーマラソン完走！':mode==='challenge'&&floor===10?'全10階クリア！':`${floor}階クリア！`,`${(info.sec||0).toFixed(1)}秒${mode==='marathon'?` · 残り ${3-bamboo.state.marathon.misses}回`:''}`,btns);
+  }
+  return true;
+}
+let bambooTouch=null,bambooWheelAt=-Infinity,bambooSuppressClickUntil=-Infinity;
+$('bamboo-map').addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;bambooTouch={x:e.clientX,y:e.clientY,id:e.pointerId};});
+$('bamboo-map').addEventListener('pointerup',e=>{
+  if(!bambooTouch||bambooTouch.id!==e.pointerId)return;
+  const dy=e.clientY-bambooTouch.y,dx=e.clientX-bambooTouch.x;bambooTouch=null;
+  if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)){e.preventDefault();bambooSuppressClickUntil=performance.now()+500;selectBambooFloor(bamboo.state.selected+(dy<0?1:-1));}
+});
+$('bamboo-map').addEventListener('pointercancel',()=>bambooTouch=null);
+$('bamboo-map').addEventListener('wheel',e=>{e.preventDefault();const now=performance.now();if(Math.abs(e.deltaY)<8||now-bambooWheelAt<350)return;bambooWheelAt=now;selectBambooFloor(bamboo.state.selected+(e.deltaY>0?-1:1));},{passive:false});
+$('event-bamboo').onclick=openBamboo;$('bamboo-back').onclick=showEventList;
+$('bamboo-prev').onclick=()=>selectBambooFloor(bamboo.state.selected-1);
+$('bamboo-next').onclick=()=>selectBambooFloor(bamboo.state.selected+1);
+for(const mode of ['challenge','marathon'])$('bamboo-mode-'+mode).onclick=()=>switchBambooMode(mode);
+$('bamboo-restart').onclick=()=>restartBamboo();
+function sampleBambooResult(result){
+  if(window.HAMU_BAMBOO_PREVIEW!==true)return;
+  const {mode,selected}=bamboo.state,id=bamboo.begin(mode,selected,bambooCourse(selected).id,'preview',false);
+  if(id==null)return;
+  bamboo.finish(id,result);if(result==='clear'&&selected<10)bamboo.select(selected+1);saveBamboo();renderBamboo();
+}
+$('bamboo-sample-clear').onclick=()=>sampleBambooResult('clear');
+$('bamboo-sample-miss').onclick=()=>sampleBambooResult('miss');
+$('bamboo-sample-unlock').onclick=()=>{if(window.HAMU_BAMBOO_PREVIEW!==true)return;bamboo.abandon();bamboo.switchMode('challenge');for(let n=bamboo.state.cleared+1;n<=10;n++){bamboo.select(n);sampleBambooResult('clear');}saveBamboo();renderBamboo();};
+$('bamboo-reset').onclick=()=>{if(window.HAMU_BAMBOO_PREVIEW!==true)return;const {stats,rewards,rewardFloors}=bamboo.state;bamboo=HamuBamboo.create({stats,rewards,rewardFloors});saveBamboo();renderBamboo();};
+
+let bambooWasReleased=bambooReleased();
+setInterval(()=>{const released=bambooReleased();if(released===bambooWasReleased)return;bambooWasReleased=released;if(tab==='event'&&!$('event-list').hidden)showEventList();},1000);
+
 /* ---------- tabs & render ---------- */
 const TABS = ['play','make','people','board','event','me'];
 let tab = 'play';
@@ -3413,10 +3721,11 @@ function setTab(name){
   for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
   if (name === 'make'){ showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
+  if(name==='event')showEventList();
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
-$('event-bamboo').onclick = () => toast('11/15〜公開予定です。お楽しみに！');
+
 let renderQueued = false, deepCourse = new URLSearchParams(location.search).get('c');
 function renderAll(){
   if (renderQueued) return; renderQueued = true;
@@ -3427,7 +3736,7 @@ function renderAll(){
     if (tab === 'play'){ renderEndless(); renderList(); }
     if (tab === 'people') renderPeople();
     if (tab === 'board') renderBoard();
-    if (tab === 'event') paintAvatar($('event-bamboo-avatar'), myLook());
+    if(tab==='event'&&!$('bamboo-challenge').hidden)renderBamboo();
     if (tab === 'me'){ syncForm(); renderMe(); }
     if (sheet) renderSheet();
     // a shared link (?c=<course id>) opens that course once it has loaded
@@ -3601,6 +3910,7 @@ $('db-state').textContent = '公式コースを表示中';
       closePlayer(); closeSheet(); formDirty = false; editor.cleared = false; activeDraftId = null; loadDraft(); showCourseFiles(false);
       accountHintShown = false; $('play-account-hint').hidden = true;
     }
+    bamboo=HamuBamboo.create(store.get(BAMBOO_KEY));bambooHydratedUid=null;
     social.isOwner = await user.isOwner();
     const cw = await user.can('data.write');
     social.canWrite = cw !== false && !!social.uid;
@@ -3634,7 +3944,7 @@ $('db-state').textContent = '公式コースを表示中';
   }, fail);
   db.collection('people').onSnapshot(snap => {
     social.people = new Map(snap.docs.map(d => [d.id, d.data()])); social.peopleLoaded = true;
-    syncCourseRuns();
+    hydrateBamboo();syncCourseRuns();
     renderAll();
   }, fail);
   db.collection('board').orderBy('at', 'desc').limit(100).onSnapshot(snap => {
