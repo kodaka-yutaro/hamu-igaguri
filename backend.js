@@ -247,6 +247,17 @@
         id, path,
         get: async () => snapDoc(id, await getRow()),
         async set(v) { const { error } = await sb.from('docs').upsert({ col, id, data: v, owner: uid }); if (error) throw err(error); bump(col); },
+        async mutate(transform) {
+          for (let attempt=0;attempt<5;attempt++) {
+            const row=await getRow();
+            if(!row)throw {code:'invalid_argument',message:'missing document'};
+            const next=transform(clone(row.data));
+            const {data,error}=await sb.from('docs').update({data:next.data}).eq('col',col).eq('id',id).eq('updated_at',row.updated_at).select('id');
+            if(error)throw err(error);
+            if(data.length){bump(col);return next;}
+          }
+          throw {code:'conflict',message:'Concurrent update; please retry'};
+        },
         async update(v) {
           // Keep simultaneous tabs/devices from replacing each other's counters or profile edits.
           for (let attempt = 0; attempt < 5; attempt++){

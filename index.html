@@ -358,12 +358,39 @@ input[type=range]{width:100%}
 @media(max-width:600px){.bamboo-layout{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:18px 8px 18px 2px}.bamboo-map{padding-left:8px;padding-right:10px;height:clamp(440px,62dvh,560px)}.bamboo-marker{width:48px;height:48px}.bamboo-floor:nth-child(3):after,.bamboo-floor:nth-child(8):after{width:18px;right:-15px;box-shadow:5px -6px 0 -1px #7e9f45}.bamboo-floor:nth-child(6):after{width:16px;left:-14px;box-shadow:none}.bamboo-course{gap:8px}.bamboo-course-card .meta{flex-wrap:wrap;gap:4px 8px}.bamboo-course-heading{flex-wrap:wrap;gap:0}.bamboo-actions .btn{padding:5px 7px}.bamboo-event{padding:12px}.event-card{padding:18px 14px;gap:14px}.bamboo-top{gap:6px}.bamboo-help{text-align:left}}
 @media(prefers-reduced-motion:reduce){.bamboo-marker{transition:none}}
 
-.bamboo-map{padding-top:80px}.bamboo-boss-marker{position:absolute;top:-68px;left:50%;transform:translateX(-50%);width:76px;height:76px;pointer-events:none;z-index:4}.bamboo-gift{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 1px 1px #1115);pointer-events:none}
+.bamboo-map{padding-top:64px}.bamboo-boss-marker{position:absolute;top:-67px;left:50%;transform:translateX(-50%);width:76px;height:76px;pointer-events:none;z-index:4}.bamboo-gift{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 1px 1px #1115);pointer-events:none}
+
+.ham-room{position:relative;height:330px;max-width:640px;width:100%;overflow:hidden;border:5px solid #986744;border-radius:24px;background:linear-gradient(#f7e8c5 0 55%,#dab181 55%);box-shadow:inset 0 0 0 8px #fff5}.plaza-room{background:linear-gradient(#d5eaf2 0 55%,#b4d99b 55%)}.house-sign{position:absolute;top:16px;left:5%;right:5%;display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:#fff9e9;border:2px solid #bc936b;border-radius:12px;z-index:3}.house-sign span:last-child{width:100%;overflow-wrap:anywhere}.house-ham{position:absolute;left:44%;top:50%;border:0;background:transparent;z-index:4;cursor:pointer}.house-door{position:absolute;right:12px;bottom:22px;z-index:5;border:3px solid #87572c;background:#b77f49;color:white;border-radius:32px 32px 3px 3px;padding:25px 10px 12px;cursor:pointer}.furniture-layer{position:absolute;inset:0;pointer-events:none}.house-item{position:absolute;transform:translate(-50%,-50%);font-size:38px;border:2px solid transparent;border-radius:10px;background:transparent;cursor:grab;touch-action:none;pointer-events:auto;z-index:2}.house-item.selected{border-color:#996632;background:#fff8}.soccer-canvas{width:100%;max-width:640px;border-radius:20px;touch-action:none}.ham-room button:focus-visible{outline:3px solid #486c37}
+.orb-tree{position:absolute;left:7%;top:40%;font-size:72px;line-height:1.1;background:transparent;border:0;cursor:pointer;z-index:3;filter:drop-shadow(0 3px 1px #80532055)}.orb-tree::after{content:"✦ 🌰 ✦";position:absolute;left:4px;top:12px;font-size:17px;color:#f3bb38;text-shadow:0 0 7px #fff}
+
+.ham-room{height:clamp(480px,125vw,720px);max-width:600px;background:linear-gradient(#f7e8c5 0 32%,#dab181 32%)}.house-ham{transform:translate(-50%,-50%);touch-action:manipulation}.editing .house-ham{touch-action:none;outline:2px dashed #825e3b;border-radius:50%}.editing .house-item{outline:1px dashed #825e3b}.orb-tree{top:35%;left:5%;width:116px;height:135px;line-height:1;padding:0}.orb-tree::after{content:none}.tree-leaves{font-size:110px}.tree-fruit{position:absolute;font-size:18px;filter:drop-shadow(0 1px 2px #ffec99)}.tree-pending{position:absolute;right:0;top:0;border-radius:30px;background:#d75d24;color:#fff;padding:4px 9px;font-size:15px}.orb-tree.stage-2{transform:scale(1.06)}.orb-tree.stage-3{transform:scale(1.12)}.orb-balance{font:800 14px var(--body);border:1.5px solid #d5ae4c;border-radius:30px;padding:7px 12px;background:#fff1b5;color:#60421f;white-space:nowrap;cursor:pointer}.orb-gain{position:fixed;z-index:100;left:50%;top:35%;padding:16px 24px;border-radius:30px;background:#fff1aa;color:#79501d;font:800 20px var(--body);white-space:nowrap;pointer-events:none;box-shadow:0 0 45px #ffe173;animation:orb-rise 1.8s forwards}.orb-spark{position:absolute;left:50%;top:50%;animation:orb-spark 1.5s forwards;font-size:18px}@keyframes orb-rise{0%{transform:translate(-50%,20px) scale(.7);opacity:0}20%{opacity:1;transform:translate(-50%,0) scale(1.08)}75%{opacity:1}100%{transform:translate(-50%,-70px);opacity:0}}@keyframes orb-spark{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--dx),var(--dy));opacity:0}}.plaza-editor-stage canvas{display:block;width:100%;touch-action:none}.plaza-editor-stage{max-width:450px;align-self:center;width:100%}@media(prefers-reduced-motion:reduce){.orb-gain{animation:none;transform:translateX(-50%)}.orb-spark{display:none}}
+
+.furniture-seed{font-size:0!important;width:25px;height:38px;background:repeating-linear-gradient(78deg,#584731 0 4px,#d5c49d 4px 7px);border:2px solid #6b5133!important;border-radius:70% 70% 55% 55%!important;transform:translate(-50%,-50%) rotate(-20deg)}.furniture-ring{width:56px;height:56px;border:9px solid #e9944a;border-radius:50%;background:transparent;box-shadow:2px 4px 0 #0002,inset 2px 2px 0 #fff6}.furniture-letter{width:50px;height:50px;display:grid;place-items:center;font:800 31px var(--body);color:#fff;text-shadow:1px 1px 2px #0008;border:2px solid #754c30;border-radius:8px;box-shadow:3px 4px 0 #0003,inset 2px 2px 0 #fff5}.shop-preview{height:100px;display:grid;place-items:center;background:var(--soft);border-radius:12px}.shop-preview .house-item{position:relative;left:auto;top:auto;transform:none;pointer-events:none}.shop-product h3{margin:0}.shop-product input[type=color]{width:64px;height:42px;padding:3px}.shop-product{max-width:520px;width:100%;align-self:center}
+.shop-swatches{display:flex;flex-wrap:wrap;gap:10px;padding:4px}.shop-swatch{width:38px;height:38px;border:2px solid #8e795e;border-radius:50%;cursor:pointer;color:white;font-weight:800;font-size:19px;text-shadow:0 1px 3px #000,0 -1px 3px #000}.shop-swatch[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:2px}
+.orb-tree-art{display:block;width:116px;height:135px;overflow:visible}.acorn-orb{display:inline-block;vertical-align:middle;flex:none;overflow:visible}.orb-balance,.orb-gain{display:inline-flex;align-items:center;gap:7px}.furniture-goldBurr{width:76px;height:76px;padding:0;border:0;background:transparent}.furniture-goldBurr svg,.furniture-goldBurr canvas{display:block;width:100%;height:100%}
+.orb-tree.stage-4{transform:scale(1.18)}.shop-current-color{display:inline-block;width:24px;height:24px;border:1.5px solid #8e795e;border-radius:50%;flex:none}
+.ham-room{isolation:isolate}.ham-room .house-sign{z-index:200000}.ham-room .house-door{z-index:1}
+.profile-board{display:block!important;max-height:42%;overflow:auto}.profile-board .prof{gap:10px}.profile-board .prof>.av{width:54px!important;height:54px!important}.profile-board .stats{flex-wrap:wrap;gap:8px}.profile-board .info{min-width:0}.profile-board span:last-child{width:auto}.profile-board .name{font-size:20px}
+.house-room-window{overflow:hidden}.ham-room{height:80dvh;max-width:none;touch-action:none;overscroll-behavior:none}.ham-room .profile-board{max-height:25dvh}.house-editor-layout{height:80dvh;display:flex;flex-direction:column;gap:8px}.house-editor-layout .house-room-window{flex:1;min-height:0}.house-editor-layout .ham-room{margin-top:-27dvh}.house-editor-layout .profile-board{visibility:hidden}.house-editor-layout .house-inventory{flex:none;background:#fff8e5;border:2px solid #bc936b;border-radius:12px;padding:8px}.house-palette{display:flex;flex-wrap:nowrap;overflow-x:auto;touch-action:pan-x;max-width:100%;gap:8px;padding:8px 0}.house-palette .tool{flex:0 0 100px;min-height:56px;white-space:normal}.house-editor-layout>p{margin:0;font-size:12px}#sheet:has(.house-editor-layout){max-height:calc(100dvh - 16px);overflow:hidden;padding:12px}#sheet:has(.house-editor-layout)>h2{font-size:18px;margin:0 0 4px;padding-right:65px!important}#sheet:has(.house-editor-layout)>p{font-size:12px;margin:4px 0}.house-inventory>.btn{padding:7px 10px;font-size:12px;margin:3px}
+#view-house{max-width:760px;margin-inline:auto;width:100%}#view-house>h2{font-size:22px;margin:8px 0}.house-view .ham-room{height:80dvh;max-height:900px}.profile-board{max-height:none!important;overflow:visible!important}.profile-board .prof{align-items:flex-start}.board-titles{display:flex!important;visibility:visible!important}.house-workspace{display:flex;flex-direction:column;gap:8px}.house-workspace .ham-room{height:54dvh;min-height:280px;margin:0;overflow:hidden;background:linear-gradient(#f7e8c5 0 14%,#dab181 14%)}.house-workspace .profile-board{display:none!important}.house-workspace .orb-tree{top:8%;transform:scale(.75);transform-origin:top left;pointer-events:none}.house-edit-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;position:sticky;top:0;z-index:300000;background:var(--panel);padding:8px 0}.house-edit-toolbar>b{margin-right:auto}.house-status{margin:0;font-size:13px;min-height:20px}.house-inventory{padding:10px;border:2px dashed #a77b50;border-radius:14px;background:#fff9e9;transition:background .15s}.house-inventory.drop-active{background:#d6efc7;border:3px solid #528436}.house-palette{margin-top:6px;min-height:90px}.house-part{flex:0 0 90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:2px solid #d7c7af;border-radius:12px;background:white;padding:6px;font:inherit;font-size:12px;touch-action:pan-x}.house-part[aria-pressed=true]{border-color:var(--accent);background:#ffedcc}.house-part:disabled{opacity:.4}.house-part-art{position:static;display:grid;place-items:center;pointer-events:none;transform:none!important;font-size:32px;width:42px;height:42px;padding:0}.house-part-art canvas,.house-part-art img{max-width:40px;max-height:40px}.house-ham.selected,.house-item.selected{outline:3px solid #c86e20;outline-offset:3px}.house-workspace .house-door{padding:12px 8px;opacity:.5}@media(max-width:500px){#view-house .house-edit-toolbar .btn{font-size:12px;padding:8px}.profile-board .prof>.av{width:44px!important;height:44px!important}.profile-board .info{font-size:12px}.profile-board .name{font-size:18px}.profile-board{top:10px;left:3%;right:3%;padding:10px}.profile-board .stats{gap:5px}}
+.house-part-art.furniture-ring{border-width:7px;border-style:solid}.house-part-art.furniture-letter{font-size:28px}
+.house-workspace .ham-room{height:80dvh;max-height:900px;min-height:0;margin:0;background:linear-gradient(#f7e8c5 0 32%,#dab181 32%)}.house-workspace .profile-board{display:block!important}.house-workspace .orb-tree{top:35%;transform:none;transform-origin:center;pointer-events:none}.house-workspace .orb-tree.stage-2{transform:scale(1.06)}.house-workspace .orb-tree.stage-3{transform:scale(1.12)}.house-workspace .house-door{padding:25px 10px 12px;opacity:1}.house-workspace .house-inventory{position:sticky;bottom:0;z-index:300001;box-shadow:0 -4px 16px #5b3c2926}.house-ham .av{background:transparent!important;border-radius:0!important;box-shadow:none!important}.editing .house-ham{outline:none;border-radius:0}.house-ham.selected{outline:2px solid #c86e20}.profile-board .prof{gap:0}.profile-board .info{width:100%;gap:3px}.profile-board .info>.row:first-child{gap:5px;align-items:center}.profile-board .name{font-size:18px}.profile-board .title-tag{font-size:11px!important}.profile-board{padding:8px 10px!important}.orb-tree{z-index:2}.house-workspace .house-edit-toolbar{z-index:300002}
+.house-edit-room-window{overflow:hidden;flex:none}.house-workspace .house-inventory{position:relative;bottom:auto}.house-edit-room-window .ham-room{margin-bottom:0}
+.house-inventory{border-style:solid}.house-palette{min-height:58px;padding:4px 0!important;gap:6px}.house-palette .house-part{position:relative;flex:0 0 50px!important;min-width:50px!important;width:50px;height:54px;min-height:54px;padding:3px!important;border-radius:9px}.house-part-art{width:34px;height:34px;font-size:27px;max-width:34px;max-height:34px}.house-part-count{position:absolute;bottom:0;right:1px;background:#fffbed;border-radius:4px;font-size:10px;line-height:13px;padding:0 2px}.house-part-art.furniture-ring{border-width:6px}.house-part-art.furniture-letter{font-size:23px}.house-inventory>.row b{font-size:13px}.house-part-art canvas{max-width:32px;max-height:32px}.shop-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:start;width:100%}.shop-grid .shop-product{padding:12px;max-width:none;margin:0;gap:8px;align-self:start}.shop-grid .shop-product h3{font-size:17px}.shop-grid .shop-preview{height:60px}.shop-grid .shop-product .btn{font-size:12px;padding:7px 9px;justify-content:center}.shop-grid .shop-product input{width:100%;min-width:0}.shop-grid .shop-product p{font-size:12px;margin:0}.shop-grid .shop-product .muted{font-size:11px}.shop-grid .shop-product>canvas{max-width:100%;height:60px;object-fit:contain}.shop-grid .shop-product label{font-size:12px}.shop-grid .shop-product .row{gap:5px}
+.orb-tree.stage-4,.house-workspace .orb-tree.stage-4{transform:scale(1.18)}
+.shop-parts{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.orb-reward{display:inline-flex;align-items:center;gap:5px;background:#fff0c6;border:1px solid #c8a04b;color:#734b1e;font-size:12px;padding:5px 8px;max-width:100%;white-space:normal}.orb-reward.claimed{background:#eeeae0;color:#756e60;border-color:#d6cfbf}.orb-reward .acorn-orb{flex:none}
+.ham-room{touch-action:pan-y;overscroll-behavior:auto}.ham-room .profile-board{touch-action:pan-y;z-index:90}.house-workspace .ham-room{touch-action:pan-y;margin:0!important}.editing .house-item,.editing .house-ham{touch-action:none}.house-transform-controls{gap:5px;flex-wrap:wrap}.house-transform-controls .btn{padding:7px 9px;min-height:34px}.house-transform-value{font-size:11px;min-width:65px;text-align:center;margin-right:auto}.part-help-dialog{border:2px solid #875f3f;border-radius:18px;max-width:440px;width:calc(100% - 32px);padding:20px;background:var(--panel);color:var(--ink)}.part-help-dialog::backdrop{background:#0007}.part-help-dialog h2{margin:0 0 12px;font-size:22px}.part-help-dialog p{line-height:1.8}.part-help-dialog button{float:right}#ed-dark-controls[hidden]{display:none!important}
 </style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
+<script src="orbs.js?v=20261114-official24"></script>
+<script src="plaza.js?v=20261114-dark24"></script>
+<script src="shop.js?v=20261114-dark24"></script>
+<script src="economy.js?v=20261114-live"></script>
 <script src="bamboo.js?v=20261111-green"></script>
 <script src="bamboo-courses.js?v=20261111-green"></script>
 <script src="boss.js?v=20261111-breakable-attacks"></script>
@@ -387,8 +414,9 @@ input[type=range]{width:100%}
     <button id="tab-play" role="tab" aria-selected="true">あそぶ</button>
     <button id="tab-make" role="tab" aria-selected="false">つくる</button>
     <button id="tab-people" role="tab" aria-selected="false">みんな</button>
-    <button id="tab-board" role="tab" aria-selected="false">けいじばん</button>
     <button id="tab-event" aria-label="イベント" aria-controls="view-event" role="tab" aria-selected="false">❗</button>
+    <button id="tab-shop" role="tab" aria-selected="false">ハム商店</button>
+    <button id="tab-board" role="tab" aria-selected="false">けいじばん</button>
     <button id="tab-me" role="tab" aria-selected="false">マイページ</button>
   </nav>
 
@@ -436,12 +464,14 @@ input[type=range]{width:100%}
         <button class="chip" id="sort-pop" aria-pressed="false">人気</button>
         <button class="chip" id="sort-follow" aria-pressed="false">フォロー中</button>
         <button class="chip" id="sort-mine" aria-pressed="false">じぶんの</button>
+        <button class="chip" id="sort-orbs" aria-pressed="false">どんぐりオーブ</button>
       </div>
       <span class="muted" id="db-state"></span>
     </div>
     <div id="list" class="grid"></div>
   </section>
 
+  <section id="view-house" class="col" hidden></section>
   <section id="view-make" class="col" hidden>
     <details id="bamboo-settings" class="card col" hidden>
       <summary>運営：バンブーチャレンジのコース設定</summary>
@@ -469,7 +499,7 @@ input[type=range]{width:100%}
     </div>
     <div class="editor-mode-switch" role="group" aria-label="編集モードの切り替え">
       <button class="btn sm" id="ed-mode-course" aria-pressed="true">コース作り</button>
-      <button class="btn sm" id="ed-mode-decor" aria-pressed="false">🎨 装飾</button>
+      <button class="btn sm" id="ed-mode-decor" aria-pressed="false">🎨 装飾</button><button class="btn sm" id="ed-part-help" aria-label="選択中のパーツの説明">？</button>
     </div>
     <div class="row" style="justify-content:space-between;gap:6px">
       <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
@@ -499,6 +529,7 @@ input[type=range]{width:100%}
       <select id="ed-warp-num" aria-label="ワープ番号"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
       <span class="muted">同じ番号の入口と出口がつながります</span>
     </div>
+    <div class="row" id="ed-dark-controls" hidden><label>暗闇の半径 <select id="ed-dark-radius" aria-label="暗闇の半径"><option value="2">2マス</option><option value="3" selected>3マス</option><option value="4">4マス</option><option value="5">5マス</option></select></label></div>
     <div class="editor-decor-panel" id="ed-decor-panel" hidden>
       <div class="tools editor-palette decor-palette" id="ed-decor" role="group" aria-label="飾りを選ぶ"></div>
       <div class="decor-size-controls" role="group" aria-label="装飾の大きさ">
@@ -537,7 +568,7 @@ input[type=range]{width:100%}
     </div>
     <div class="card col" id="ed-op" hidden style="gap:8px">
       <div class="row"><span class="badge op">運営</span><label class="row" for="ed-kind">公開先 <select id="ed-kind"><option value="">みんなのコース</option><option value="official">公式コース</option><option value="piece">エンドレス用パーツ</option></select></label></div>
-      <p class="muted" id="ed-kind-note" style="margin:0"></p>
+      <p class="muted" id="ed-kind-note" style="margin:0"></p><div id="ed-orb-settings" class="col" hidden><label class="row"><input type="checkbox" id="ed-first-orbs"> 初回クリアでどんぐりオーブを付与</label><label class="row">獲得個数 <input id="ed-first-orb-amount" type="number" min="1" step="1" value="3" aria-label="初回クリアのオーブ数" style="width:110px" disabled> 個</label></div>
       <div class="col" id="ed-pieces" style="gap:6px"></div>
     </div>
     </div>
@@ -557,6 +588,8 @@ input[type=range]{width:100%}
     <div id="people" class="people"></div>
   </section>
 
+  <section id="view-shop" class="col" hidden></section>
+
   <section id="view-board" class="col" hidden>
     <div class="row" style="justify-content:space-between"><h2>けいじばん</h2><span class="muted">運営からのお知らせと今後の方針。返信で意見を聞かせてください</span></div>
     <div id="board-compose" class="post" hidden>
@@ -569,7 +602,7 @@ input[type=range]{width:100%}
   </section>
 
   <section id="view-me" class="col" hidden>
-    <h2>プロフィール</h2>
+    <h2>マイページ</h2><button class="btn sm" id="back-house">ハムハウスへ</button>
     <div class="maker">
       <canvas class="preview" id="mk-preview" width="400" height="400" aria-label="あなたのハムスター"></canvas>
       <div class="col" style="gap:10px">
@@ -644,7 +677,7 @@ input[type=range]{width:100%}
 // portrait view: 10 tiles wide, 16 tall; canvases are drawn at 2x for sharp phones
 const T = 32, ROWS = 16, VIEW_W = 320, VIEW_H = ROWS * T, PX = 2;
 const $ = id => document.getElementById(id);
-const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)){ if (k === 'text') e.textContent = v; else if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== false && v != null) e.setAttribute(k, v); } e.append(...kids.filter(Boolean)); return e; };
+const el = (tag, props = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(props)){ if (k === 'text') e.textContent = v; else if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== false && v != null) e.setAttribute(k, v); } e.append(...kids.flat().filter(v=>v!==null&&v!==undefined&&v!==false)); return e; };
 const toast = (s) => { const t = $('toast'); t.textContent = s; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); };
 // Keep each hamster's local records and drafts separate, including across tabs.
 const localMemory = new Map();
@@ -777,13 +810,13 @@ function drawItem(ctx, cx, cy, item, t){
 }
 
 const PARTS = {
-  body:   { label: '体の色', swatch: true, opts: [['#f0b56a','ゴールデン'],['#f4efe6','ホワイト'],['#a9a9b3','グレー'],['#8a5a3c','チョコ'],['#f2a7b8','ピンク'],['#9fd8c0','ミント'],['#9cc3ef','そら'],['#4a4040','ブラック']] },
+  body:   { label: '体の色', swatch: true, opts: HamuShop.bodyColors },
   belly:  { label: 'おなか', swatch: true, opts: [['#fff4e2','クリーム'],['#ffffff','しろ'],['#ffe0e6','さくら'],['#e8d2b0','きなこ']] },
   eyes:   { label: '目', opts: [['dot','まる'],['smile','にっこり'],['sparkle','きらきら'],['sleepy','ねむい'],['wide','びっくり']] },
   cheek:  { label: 'ほっぺ', opts: [['pink','ピンク'],['orange','オレンジ'],['none','なし']] },
   hat:    { label: 'ぼうし', opts: [['none','なし'],['bambooCrown','竹の冠',{event:'bambooCrown'}],['bambooCrownPurple','竹の冠（紫）',{event:'bambooCrownPurple'}],['acorn','どんぐり帽'],['crown','王冠'],['beret','ベレー帽'],['knit','ニット帽'],['band','ハチマキ'],['silk','シルクハット'],['flower','お花'],['pan','フライパン',{item: 'pan'}],['chawan','おちゃわん',{item: 'chawan'}],['nabe','おなべ',{item: 'nabe'}],['goldplate','金のお皿',{item: 'goldplate'}],...FRUITS.map(f => [f.key,`${f.name}`,{clear:f.n}])] },
   outfit: { label: 'いしょう', opts: [['none','なし'],['scarf','スカーフ'],['cape','マント'],['shirt','Tシャツ'],['tie','ネクタイ'],['wrap','はらまき'],['kangaroo','🦘 カンガルーに変身',{clear:200}]] },
-  color:  { label: 'いしょうの色', swatch: true, opts: [['#d9412b','あか'],['#2f6fd0','あお'],['#3f9a4a','みどり'],['#f0c050','きいろ'],['#8c4fc0','むらさき'],['#2b2620','くろ'],['#f7f2ea','しろ']] },
+  color:  { label: 'いしょうの色', swatch: true, opts: HamuShop.outfitColors },
   acc:    { label: 'こもの', opts: [['none','なし'],['glasses','メガネ'],['shades','サングラス'],['ribbon','リボン'],['seed','ひまわりの種'],['bandage','ばんそうこう'],['hashi','おはし',{item: 'hashi'}],['fork','フォーク',{item: 'fork'}]] },
 };
 const DEFAULT_LOOK = { body:'#f0b56a', belly:'#fff4e2', eyes:'dot', cheek:'pink', hat:'none', outfit:'none', color:'#d9412b', acc:'none' };
@@ -1068,11 +1101,11 @@ function drawMetalBlock(ctx,x,y){
   ctx.fillStyle='#4c5965';
   for(const dx of [5,T-7])for(const dy of [5,T-7]){ctx.beginPath();ctx.arc(x+dx,y+dy,1.8,0,Math.PI*2);ctx.fill();}
 }
-function drawBurr(ctx, cx, cy, t){
+function drawBurr(ctx, cx, cy, t, tint=null){
   ctx.save(); ctx.translate(cx, cy); ctx.rotate((t||0)*0.6);
-  ctx.strokeStyle = '#6b4310'; ctx.lineWidth = 2;
+  ctx.strokeStyle = tint?.spikes || '#6b4310'; ctx.lineWidth = 2;
   for (let i = 0; i < 16; i++){ const a = i/16*Math.PI*2; ctx.beginPath(); ctx.moveTo(Math.cos(a)*8, Math.sin(a)*8); ctx.lineTo(Math.cos(a)*15, Math.sin(a)*15); ctx.stroke(); }
-  ctx.fillStyle = '#8a5a1c'; ctx.beginPath(); ctx.arc(0,0,10,0,7); ctx.fill();
+  ctx.fillStyle = tint?.body || '#8a5a1c'; ctx.beginPath(); ctx.arc(0,0,10,0,7); ctx.fill();
   ctx.restore();
   ctx.fillStyle = '#5a3410'; ctx.beginPath(); ctx.arc(cx-3, cy+1, 1.6, 0, 7); ctx.arc(cx+3, cy+1, 1.6, 0, 7); ctx.fill();
 }
@@ -1215,7 +1248,8 @@ function drawCourse(ctx, rows, camX, t, opts = {}){
 function renderEditorPaletteIcons(){
   const look=myLook();
   for(const button of document.querySelectorAll('.editor-palette .tool')){
-    const kind=button.dataset.t;
+    const kind=button.dataset.t;if(!kind)continue;
+    if(kind==='soccer'){button.textContent='⚽';continue;}if(kind==='darkness'){button.textContent='🌑';continue;}if(['switch','bulb'].includes(kind)){const canvas=el('canvas',{width:80,height:80,'aria-hidden':'true'}),ctx=canvas.getContext('2d');ctx.scale(2,2);HamuPlaza.drawCircuit(ctx,HamuPlaza.createCircuit([{kind,x:0,y:0,number:editor.warpNumber}]),-4);button.replaceChildren(canvas);continue;}
     const tile=kind==='warp-in'?WARP_ENTRIES[editor.warpNumber-1]
       :kind==='warp-out'?WARP_EXITS[editor.warpNumber-1]:kind;
     const asset=kind.startsWith('warp-')?gimmickArt.entry:kind==='L'?gimmickArt.launcher:null;
@@ -1483,6 +1517,7 @@ function makeGame(canvas, rows, hooks){
   let maxLife = LIFE_MAX, stocks = 1, ghostT = 0, hoverT = 0, rear = false;
   let bossFireCd=0;
   let launcherCharges=0, launcherShots=[], warpCooldown=0;
+  let soccerBalls=hooks.plaza?HamuPlaza.create(hooks.plazaItems):null;let lightCircuit=hooks.plaza?HamuPlaza.createCircuit(hooks.plazaItems):null;
   // springs: when each spring, ball or cannon last went off. Each part only ignores the hamster
   // for a moment after its own bounce, so a fast hamster still hits the next one in its path
   let springs = new Map();
@@ -1542,7 +1577,7 @@ function makeGame(canvas, rows, hooks){
     }
   }
   function reset(){
-    paused = false; elapsed = 0; if(boss)boss.reset(); bossFireCd=0;
+    paused = false; elapsed = 0; if(soccerBalls)soccerBalls=HamuPlaza.create(hooks.plazaItems);if(lightCircuit)lightCircuit=HamuPlaza.createCircuit(hooks.plazaItems); if(boss)boss.reset(); bossFireCd=0;
     if (canRewind && !replaying){ trace = []; history = [{index: 0, time: 0}]; rewindCount = 0; overflow = false; hasStarted = false; }
     if (gen && state){ gen = hooks.endless(); rows = gen.rows; w = rows[0].length; W = w * T; S = find('S'); }
     if(!gen)rows=originalRows.slice();
@@ -1758,6 +1793,7 @@ function makeGame(canvas, rows, hooks){
         if (c === 'W' && (B || boss) && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); myW.set(x*ROWS + y, (performance.now() - startedAt) / 1000); power = Math.min(2, power + 1); sound('power'); burst(x*T+T/2, y*T+T/2, false, 0); fx.pop(); B && B.onWeapon && B.onWeapon(x, y, (performance.now() - startedAt) / 1000, power); }
         if (itemByCh[c] && !taken.has(x*ROWS + y) && Math.hypot(cx - (x*T+T/2), cy - (y*T+T/2)) < 24){ taken.add(x*ROWS + y); sound('item'); hooks.onItem && hooks.onItem(itemByCh[c]); }
       }
+    if(soccerBalls)HamuPlaza.step(soccerBalls,dt,p,solid,W);if(lightCircuit)HamuPlaza.stepCircuit(lightCircuit,p,dt,soccerBalls||[]);
     // crossing the goal line at any height clears the course
     if (cx >= goalX) return win();
     // up to 1.5 tiles below the screen is survivable
@@ -1787,9 +1823,10 @@ function makeGame(canvas, rows, hooks){
     if (hooks.headless || replaying) return;
     const sh = shake > 0 ? (Math.random() - .5) * 10 * shake / .3 : 0;
     ctx.setTransform(PX, 0, 0, PX, sh * PX, (Math.random() - .5) * Math.abs(sh) * PX);
-    drawSky(ctx, camX, VIEW_W, VIEW_H);
+    if(hooks.plaza){ctx.fillStyle='#d9efce';ctx.fillRect(0,0,VIEW_W,VIEW_H);}else drawSky(ctx, camX, VIEW_W, VIEW_H);
     drawCourse(ctx, rows, camX, t, {hideGoal:!!boss, spin: true, taken, springs, decorations: hooks.decorations || (gen && gen.decorations) || []});
     if(boss)for(const offset of [-W,W])drawCourse(ctx,originalRows,camX+offset,t,{hideGoal:true,spin:true,decorations:hooks.decorations||[]});
+    if(soccerBalls)for(const b of soccerBalls)HamuPlaza.draw(ctx,b,camX);if(lightCircuit)HamuPlaza.drawCircuit(ctx,lightCircuit,camX);
     if(!B)for(const s of launcherShots){
       if(boss){drawBlackAcorn(ctx,s.x-camX,s.y,t,s.pw?1.4:1,Math.atan2(s.vy||0,SHOT_V));continue;}
       ctx.fillStyle='#d83d35';ctx.beginPath();ctx.arc(s.x-camX,s.y,5,0,Math.PI*2);ctx.fill();
@@ -1815,6 +1852,7 @@ function makeGame(canvas, rows, hooks){
     if (B && catchUp > 20 && state === 'run'){ ctx.fillStyle = 'rgba(255,230,140,.7)'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('おいあげ中', p.x - camX + 11, p.y - 6); ctx.textAlign = 'left'; }
     if (B && hurtT > .3){ ctx.fillStyle = `rgba(229,83,60,${(hurtT - .3) * 1.5})`; ctx.fillRect(-10, -10, VIEW_W + 20, VIEW_H + 20); }
     ctx.setTransform(PX, 0, 0, PX, 0, 0);
+    if(hooks.plaza)HamuPlaza.drawDarkness(ctx,hooks.plazaItems,lightCircuit,camX,VIEW_W,VIEW_H);
     if(!boss)drawLife(life / maxLife);
     if(boss){HamuBoss.drawHud(ctx,boss);HamuBoss.drawPlayerHud(ctx,power,state==='dead');}
     if (B){ ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif'; ctx.fillText(`のこり${stocks}`, 172, 40); if (maxLife > LIFE_MAX) ctx.fillText(`最大${maxLife}`, 220, 40); if (rear){ ctx.fillStyle = '#9fd3ff'; ctx.fillText('うしろ', 268, 40); } }
@@ -1901,7 +1939,7 @@ function makeGame(canvas, rows, hooks){
   // battle: both players start at the same moment without a jump
   function begin(){ if (state === 'ready'){ state = 'run'; startedAt = performance.now(); sound('start'); notify('run'); } }
   reset(); if (hooks.checkpoint) loadCheckpoint(hooks.checkpoint); if (!hooks.manual) raf = requestAnimationFrame(loop);
-  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get bossState(){return boss?JSON.parse(JSON.stringify(boss.state)):null;}, get launcherCharges(){return availableShots();}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
+  return { jump, reset, begin, dash, fire, fireLauncher, addShot, dropShot, rivalWeapon, _warp(x, y){ p.x = x; p.y = y; p.vy = 0; }, _grow(n){ if (gen){ gen.extend(n); w = rows[0].length; W = w * T; } }, get power(){ return power; }, get bossState(){return boss?JSON.parse(JSON.stringify(boss.state)):null;}, get lightCircuit(){return lightCircuit?structuredClone(lightCircuit):null;}, get soccerBalls(){return soccerBalls?structuredClone(soccerBalls):[];}, get launcherCharges(){return availableShots();}, get rear(){ return rear; }, get rows(){ return rows; }, stop(){ cancelAnimationFrame(raf); }, get state(){ return paused ? 'paused' : state; },
     rewind, mark, resume, restoreCheckpoint(){ return checkpoint ? restoreAt(checkpoint, checkpoint.route) : false; }, replayEvent,
     get rewindInfo(){ return {enabled: canRewind, available: canRewind && hasStarted && !overflow && state !== 'clear', checkpoint: checkpoint && {index: checkpoint.index, time: checkpoint.time, dist: checkpoint.dist}, count: rewindCount, overflow}; },
     get route(){ return canRewind && !overflow ? trace.map(e => ({...e})) : null; },
@@ -1926,13 +1964,14 @@ async function verifyCourseRoute(rows, route, cancelled = () => false, boss = nu
 if (window.__hamuTest) window.__verifyCourseRoute = verifyCourseRoute;
 /* ---------- social state ---------- */
 const social = { db: null, user: null, uid: null, isOwner: false, canWrite: false, courses: [], allCourses: [], pieces: [], people: new Map(), board: [], ownerId: null, ops: new Set(), names: {}, sort: 'new', ready: false };
-const me = () => (social.uid && social.people.get(social.uid)) || null;
+const economy=HamuEconomy.create({social,onChange:()=>renderAll(),onError:()=>toast('保存できませんでした。通信を確認してください')});
+const me = () => social.uid ? economy.profile(social.uid) : null;
 const myLook = () => cleanLook((me() && me().look) || store.get('hi-look'));
 const myClears = () => { const m = me(); return (m && m.clears) || store.get('hi-clears') || {}; };
 const clearCount = clears => Object.values(clears || {}).filter(v => v != null && v !== false).length;
 // short code people can tell each other to find a friend (first 8 chars of the id)
 const codeOf = uid => String(uid || '').replace(/[^0-9a-z]/gi, '').slice(0, 8).toUpperCase().replace(/^(.{4})(.{4})$/, '$1-$2');
-function personOf(uid){ return social.people.get(uid) || null; }
+function personOf(uid){ return economy.profile(uid) || null; }
 function nameOf(uid){ const p = personOf(uid); return (p && p.name) || social.names[uid] || 'ななしのハム'; }
 function lookOf(uid){ const p = personOf(uid); return cleanLook(p && p.look); }
 const following = uid => { const p = personOf(uid); return Array.isArray(p && p.following) ? p.following : []; };
@@ -2011,6 +2050,7 @@ async function syncCourseRuns(){
   if (saved) return syncCourseRuns();
 }
 function trackCourseRun(state){
+  if(current?.course?.plaza)return;
   if(current&&Number.isInteger(current.bambooFloor))return;
   if (!current || current.mode !== 'play' || !current.course.id) return;
   if (state === 'ready'){ current.countedRun = false; return; }
@@ -2072,7 +2112,7 @@ function openPlayer(course, mode, context={}){
   paintBambooLives($('pl-bamboo-lives'),Number.isInteger(current.bambooFloor)&&current.bambooMode==='marathon');
   $('pl-rewind').hidden = true;
   showLauncherAmmo(0);
-  $('pl-title').textContent = course.title || '名前のないコース';
+  $('pl-title').textContent = Number.isInteger(context.bambooFloor) ? bambooCourseTitle(course,context.bambooMode) : (course.title || '名前のないコース');
   $('overlay').hidden = false; document.body.style.overflow = 'hidden'; fitPlayer(); $('pl-stage').focus({preventScroll: true});
   if (game) game.stop();
   if (mode === 'battle'){
@@ -2092,7 +2132,7 @@ function openPlayer(course, mode, context={}){
   }
   const operatorTest = mode === 'test' && social.isOwner === true && $('ed-admin-test').checked;
   const savedPoint = operatorTest ? savedTestCheckpoint(current.draftId) : null;
-  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], boss:course.boss, rewind: operatorTest, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = left==='boss'?`ボス撃破でクリア　ミス ${d}`:`ゴールまで ${left}マス　ミス ${d}` });
+  game = makeGame($('pl-canvas'), course.rows, { onState, onLauncher:showLauncherAmmo, look: myLook(), decorations: course.decorations || [], plaza:!!course.plaza,plazaItems:course.plazaItems,boss:course.boss, rewind: operatorTest, checkpoint: savedPoint, onSaveCheckpoint: saveTestCheckpoint, onRewindInfo: renderRewindControls, hud: (left, d) => $('pl-hud').textContent = left==='boss'?`ボス撃破でクリア　ミス ${d}`:`ゴールまで ${left}マス　ミス ${d}` });
   renderRewindControls(); fitPlayer();
 }
 function savedTestCheckpoint(id){
@@ -2179,6 +2219,7 @@ function rankRow(r, i){
     el('span', {class: 'pos', text: i + 1}), avatar(lookOf(r.uid), 28), el('span', {style: 'flex:1;min-width:0;display:flex;align-items:center;gap:6px'}, el('span', {class: 'nm', style: 'flex:0 1 auto', text: nameOf(r.uid)}), opBadge(r.uid)), el('b', {text: `${r.n}マス`}));
 }
 function renderEndless(){
+  renderDailyRewards();
   renderBattleCard();
   const box = $('endless'); if (!box) return;
   const rank = endlessRanking(), mine = myEndless(), pos = rank.findIndex(r => r.uid === social.uid);
@@ -2192,6 +2233,8 @@ function renderEndless(){
 }
 
 async function recordClear(course, sec){
+  if(economy&&social.uid){todaysRewards();economy.rewardClear(social.uid,course.id).then(result=>{if(result.awarded)orbGain(result.amount||3);});}
+
   const before = clearCount(myClears());
   const prev = myClears()[course.id];
   if (prev != null && prev <= sec) return null;
@@ -2203,6 +2246,8 @@ async function recordClear(course, sec){
   return t && (!titleFor(before) || titleFor(before).n !== t.n) ? t : null;
 }
 function onState(s, info){
+  if(s==='ready'&&current?.course?.plaza)current.plazaPlayCounted=false;
+  if(s==='run'&&current?.course?.plaza&&social.uid&&!current.plazaPlayCounted){current.plazaPlayCounted=true;economy.recordPlazaPlay(social.uid,current.course.author);}
   if(current&&Number.isInteger(current.bambooFloor)&&bambooPlayerState(s,info))return;
   trackCourseRun(s);
   renderRewindControls();
@@ -2222,6 +2267,7 @@ function onState(s, info){
   if (s === 'clear'){
     lastClear = info;
     const c = current.course;
+    if(c.plaza){showMsg('広場クリア！',`${info.sec.toFixed(1)}秒`,[['もう一回',()=>game.reset(),true],['広場にもどる',closePlayer]]);return;}
     const btns = [['もう一回', () => game.reset()]];
     if (current.mode === 'test'){
       if (game && game.rewindInfo.enabled){ finishRewindTest(game, current, info); return; }
@@ -2313,11 +2359,11 @@ addEventListener('keydown', e => {
 
 /* ---------- sheets (course detail, profile) ---------- */
 let sheet = null;
-function openSheet(kind, id, context={}){ sheet = {kind, id,...context}; $('sheet-bg').hidden = false; renderSheet(true); }
-function closeSheet(){ sheet = null; $('sheet-bg').hidden = true; $('sheet').replaceChildren(); }
+function openSheet(kind, id, context={}){ if(plazaEdit)finishPlazaEditor(); if(plazaStop){plazaStop();plazaStop=null;} sheet = {kind, id,...context}; $('sheet-bg').hidden = false; renderSheet(true); $('sheet-bg').scrollTop=0; }
+function closeSheet(){ if(plazaEdit)finishPlazaEditor(); if(plazaStop){plazaStop();plazaStop=null;} sheet = null; $('sheet-bg').hidden = true; $('sheet').replaceChildren(); }
 $('sheet-bg').addEventListener('click', e => { if (e.target === $('sheet-bg')) closeSheet(); });
 const openCourse = (id, toComments, context={}) => { openSheet('course', id,context); if (toComments) setTimeout(() => { const h = $('cm-head'); if (h) h.scrollIntoView({behavior: 'smooth', block: 'start'}); const ta = $('cm-' + id); if (ta) ta.focus({preventScroll: true}); }, 50); };
-const openProfile = uid => { if (uid === social.uid) { closeSheet(); setTab('me'); } else openSheet('profile', uid); };
+const openProfile = uid => openHouse(uid);
 // the operator gets this badge everywhere their name shows up
 // operators: everyone in the admins table, plus the one registered in meta/site from before
 const isOp = uid => !!uid && (social.ops.has(uid) || uid === social.ownerId);
@@ -2345,7 +2391,7 @@ function commentBlock(target, placeholder){
   const list = commentsFor(target);
   if (!list.length) wrap.append(el('p', {class: 'muted', style: 'margin:0', text: 'まだコメントはありません。'}));
   for (const c of list){
-    const body = el('div', {class: 'body'}, el('div', {class: 'head'}, whoChip(c.uid, 20), el('span', {class: 'muted', text: ago(c.at)}),
+    const body = el('div', {class: 'body'}, el('div', {class: 'head'}, el('button',{class:'linkbtn',title:'ハウスを訪問',onclick:()=>openHouse(c.uid)},avatar(lookOf(c.uid),24)),el('button',{class:'linkbtn',text:nameOf(c.uid),title:'メンションして返信',onclick:()=>mentionUser(c.uid,target)}), el('span', {class: 'muted', text: ago(c.at)}),
       c.uid === social.uid ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '削除', onclick: () => patchMe({comments: {[c.id]: null}})})
         : social.isOwner ? el('button', {class: 'linkbtn muted', style: 'font-size:12px', text: '運営として削除', onclick: (e) => hideComment(c, e.currentTarget)}) : null),
       el('p', {text: c.text}), el('div', {}, likeButton(null, `cm:${c.uid}:${c.id}`, true)));
@@ -2358,13 +2404,14 @@ function composer(target, placeholder, key){
   if (!social.canWrite) return el('p', {class: 'muted', style: 'margin:0', text: 'このページは閲覧のみのため、コメントは書けません。'});
   const ta = el('textarea', {id: key, rows: 2, maxlength: 280, placeholder});
   const btn = el('button', {class: 'btn primary sm', text: '送信', onclick: async () => {
-    const text = ta.value.trim(); if (!text) return;
+    const text = ta.value.trimEnd()+' '; if (!text.trim()) return;
     btn.disabled = true;
-    const ok = await patchMe({comments: {[newId()]: {target, text: text.slice(0, 280), at: Date.now()}}});
+    const ok = await patchMe({comments: {[newId()]: {target, text: text.trim().slice(0, 280), at: Date.now(),mentions:[...social.people.keys()].filter(uid=>uid!==social.uid&&text.includes('@'+nameOf(uid)+' '))}}});
     btn.disabled = false; if (ok){ ta.value = ''; drafts[key] = ''; }
   }});
-  ta.value = drafts[key] || ''; ta.oninput = () => drafts[key] = ta.value;
-  return el('div', {class: 'col', style: 'gap:6px'}, ta, el('div', {class: 'row'}, btn));
+  const candidates=el('div',{class:'row',role:'listbox','aria-label':'メンション候補'});ta.dataset.target=target;
+  ta.value = drafts[key] || ''; ta.oninput = () => {drafts[key] = ta.value;candidates.replaceChildren();const m=ta.value.slice(0,ta.selectionStart).match(/@([^@\s]*)$/);if(!m)return;for(const [uid,p]of social.people){if(uid===social.uid||!p.name.includes(m[1]))continue;candidates.append(el('button',{class:'btn sm',role:'option',text:'@'+p.name,onclick:()=>{const end=ta.selectionStart,start=end-m[0].length;ta.value=ta.value.slice(0,start)+'@'+p.name+' '+ta.value.slice(end);drafts[key]=ta.value;candidates.replaceChildren();ta.focus();}}));}};
+  return el('div', {class: 'col', style: 'gap:6px'}, ta,candidates, el('div', {class: 'row'}, btn));
 }
 const drafts = {};
 // only the operator's own posts count as official courses or endless pieces
@@ -2374,12 +2421,16 @@ function markOfficial(){
   social.courses = social.allCourses.filter(c => c.kind !== 'piece' && (!c.boss || op(c)));
   social.pieces = social.allCourses.filter(c => c.kind === 'piece' && op(c)).map(c => Object.assign(c, {piece: toPiece(c.rows,c.decorations)})).filter(c => c.piece);
 }
-function courseById(id){ return Object.values(bambooAssignments).find(c=>c.id===id) || window.HAMU_BAMBOO_COURSES.find(c=>c.id===id) || social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
+function courseById(id){ if(String(id).startsWith('plaza-')&&social.people.has(id.slice(6)))return plazaCourse(id.slice(6));return Object.values(bambooAssignments).find(c=>c.id===id) || window.HAMU_BAMBOO_COURSES.find(c=>c.id===id) || social.courses.find(c => c.id === id) || BUILTIN.find(c => c.id === id) || null; }
 function renderSheet(first){
   if (!sheet) return;
   const box = $('sheet');
   const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.id : null;
   box.replaceChildren(el('button', {class: 'btn sm x', text: 'とじる', onclick: closeSheet}));
+  if (sheet.kind === 'shop-colors'){renderShopColors(box);return;}
+  if (sheet.kind === 'house'){renderHouse(box,sheet.id);return;}
+  if (sheet.kind === 'plaza'){renderPlaza(box,sheet.id);return;}
+  if (sheet.kind === 'visitors'){renderVisitors(box,sheet.id);return;}
   if (sheet.kind === 'battle'){ renderBattleLobby(box); return; }
   if (sheet.kind === 'noti'){ renderNoti(box); return; }
   if (sheet.kind === 'pub'){ renderPubConfirm(box); return; }
@@ -2394,18 +2445,20 @@ function renderSheet(first){
     const cleared = myClears()[c.id];
     box.append(
       el('h2', {text: c.title || '名前のないコース', style: 'padding-right:70px;overflow-wrap:anywhere'}),
-      el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: c.boss?'公式ボス戦':'公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official ? '' : ago(c.createdAt)}`})),
+      courseOrbBadge(c)||'',
+      el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: c.boss?'公式ボス戦':'公式コース'}) : whoChip(c.author), el('span', {text: `${sizeName(c)}・${c.official || c.plaza ? '' : ago(c.createdAt)}`})),
       (cs => el('div', {class: 'meta'}, el('span', {}, 'クリアした人 ', el('b', {text: cs.n}), '人'), cs.best != null ? el('span', {text: `最速 ${cs.best.toFixed(1)}秒`}) : el('span', {class: 'muted', text: 'まだだれもクリアしていません'})))(clearStats(c.id)),
-      rateDisplay(c.id, true),
-      friendClearDisplay(c.id, true),
-      thumb(c.rows,c.decorations),
-      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。ハムHPは進化に応じて1→2→3。ジャンプと発射はHP消費なし・弾数無制限です（発射は0.8秒間隔）。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : null,
+      c.plaza ? el('div',{class:'meta',text:'遊ばれた回数 '+(Number(personOf(c.author)?.plazaPlays)||0)+'回'}) : rateDisplay(c.id, true),
+      friendClearDisplay(c.id, true) || '',
+      thumb(c.rows,c.decorations,c.plaza?c:null),
+      c.boss ? el('p',{class:'muted',text:'ボスHPを0にすると勝利。Space／タップでジャンプ、G／発射ボタンでどんぐり。ハムHPは進化に応じて1→2→3。ジャンプと発射はHP消費なし・弾数無制限です（発射は0.8秒間隔）。進化どんぐりで2段階まで進化し、被弾で1段階低下、進化0で被弾すると死亡します。コース右端から次の周回につながります。'}) : '',
       el('div', {class: 'row'},
-        el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, 'play')}),
+        el('button', {class: 'btn primary', text: 'あそぶ', onclick: () => openPlayer(c, c.plaza?'plaza':'play')}),
         likeButton(c),
-        el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
+        c.plaza&&c.author===social.uid?el('button',{class:'btn',text:'広場を編集',onclick:()=>openSheet('plaza',c.author)}):null,
+        c.plaza?null:el('button', {class: 'btn sm', text: 'これを元に作る', onclick: () => { remix(c); closeSheet(); }}),
         el('button', {class: 'btn sm', text: 'Xでシェア', onclick: () => shareX(`「${c.title || '名前のないコース'}」このコース、クリアできる？🐹🌰`, courseUrl(c.id))}),
-        c.author && c.author === social.uid ? deleteBtn(c) : null),
+        !c.plaza && c.author && c.author === social.uid ? deleteBtn(c) : null),
       el('p', {class: 'muted', style: 'margin:0', text: cleared != null ? `あなたのベスト: ${cleared}秒` : 'まだクリアしていません'}));
     box.append(el('h2', {text: `コメント ${commentsFor('c:' + c.id).length}`, id: 'cm-head'}), commentBlock('c:' + c.id), composer('c:' + c.id, 'コースの感想を書く', 'cm-' + c.id));
   } else {
@@ -2423,12 +2476,12 @@ function renderSheet(first){
   }
   if (focused && $(focused)){ const f = $(focused); f.focus(); if (f.setSelectionRange && f.value) f.setSelectionRange(f.value.length, f.value.length); }
 }
-function profileHeader(uid){
-  const p = personOf(uid) || {}, n = clearCount(p.clears), t = titleFor(n), lk = likesReceived(uid), mt = makerTitleFor(lk);
-  return el('div', {class: 'prof'}, avatar(lookOf(uid), 96),
+function profileHeader(uid,compact=false){
+  const p = personOf(uid) || {}, n = clearCount(uid===social.uid?myClears():p.clears), t = titleFor(n), lk = likesReceived(uid), mt = makerTitleFor(lk);
+  return el('div', {class: 'prof'}, compact?null:avatar(lookOf(uid), 96),
     el('div', {class: 'info'},
-      el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}), opBadge(uid), social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
-      t || mt ? el('div', {class: 'row', style: 'gap:6px'}, t ? el('span', {class: 'title-tag', style: 'font-size:13px', text: `称号: ${t.name}`}) : null, mt ? el('span', {class: 'title-tag maker', style: 'font-size:13px', text: mt.name}) : null) : null,
+      el('div', {class: 'row'}, el('span', {class: 'name', text: nameOf(uid)}),compact?el('span',{class:'title-tag',text:t?.name||'はじめてのハム'}):null,compact&&mt?el('span',{class:'title-tag maker',text:mt.name}):null, opBadge(uid), social.uid && uid !== social.uid && isFriend(social.uid, uid) ? el('span', {class: 'badge friend', text: 'ともだち'}) : null),
+      compact?null:el('div', {class: 'row board-titles', style: 'gap:6px'},el('span', {class: 'title-tag', style: 'font-size:13px', text: '称号: '+(t?.name||'はじめてのハム')}),mt?el('span', {class: 'title-tag maker', style: 'font-size:13px', text: mt.name}):null),
       p.bio ? el('span', {text: p.bio, style: 'overflow-wrap:anywhere'}) : null,
       el('span', {class: 'muted'}, 'ともだちコード ', el('span', {class: 'code', text: codeOf(uid)})),
       el('div', {class: 'stats'}, el('span', {}, el('b', {text: following(uid).length}), ' フォロー'), el('span', {}, el('b', {text: followers(uid).length}), ' フォロワー'), el('span', {}, el('b', {text: n}), ' クリア'), el('span', {}, 'もらったいいね ', el('b', {text: lk})), +p.endless > 0 ? el('span', {}, 'エンドレス ', el('b', {text: Math.floor(+p.endless)}), 'マス') : null, +(p.battle && p.battle.wins) > 0 ? el('span', {}, '対戦 ', el('b', {text: Math.floor(+p.battle.wins)}), '勝') : null)));
@@ -2476,7 +2529,8 @@ function deleteBtn(c){
 }
 
 /* ---------- editor ---------- */
-const editor = { boss:null, rows: null, decorations: [], mode: 'course', tool: '#', courseTool: '#', decorTool: 'a', decorSize: 1, warpNumber: 1, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
+let plazaEdit=null;
+const editor = { boss:null, rows: null, decorations: [], mode: 'course', tool: '#', courseTool: '#', decorTool: 'a', decorSize: 1, warpNumber: 1, darkRadius:3, orbReward:0, cam: 0, cleared: false, clearProof: null, cols: 10, undo: [] }; // cols: how many columns fit across the editor (10 = same as play)
 
 const BOSS_COLORS={body:'体',belly:'おなか',earColor:'耳',noseColor:'鼻・耳の内側',eyeColor:'目',cheekColor:'ほっぺ',color:'衣装',hatColor:'帽子',accColor:'小物'};
 function cleanBossLook(value){
@@ -2570,15 +2624,16 @@ function loadDraft(){
   store.set('hi-course-active', activeDraftId);
   if (d){ const converted = HamuDecorations.fromCourse(d); editor.rows = converted.rows; editor.decorations = converted.decorations; $('ed-title').value = d.title; }
   else { editor.rows = blankCourse(40); editor.decorations = []; $('ed-title').value = 'わたしのコース'; }
-  editor.boss=d?HamuBoss.normalize(d.boss):null; loadBossEditor();
+  editor.boss=d?HamuBoss.normalize(d.boss):null;editor.orbReward=Number.isSafeInteger(d?.orbReward)&&d.orbReward>0?d.orbReward:0;$('ed-first-orbs').checked=editor.orbReward>0;$('ed-first-orb-amount').value=editor.orbReward||3;$('ed-first-orb-amount').disabled=!editor.orbReward; loadBossEditor();
   syncWidth(); editor.cam = 0; editor.undo = []; updateUndoBtn();
 }
 function saveDraft(){
+  if(plazaEdit){savePlazaEditor();return;}
   if (!activeDraftId) return;
   const library = courseLibrary(), previous = library.files[activeDraftId];
   if (!previous || previous.deleted) return;
-  const value = {boss:editor.boss, rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), title: $('ed-title').value.slice(0, 30)};
-  if (previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n') &&
+  const value = {orbReward:Number.isSafeInteger(editor.orbReward)&&editor.orbReward>0?editor.orbReward:0,boss:editor.boss, rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), title: $('ed-title').value.slice(0, 30)};
+  if ((previous.orbReward||0)===value.orbReward && previous.title === value.title && previous.rows.join('\n') === value.rows.join('\n') &&
       JSON.stringify(previous.decorations || []) === JSON.stringify(value.decorations) && JSON.stringify(previous.boss||null)===JSON.stringify(value.boss)) return;
   library.files[activeDraftId] = {...previous, ...value, updatedAt: Date.now()};
   store.set('hi-draft', value); store.set('hi-course-library', library);
@@ -2600,7 +2655,7 @@ function openCourseFile(id){
 function addCourseFile(value){
   saveDraft(); const library = courseLibrary(), id = newId();
   const converted = HamuDecorations.fromCourse(value);
-  library.files[id] = {boss:social.isOwner?HamuBoss.normalize(value.boss):null,rows: converted.rows, decorations: converted.decorations, title: value.title.slice(0, 30), updatedAt: Date.now()};
+  library.files[id] = {orbReward:social.isOwner&&Number.isSafeInteger(value.orbReward)&&value.orbReward>0?value.orbReward:0,boss:social.isOwner?HamuBoss.normalize(value.boss):null,rows: converted.rows, decorations: converted.decorations, title: value.title.slice(0, 30), updatedAt: Date.now()};
   if (new TextEncoder().encode(JSON.stringify(library)).length > 220000) return toast('下書きの保存容量がいっぱいです。新しいコースを追加できません。');
   store.set('hi-course-library', library);
   if (draftSync) draftSync.changed();
@@ -2710,10 +2765,10 @@ function startDraftSync(api){
   setInterval(() => { if (document.visibilityState === 'visible') draftSync.sync(); }, 30000);
 }
 
-function editorSnapshot(){ return {bossFingerprint:JSON.stringify(editor.boss||null), rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam}; }
+function editorSnapshot(){ return {bossFingerprint:JSON.stringify(editor.boss||null), rows: editor.rows.slice(), decorations: editor.decorations.map(d=>({...d})), cleared: editor.cleared, clearProof: editor.clearProof, cam: editor.cam,plazaItems:plazaEdit?structuredClone(plazaEdit.items):null}; }
 function updateUndoBtn(){ $('ed-undo').disabled = !editor.undo.length; }
 function pushUndo(s){
-  if (!s || (s.rows.join('\n') === editor.rows.join('\n') && JSON.stringify(s.decorations) === JSON.stringify(editor.decorations))) return;
+  if (!s || (s.rows.join('\n') === editor.rows.join('\n') && JSON.stringify(s.decorations) === JSON.stringify(editor.decorations) && JSON.stringify(s.plazaItems)===JSON.stringify(plazaEdit?plazaEdit.items:null))) return;
   editor.undo.push(s);
   if (editor.undo.length > 50) editor.undo.shift();
   updateUndoBtn();
@@ -2721,6 +2776,7 @@ function pushUndo(s){
 function undoEditor(){
   const s = editor.undo.pop();
   if (!s) return;
+  if(plazaEdit&&s.plazaItems)plazaEdit.items=structuredClone(s.plazaItems);
   editor.rows = s.rows.slice();
   editor.decorations = s.decorations.map(d=>({...d}));
   editor.cleared = s.cleared && (s.bossFingerprint||'null')===JSON.stringify(editor.boss||null);
@@ -2773,9 +2829,9 @@ function setEditorMode(mode){
 }
 function syncEditorTools(){
   document.querySelectorAll('#ed-course-palette .tool, #ed-decor .tool, #ed-eraser').forEach(b=>b.setAttribute('aria-pressed',String(editor.tool===b.dataset.t)));
-  const warp=editor.mode==='course'&&(editor.tool==='warp-in'||editor.tool==='warp-out');
-  $('ed-warp-controls').hidden=!warp;
-  if(warp){$('ed-warp-label').textContent=editor.tool==='warp-in'?'ワープ入口の番号':'ワープ出口の番号';$('ed-warp-num').value=String(editor.warpNumber);}
+  const lights=!!plazaEdit&&['switch','bulb'].includes(editor.tool),warp=editor.mode==='course'&&(editor.tool==='warp-in'||editor.tool==='warp-out'||lights);
+  $('ed-warp-controls').hidden=!warp;const darkControls=$('ed-dark-controls');if(darkControls){darkControls.hidden=!(plazaEdit&&editor.tool==='darkness');$('ed-dark-radius').value=String(editor.darkRadius||3);}
+  if(warp){$('ed-warp-num').setAttribute('aria-label',lights?'電球セットの番号':'ワープ番号');$('ed-warp-controls').querySelector('span').textContent=lights?'同じ番号のスイッチと電球がつながります':'同じ番号の入口と出口がつながります';$('ed-warp-label').textContent=lights?'電球セットの番号':editor.tool==='warp-in'?'ワープ入口の番号':'ワープ出口の番号';$('ed-warp-num').value=String(editor.warpNumber);}
   document.querySelectorAll('[data-decor-size]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.decorSize===editor.decorSize)));
   renderEditorPaletteIcons();
 }
@@ -2799,11 +2855,12 @@ function drawEditor(){
   const h = Math.round(VIEW_H * k); if (cv.height !== h) cv.height = h;
   clampCam();
   edCtx.setTransform(k, 0, 0, k, 0, 0);
-  drawSky(edCtx, editor.cam, VW, VIEW_H);
+  if(plazaEdit){edCtx.fillStyle='#d9efce';edCtx.fillRect(0,0,VW,VIEW_H);}else drawSky(edCtx, editor.cam, VW, VIEW_H);
   edCtx.strokeStyle = `rgba(255,255,255,${(.25 * Math.min(1, 16 / editor.cols)).toFixed(3)})`; edCtx.lineWidth = PX / k * .6;
   for (let x = 0; x <= w; x++){ const px = x*T - editor.cam; if (px < -1 || px > VW+1) continue; edCtx.beginPath(); edCtx.moveTo(px, 0); edCtx.lineTo(px, VIEW_H); edCtx.stroke(); }
   for (let y = 0; y <= ROWS; y++){ edCtx.beginPath(); edCtx.moveTo(0, y*T); edCtx.lineTo(VW, y*T); edCtx.stroke(); }
   drawCourse(edCtx, editor.rows, editor.cam, 0, {hideGoal:!!editor.boss, showStart: true, look: myLook(), viewW: VW, decorations: editor.decorations, fadeCourse: editor.mode==='decor'});
+  if(plazaEdit){for(const ball of HamuPlaza.create(plazaEdit.items))HamuPlaza.draw(edCtx,ball,editor.cam);HamuPlaza.drawCircuit(edCtx,HamuPlaza.createCircuit(plazaEdit.items),editor.cam);HamuPlaza.drawDarkness(edCtx,plazaEdit.items,HamuPlaza.createCircuit(plazaEdit.items),editor.cam,VW,VIEW_H,true);}
   // when zoomed out, outline how much a player sees at once
   if (editor.cols > MIN_COLS){ edCtx.strokeStyle = 'rgba(255,255,255,.75)'; edCtx.lineWidth = 2 * PX / k; edCtx.setLineDash([8 * PX / k, 6 * PX / k]); edCtx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2); edCtx.setLineDash([]); }
   edCtx.setTransform(PX, 0, 0, PX, 0, 0);
@@ -2819,6 +2876,7 @@ function setZoom(cols, anchorFrac = .5){
   editor.cam = ax - anchorFrac * viewW(); drawEditor();
 }
 function setCell(x, y, c){
+  if(plazaEdit&&x>=0&&x<editor.rows[0].length&&y>=0&&y<ROWS){if(['soccer','switch','bulb','darkness'].includes(c)){if(c==='darkness'?!me()?.plazaParts?.darkness:c!=='soccer'&&!me()?.plazaParts?.lightSet)return;if(!plazaEdit.items.some(i=>i.x===x&&i.y===y&&i.kind===c&&(c==='darkness'?HamuPlaza.darknessRadius(i.radius)===HamuPlaza.darknessRadius(editor.darkRadius):c==='soccer'||Number(i.number||1)===editor.warpNumber))){plazaEdit.items=plazaEdit.items.filter(i=>i.x!==x||i.y!==y);plazaEdit.items.push({id:'part-'+crypto.randomUUID(),kind:c,x,y,...(c==='darkness'?{radius:HamuPlaza.darknessRadius(editor.darkRadius)}:c!=='soccer'?{number:editor.warpNumber}:{})});}drawEditor();return;}plazaEdit.items=plazaEdit.items.filter(i=>i.x!==x||i.y!==y);drawEditor();}
   const w = editor.rows[0].length;
   if (x < 0 || x >= w || y < 0 || y >= ROWS) return;
   if (editor.rows[y][x] === c) return;
@@ -2857,7 +2915,7 @@ edCv.addEventListener('pointerdown', e => {
   touches.set(e.pointerId, {x: e.clientX, y: e.clientY}); try { edCv.setPointerCapture(e.pointerId); } catch {}
   if (touches.size === 2){
     // second finger: take back what the first finger just painted and switch to moving the view
-    if (painting && before){ editor.rows = before.rows; editor.decorations=before.decorations; editor.cleared = before.cleared; updatePubBtn(); drawEditor(); }
+    if (painting && before){ editor.rows = before.rows; editor.decorations=before.decorations;if(plazaEdit&&before.plazaItems)plazaEdit.items=structuredClone(before.plazaItems); editor.cleared = before.cleared; updatePubBtn(); drawEditor(); }
     painting = false; before = null;
     const st = pinchState(); pinch = {...st, cols: editor.cols, world: editor.cam + st.f * viewW()}; return;
   }
@@ -2900,7 +2958,9 @@ $('ed-scroll').addEventListener('input', e => { editor.cam = +e.target.value; dr
 document.querySelectorAll('#ed-course-palette .tool').forEach(b => b.onclick = () => { editor.tool = b.dataset.t; editor.courseTool=editor.tool; syncEditorTools(); });
 $('ed-mode-course').onclick=()=>setEditorMode('course');
 $('ed-mode-decor').onclick=()=>setEditorMode('decor');
+$('ed-part-help').onclick=()=>showEditorPartHelp(editor.tool,editor.mode==='decor'?'decor':'course');
 document.querySelectorAll('[data-decor-size]').forEach(b=>b.onclick=()=>{editor.decorSize=+b.dataset.decorSize;syncEditorTools();});
+$('ed-dark-radius').onchange=e=>{editor.darkRadius=HamuPlaza.darknessRadius(e.target.value);};
 $('ed-warp-num').onchange=e=>{editor.warpNumber=Number(e.target.value);syncEditorTools();};
 $('ed-eraser').onclick = () => { editor.tool = '.'; if(editor.mode==='decor')editor.decorTool='.';else editor.courseTool='.'; syncEditorTools(); };
 const SIZES = [40, 80, 150];
@@ -2924,6 +2984,7 @@ $('ed-new').onclick = () => {
   pushUndo(beforeClear); updatePubBtn(); drawEditor(); saveDraft();
 };
 function validate(){
+  if(social.isOwner&&['official','boss'].includes(edKind())&&$('ed-first-orbs').checked&&(!Number.isSafeInteger(editor.orbReward)||editor.orbReward<=0))return '初回クリアのオーブ数は1以上の整数にしてください';
   if(editor.boss && !social.isOwner)return 'ボス戦の編集・公開は運営専用です';
   if(social.isOwner && $('ed-boss-enabled').checked && !readBossEditor())return 'ボスHP・攻撃順・間隔を確認してください';
   const all = editor.rows.join('');
@@ -2946,7 +3007,7 @@ function renderEdOp(){
   $('ed-test-options').hidden = !social.isOwner;
   if (!social.isOwner) $('ed-admin-test').checked = false;
   if (!social.isOwner) return;
-  const k = edKind();
+  const k = edKind();$('ed-orb-settings').hidden=!['official','boss'].includes(k);$('ed-first-orb-amount').disabled=!$('ed-first-orbs').checked;
   $('ed-pub').textContent = k === 'boss' ? 'ボス戦を公開' : k === 'official' ? '公式コースとして公開' : k === 'piece' ? 'エンドレスに追加' : '公開する';
   $('ed-kind-note').textContent = k === 'boss' ? 'ボス戦は公式コースとして公開されます。ボス設定を変更できるのは運営だけです。' : k === 'official' ? '公式バッジつきで、みんなのコースの一覧に並びます。'
     : k === 'piece' ? 'スタートの列からゴールラインの列までを切り出して、エンドレスの150マス以降にときどき混ぜます。ゴールラインを置いた高さが、パーツを抜けたあとのイガグリのすき間の高さになります。'
@@ -2954,10 +3015,12 @@ function renderEdOp(){
   const box = $('ed-pieces'); box.replaceChildren();
   if (k !== 'piece') return;
   box.append(el('b', {text: `エンドレス用パーツ ${social.pieces.length}個`}));
-  for (const c of social.pieces) box.append(el('div', {class: 'row', style: 'gap:8px'}, thumb(c.rows,c.decorations), el('span', {style:'flex:1', text:`${c.title || '名前なし'}（${c.piece.rows[0].length}マス）`}), deleteBtn(c)));
+  for (const c of social.pieces) box.append(el('div', {class: 'row', style: 'gap:8px'}, thumb(c.rows,c.decorations,c.plaza?c:null), el('span', {style:'flex:1', text:`${c.title || '名前なし'}（${c.piece.rows[0].length}マス）`}), deleteBtn(c)));
 }
 $('ed-kind').onchange = () => updatePubBtn();
+for(const id of ['ed-first-orbs','ed-first-orb-amount'])$(id).addEventListener('input',()=>{editor.orbReward=$('ed-first-orbs').checked?Number($('ed-first-orb-amount').value):0;saveDraft();updatePubBtn();});
 function updatePubBtn(){
+  if(plazaEdit){$('ed-pub').hidden=true;$('ed-hint').textContent='広場は自動保存されます。';return;}
   renderEdOp();
   const err = validate();
   const proofMatches = !editor.clearProof || (editor.clearProof.rows === editor.rows.join('\n') && JSON.stringify(editor.clearProof.boss||null)===JSON.stringify(editor.boss||null));
@@ -2982,6 +3045,7 @@ function renderPubConfirm(box){
     el('p', {class: 'muted', style: 'margin:0', text: 'コース名'}),
     el('p', {style: 'margin:0;font-size:22px;font-weight:800;overflow-wrap:anywhere', text: `「${title}」`}),
     thumb(editor.rows,editor.decorations),
+    ['official','boss'].includes(kind)&&editor.orbReward>0?el('p',{class:'badge',text:'初回クリアでどんぐりオーブ '+editor.orbReward+'個'}):'',
     el('p', {class: 'muted', style: 'margin:0', text: '公開したあとはコース名を変えられません。'}),
     el('div', {class: 'row'}, go, el('button', {class: 'btn', text: '名前を変える', onclick: () => { closeSheet(); const t = $('ed-title'); t.focus(); t.select(); }})));
 }
@@ -3000,6 +3064,7 @@ async function publishCourse(){
     const kind = edKind(), doc = { title: $('ed-title').value.trim().slice(0, 30), rows, decorations:(editor.decorations || []).map(d=>({...d})), author: social.uid, createdAt: Date.now() };
     if(kind==='boss'){doc.boss=HamuBoss.normalize(editor.boss);doc.official=true;}
     if (kind === 'official') doc.official = true;
+    if(doc.official&&Number.isSafeInteger(editor.orbReward)&&editor.orbReward>0)doc.orbReward=editor.orbReward;
     if (kind === 'piece') doc.kind = 'piece';
     await social.db.collection('courses').add(doc);
     editor.cleared = false; updatePubBtn();
@@ -3013,10 +3078,10 @@ async function publishCourse(){
 }
 
 /* ---------- course list ---------- */
-function thumb(rows,decorations=[]){
+function thumb(rows,decorations=[],plaza=null){
   const c = document.createElement('canvas'); const w = rows[0].length, s = 4;
   c.width = Math.min(w, 90) * s; c.height = ROWS * s; const x = c.getContext('2d');
-  x.fillStyle = '#9fd0dc'; x.fillRect(0,0,c.width,c.height);
+  x.fillStyle = plaza?'#d9efce':'#9fd0dc'; x.fillRect(0,0,c.width,c.height);
   const off = 0;
   for(const d of decorations){
     if(d.x>=Math.min(w,90))continue;
@@ -3045,18 +3110,26 @@ function thumb(rows,decorations=[]){
     if (ch === 'G'){ x.fillStyle = 'rgba(255,255,255,.8)'; x.fillRect(i*s, 0, 1, c.height); x.fillStyle = '#d9412b'; x.fillRect(i*s, r*s-4, s, s*2); }
     if (ch === 'S'){ x.fillStyle = '#f0b56a'; x.fillRect(i*s, r*s, s, s); }
   }
+  if(plaza){x.save();x.scale(s/32,s/32);for(const ball of HamuPlaza.create(plaza.plazaItems))HamuPlaza.draw(x,ball,0);HamuPlaza.drawCircuit(x,HamuPlaza.createCircuit(plaza.plazaItems),0);x.restore();}
   c.className = 'thumb'; c.setAttribute('aria-hidden', 'true');
   return c;
 }
+function courseOrbReward(c,context={}){
+ if(c.plaza)return null;const claims=me()?.orbs||{};
+ if(Number.isInteger(context.bambooFloor)&&['challenge','marathon'].includes(context.bambooMode)){const claimed=!!claims.eventClaims?.['bamboo-green-family-v1:'+context.bambooMode+':'+context.bambooFloor];return {claimed,text:claimed?'どんぐりオーブ 3個・受取済み':'初回クリアでどんぐりオーブ3個'};}
+ const rewards=[];if(c.official&&Number.isSafeInteger(c.orbReward)&&c.orbReward>0){const claimed=!!claims.officialClaims?.[c.id];rewards.push({claimed,text:claimed?'初回オーブ'+c.orbReward+'個・受取済み':'初回クリアでどんぐりオーブ'+c.orbReward+'個'});}const draw=todaysRewards();if(draw?.ids?.includes(c.id)){const claimed=!!claims.claims?.[HamuOrbs.day(Date.now())]?.includes(c.id);rewards.push({claimed,text:claimed?'本日のオーブ3個・受取済み':'今日のクリアでどんぐりオーブ3個'});}return rewards.length?{claimed:rewards.every(r=>r.claimed),text:rewards.map(r=>r.text).join(' ／ ')}:null;
+}
+function courseOrbBadge(c,context={}){const reward=courseOrbReward(c,context);return reward?el('span',{class:'badge orb-reward'+(reward.claimed?' claimed':''),'aria-label':reward.text},orbIcon(18),reward.text):null;}
+
 function courseCard(c,context={}){
   if(Number.isInteger(context.bambooFloor))return bambooCourseCard(c,context);
   const cleared = myClears()[c.id] != null;
   const card = el('article', {class: 'card click', tabindex: 0, onclick: () => openCourse(c.id), onkeydown: e => { if (e.key === 'Enter') openCourse(c.id); }},
-    thumb(c.rows,c.decorations),
+    thumb(c.rows,c.decorations,c.plaza?c:null),courseOrbBadge(c,context),
     el('div', {class: 'row', style: 'justify-content:space-between'}, el('h3', {text: c.title || '名前のないコース'}), cleared ? el('span', {class: 'badge', text: 'クリア済み'}) : null),
     el('div', {class: 'meta'}, c.official ? el('span', {class: 'badge', text: c.boss?'ボス戦':'公式'}) : whoChip(c.author, 22),
       el('span', {text: `${sizeName(c)}・クリア ${clearStats(c.id).n}人`})),
-    rateDisplay(c.id),
+    c.plaza ? el('div',{class:'meta',text:'遊ばれた回数 '+(Number(personOf(c.author)?.plazaPlays)||0)+'回'}) : rateDisplay(c.id),
     friendClearDisplay(c.id),
     el('div', {class: 'row'}, likeButton(c),
       el('button', {class: 'like', onclick: (e) => { e.stopPropagation(); openCourse(c.id, true); }}, el('span', {text: `コメント ${commentsFor('c:' + c.id).length}`}))));
@@ -3064,22 +3137,26 @@ function courseCard(c,context={}){
 }
 function renderList(){
   const list = $('list');
-  let items = social.courses.slice();
+  let items = social.courses.slice(),dailyPlaza=null;
   if (social.sort === 'mine') items = items.filter(c => social.uid && c.author === social.uid);
   else if (social.sort === 'follow'){ const f = social.uid ? following(social.uid) : []; items = items.filter(c => f.includes(c.author)); }
   else items = items.concat(BUILTIN);
+  if(social.sort==='orbs'){const draw=todaysRewards();items=items.filter(c=>draw?.ids.includes(c.id));if(draw?.plazaOwner&&social.people.has(draw.plazaOwner))dailyPlaza=plazaCourse(draw.plazaOwner);}
   if (social.sort === 'pop') items.sort((a, b) => likeCount(b.id) - likeCount(a.id) || b.createdAt - a.createdAt);
   else if (social.sort === 'new') items.sort((a, b) => b.createdAt - a.createdAt);
   else items.sort((a, b) => (!!a.official - !!b.official) || (b.createdAt - a.createdAt));
+  if(dailyPlaza)items.push(dailyPlaza);
   list.replaceChildren();
   if (!items.length){
     list.append(el('div', {class: 'empty', text: social.sort === 'follow' ? 'フォロー中の人のコースはまだありません。「みんな」から気になるハムをフォローしよう。' : 'まだ公開したコースがありません。「つくる」で最初のコースを作ってみよう。'}));
     return;
   }
-  for (const c of items) list.append(courseCard(c));
+  for(const c of items){const card=courseCard(c);if(social.sort==='orbs'&&c.plaza)card.append(el('span',{class:'badge',text:'今日の広場（クリア報酬なし）'}));list.append(card);}
+  if(social.sort==='orbs')list.append(el('p',{class:'muted',style:'grid-column:1 / -1;margin:8px 0;font-size:13px'},'友達の広場で遊ぶと、家主の樹にどんぐりオーブが1個たまります（訪問と合わせて1日10個まで）。広場クリアの報酬はお休み中です。 ',el('button',{class:'linkbtn',text:'友達の広場を探す',onclick:()=>{setTab('people');peopleFilter='friend';for(const k of ['all','friend','following','follower'])$('pf-'+k).setAttribute('aria-pressed',String(k==='friend'));renderPeople();}})));
+
 }
-function setSort(s){ social.sort = s; ['new','pop','follow','mine'].forEach(k => $('sort-' + k).setAttribute('aria-pressed', k === s)); renderList(); }
-['new','pop','follow','mine'].forEach(k => $('sort-' + k).onclick = () => setSort(k));
+function setSort(s){ social.sort = s; ['new','pop','follow','mine','orbs'].forEach(k => $('sort-' + k).setAttribute('aria-pressed', k === s)); renderList(); }
+['new','pop','follow','mine','orbs'].forEach(k => $('sort-' + k).onclick = () => setSort(k));
 
 /* ---------- people ---------- */
 let peopleFilter = 'all';
@@ -3235,7 +3312,7 @@ function renderMe(){
     ids.length ? el('div', {class: 'row'}, ...ids.map(u => whoChip(u, 26))) : el('span', {class: 'muted', text: 'まだいません'}));
   links.replaceChildren(line('ともだち', friends), line('フォロー中', fo), line('フォロワー', fr));
 }
-function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').replaceChildren((m && m.name) || store.get('hi-name') || 'マイページ', opBadge(social.uid, true) || ''); renderBell(); }
+function renderHeader(){ paintAvatar($('me-av'), myLook()); const m = me(); $('me-name').replaceChildren((m && m.name) || store.get('hi-name') || 'マイページ', opBadge(social.uid, true) || ''); renderBell(); renderOrbBalance(); }
 /* ---------- title celebration: confetti of acorns and a big card ---------- */
 function awardNotice(item, at){
   const title=item.title, kind=item.kind;
@@ -3293,6 +3370,7 @@ function notifications(){
   const uid = social.uid; if (!uid || !social.peopleLoaded) return [];
   const mine = me() || {}, courses = new Map(social.courses.filter(c => c.author === uid).map(c => [c.id, c])), out = [];
   for (const [who, p] of social.people){
+    if(who!==uid)for(const c of Object.values(p.comments||{}))if(c?.mentions?.includes(uid))out.push({who,at:c.at,comment:c,mention:true});
     if (who === uid || !p.likes) continue;
     for (const [k, v] of Object.entries(p.likes)){
       if (v !== true) continue;
@@ -3328,6 +3406,7 @@ function renderBell(){
   checkTitleAwards();
 }
 function notiText(n){
+  if(n.mention)return nameOf(n.who)+'さんがあなたをメンションしました';
   if (n.award) return `称号「${n.name}」を獲得！`;
   if (n.post) return `運営からのお知らせ「${n.post.title || '（無題）'}」`;
   if (n.newCourse) return `${nameOf(n.who)}さんが新しいコース「${n.newCourse.title || '名前のないコース'}」を公開しました`;
@@ -3366,12 +3445,12 @@ function renderNoti(box){
     box.append(el('button', {class: 'noti' + (n.at > seen ? ' new' : ''), onclick: go},
       avatar(lookOf(n.who), 34),
       el('span', {class: 'col', style: 'gap:2px;min-width:0;text-align:left'},
-        el('span', {}, el('b', {text: nameOf(n.who)}), opBadge(n.who, true), `さんがあなたの${what}にいいねしました`),
+        el('span', {}, el('b', {text: nameOf(n.who)}), opBadge(n.who, true), n.mention?'さんがあなたをメンションしました':`さんがあなたの${what}にいいねしました`),
         el('span', {class: 'muted', style: 'font-size:12px', text: n.at ? ago(n.at) : '以前'})),
       el('span', {class: 'nut', 'aria-hidden': 'true'})));
   }
 }
-$('me-btn').onclick = () => setTab('me');
+$('me-btn').onclick = () => openHouse(social.uid);
 function markNotiSeen(){
   const now = Date.now(); store.set('hi-noti-seen', now);
   if (social.db && social.uid && social.canWrite && me()) patchMe({notiSeen: now});
@@ -3605,10 +3684,11 @@ function bambooStatsView(mode,floor,c){
     el('div',{class:'meta'},el('span',{text:`クリア ${s.people}人`}),el('span',{text:s.best==null?'最速 —':`最速 ${s.best.toFixed(1)}秒`})),
     el('div',{class:'meta'},el('b',{text:rateLabel(s)}),el('span',{text:s.attempts?`${s.clears}回クリア / ${s.attempts}回挑戦`:'まだ挑戦の記録がありません'})));
 }
+function bambooCourseTitle(c,mode){return (c.title || '名前のないコース')+(mode==='marathon'?' BM':'');}
 function bambooCourseCard(c,context){
   const {bambooFloor:floor,bambooMode:mode}=context,can=bambooCanPlay(mode,floor);
   return el('article',{class:'card click',tabindex:0,onclick:()=>openCourse(c.id,false,context),onkeydown:e=>{if(e.key==='Enter'&&e.target===e.currentTarget)openCourse(c.id,false,context);}},
-    thumb(c.rows,c.decorations),el('h3',{text:c.title}),
+    thumb(c.rows,c.decorations,c.plaza?c:null),el('h3',{text:bambooCourseTitle(c,mode)}),courseOrbBadge(c,context),
     el('div',{class:'meta'},el('span',{class:'badge',text:'公式'}),el('span',{text:sizeName(c)})),
     bambooStatsView(mode,floor,c),
     el('p',{class:'muted',style:'margin:0;font-size:12px',text:can?'カードを押して「あそぶ」から挑戦':bambooBlockedReason(mode,floor)}),
@@ -3616,8 +3696,8 @@ function bambooCourseCard(c,context){
 }
 function renderBambooSheet(box,c,context){
   const {bambooFloor:floor,bambooMode:mode}=context,can=bambooCanPlay(mode,floor);
-  box.append(el('h2',{text:`${floor}階 · ${c.title}`,style:'padding-right:70px'}),
-    el('p',{class:'muted',text:bambooName(mode)}),bambooStatsView(mode,floor,c),thumb(c.rows,c.decorations),
+  box.append(el('h2',{text:`${floor}階 · ${bambooCourseTitle(c,mode)}`,style:'padding-right:70px'}),
+    el('p',{class:'muted',text:bambooName(mode)}),courseOrbBadge(c,context),bambooStatsView(mode,floor,c),thumb(c.rows,c.decorations,c.plaza?c:null),
     el('div',{class:'row'},el('button',{class:'btn primary',text:can?'あそぶ':'挑戦できません',disabled:!can,onclick:()=>openPlayer(c,'play',context)}),likeButton(c)),
     el('p',{class:'muted',text:can?(mode==='marathon'?'1階から順番に挑戦。3ミスで1階からやり直しです。':'クリアすると次の階が開きます。'):bambooBlockedReason(mode,floor)}),
     el('small',{class:'muted',text:'クリア回数 ÷ 挑戦回数（リトライ・途中終了を含む）。チャレンジとマラソンの記録は別集計です。オンライン接続時に同期します。'}),
@@ -3672,7 +3752,7 @@ function renderBamboo(){
     room.setAttribute('aria-label',floor+'階 '+(bambooCanPlay(mode,floor)?'挑戦可能':unlocked?'情報を見る':'未解放・情報を見る'));
   }
   let bossMarker=$('bamboo-boss-marker');if(!bossMarker){bossMarker=el('canvas',{id:'bamboo-boss-marker',class:'bamboo-boss-marker',width:160,height:160,'aria-label':'10階のボス'});tower.append(bossMarker);}
-  paintAvatar(bossMarker,cleanBossLook(bambooCourse(10).boss?.look));
+  const bossLook=cleanBossLook(bambooCourse(10).boss?.look);if(cleared>=10)bossLook.eyes='smile';paintAvatar(bossMarker,bossLook);bossMarker.setAttribute('aria-label',cleared>=10?'10階のボス にっこり目（チャレンジ全階クリア）':'10階のボス');
   marker.style.bottom=((top-.5)*10)+'%';marker.setAttribute('aria-label','ハムの現在地：解放済み最上階の'+top+'階');paintAvatar(marker,myLook());
   $('bamboo-progress').textContent=isMarathon?(marathon.finished?'全10階 完走':`${marathon.misses===3?0:marathon.floor-1} / 10階 通過`):cleared+' / 10階 クリア';
   $('bamboo-floor-title').textContent=selected+'階';
@@ -3689,7 +3769,7 @@ function switchBambooMode(mode){if(!bamboo.switchMode(mode))return false;saveBam
 function returnToBamboo(floor){closePlayer();closeSheet();if(floor)bamboo.select(floor);saveBamboo();openBamboo();}
 function leaveBambooAttempt(){
   if(!current||!Number.isInteger(current.bambooFloor))return;
-  bamboo.abandon();saveBamboo();renderBamboo();
+  if(current.bambooMode==='marathon'&&current.bambooAttempt)bamboo.finish(current.bambooAttempt,'miss');else bamboo.abandon();current.bambooAttempt=null;saveBamboo();renderBamboo();
   if(sheet&&Number.isInteger(sheet.bambooFloor))renderSheet();
 }
 function retryBamboo(){
@@ -3711,7 +3791,7 @@ function bambooPlayerState(s,info={}){
   if(s!=='dead'&&s!=='clear')return false;
   const result=bamboo.finish(current.bambooAttempt,s==='clear'?'clear':'miss',info.sec||0);
   if(!result)return true;
-  current.bambooAttempt=null;saveBamboo();notifyBambooReward();renderBamboo();paintBambooLives($('pl-bamboo-lives'),mode==='marathon');
+  current.bambooAttempt=null;saveBamboo();if(s==='clear'&&social.uid){economy.rewardBamboo(social.uid,mode,floor).then(reward=>{if(reward.awarded)orbGain(3);});}notifyBambooReward();renderBamboo();paintBambooLives($('pl-bamboo-lives'),mode==='marathon');
   if(sheet&&Number.isInteger(sheet.bambooFloor))renderSheet();
   if(s==='dead'){
     const over=result.gameOver;
@@ -3755,14 +3835,16 @@ let bambooWasReleased=bambooReleased();
 setInterval(()=>{const released=bambooReleased();if(released===bambooWasReleased)return;bambooWasReleased=released;if(tab==='event'&&!$('event-list').hidden)showEventList();},1000);
 
 /* ---------- tabs & render ---------- */
-const TABS = ['play','make','people','board','event','me'];
-let tab = 'play';
-function setTab(name){
+const TABS = ['play','make','people','board','event','shop','me'];
+let tab = 'play',ownHouseEditing=false;
+function setTab(name,dressing=false){
   tab = name;
-  for (const k of TABS){ $('tab-' + k).setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
+  for (const k of [...TABS,'house']){ $('tab-' + k)?.setAttribute('aria-selected', k === name); $('view-' + k).hidden = k !== name; }
   if (name === 'make'){ renderBambooSettings(); showCourseFiles(); updatePubBtn(); if (draftSync) draftSync.sync(); }
   if (name === 'me'){ syncForm(); renderAccount(); }
   if(name==='event')showEventList();
+  if(name==='shop')renderShop();
+  if(name==='house'&&(!ownHouseEditing||!$('view-house').querySelector('.house-workspace')))renderOwnHouse();
   renderAll();
 }
 TABS.forEach(k => $('tab-' + k).onclick = () => setTab(k));
@@ -3776,11 +3858,12 @@ function renderAll(){
     renderHeader();
     if (tab === 'play'){ renderEndless(); renderList(); }
     if (tab === 'make') renderBambooSettings();
+    if(tab==='house'&&!ownHouseEditing)renderOwnHouse();
     if (tab === 'people') renderPeople();
     if (tab === 'board') renderBoard();
     if(tab==='event'&&!$('bamboo-challenge').hidden)renderBamboo();
     if (tab === 'me'){ syncForm(); renderMe(); }
-    if (sheet) renderSheet();
+    if (sheet && !['house','plaza','visitors','login','shop-colors'].includes(sheet.kind)) renderSheet();
     // a shared link (?c=<course id>) opens that course once it has loaded
     if (deepCourse && courseById(deepCourse)){ const id = deepCourse; deepCourse = null; openCourse(id); }
   });
@@ -3936,6 +4019,135 @@ function renderBattleLobby(box){
     el('button', {class: 'btn sm', text: '部屋を出る', onclick: () => { battleLeave(); closeSheet(); }}));
 }
 
+/* ---------- Houses, plaza and shop ---------- */
+let orbDisplayDay=HamuOrbs.day(Date.now());
+setInterval(()=>{const day=HamuOrbs.day(Date.now());if(day!==orbDisplayDay){orbDisplayDay=day;renderAll();}},10000);
+function todaysRewards(){
+ if(!social.peopleLoaded||!social.coursesLoaded)return null;
+ return economy.dailyCourses([...BUILTIN,...social.courses].map(c=>({id:c.id,rate:courseRate(c.id).rate})));
+}
+function renderDailyRewards(){todaysRewards();renderOrbBalance();}
+
+$('me-btn').setAttribute('aria-label','自分のハムハウス');
+$('me-btn').after(el('button',{class:'btn sm',text:'ログイン',onclick:()=>openLogin()}));
+function openLogin(){closeSheet();setTab('me');$('account').scrollIntoView({block:'start'});}
+function renderOwnHouse(){const box=$('view-house');box.replaceChildren();renderHouse(box,social.uid);}
+function openHouse(uid){if(!uid)return openLogin();if(uid===social.uid){closeSheet();ownHouseEditing=false;setTab('house');return;}if(social.uid)economy.visitHouse(uid,social.uid);openSheet('house',uid);}
+$ ('back-house').onclick=()=>openHouse(social.uid);
+function enterDressing(){closeSheet();setTab('me',true);}
+const FURNITURE={seed:['◒','ひまわりの種'],flower:['🌼','お花'],chair:['🪑','いす'],crown:['👑','イベントの冠'],soccer:['⚽','サッカーボール'],ring:['◯','輪っか'],letter:['あ','文字ブロック'],goldBurr:['✦','金のイガグリ']};
+for(const d of DECOR)FURNITURE['decor-'+d.key]=[d.emoji,d.name];
+function ownedFurniture(uid,plaza){const p=personOf(uid)||{};if(plaza)return ['soccer',...(p.items?.bambooCrown?['crown']:[])];return [...DECOR.filter(d=>likesReceived(uid)>=d.n).map(d=>'decor-'+d.key),'seed',...(likesReceived(uid)>=1?['flower']:[]),...(clearCount(p.clears)>=5?['chair']:[]),...(p.items?.bambooCrown?['crown']:[])];}
+function houseState(uid,plaza){const p=personOf(uid)||{};return structuredClone(plaza?(p.plaza?.items||[{id:'soccer',kind:'soccer',x:65,y:78}]):(p.house?.furniture||[{id:'seed',kind:'seed',x:25,y:72}]));}
+let orbArtSeq=0;
+function artNode(tag,attrs={},...children){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attrs))n.setAttribute(key,String(value));n.append(...children);return n;}
+function orbIcon(size=24){
+ const canvas=el('canvas',{width:160,height:160,class:'acorn-orb',style:`width:${size}px;height:${size}px`,'aria-hidden':'true'}),ctx=canvas.getContext('2d');ctx.scale(4,4);
+ const shine=ctx.createRadialGradient(12,9,1,20,20,25);shine.addColorStop(0,'#f4d3a5');shine.addColorStop(.35,'#bd854c');shine.addColorStop(.78,'#7f482b');shine.addColorStop(1,'#492a1e');
+ ctx.fillStyle=shine;ctx.strokeStyle='#633a24';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(20,20,18,0,Math.PI*2);ctx.fill();ctx.stroke();
+ ctx.save();ctx.translate(20,21);ctx.scale(.8,.8);drawAcorn(ctx,0,0,0);ctx.restore();
+ ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.ellipse(13,10,6,3.2,-.45,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(232,183,117,.5)';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(20,20,14,.8,1.8);ctx.stroke();return canvas;
+}
+
+function orbTreeArt(amount){const svg=artNode('svg',{viewBox:'0 0 120 140',width:116,height:135,class:'orb-tree-art','aria-hidden':'true'}),id='tree-green-'+(++orbArtSeq);
+ svg.append(artNode('defs',{},artNode('linearGradient',{id,x1:0,y1:0,x2:1,y2:1},artNode('stop',{offset:0,'stop-color':'#79bc49'}),artNode('stop',{offset:'.6','stop-color':'#419635'}),artNode('stop',{offset:1,'stop-color':'#23612c'}))),artNode('ellipse',{cx:61,cy:130,rx:30,ry:5,fill:'#6d5127','fill-opacity':'.2'}),artNode('path',{d:'M52 86 L51 125 L69 125 L67 86 Z',fill:'#9c653a',stroke:'#654124','stroke-width':3}),artNode('path',{d:'M60 111 L60 88 M59 96 L42 81 M61 98 L80 80',fill:'none',stroke:'#63472b','stroke-width':3,'stroke-linecap':'round'}),artNode('path',{d:'M59 12 C45 7 35 18 38 31 C17 26 11 45 23 57 C4 71 15 94 38 91 C48 104 68 104 79 91 C105 98 115 75 97 59 C111 43 94 26 80 31 C81 17 71 10 59 12 Z',fill:'url(#'+id+')',stroke:'#29572a','stroke-width':3.5,'stroke-linejoin':'round'}),artNode('path',{d:'M36 45 Q42 31 50 33 M30 70 Q25 77 34 81',fill:'none',stroke:'#b0d76f','stroke-opacity':'.55','stroke-width':4,'stroke-linecap':'round'}));
+ const positions=[[37,49],[80,49],[59,83],[58,30],[26,75],[92,75],[58,53],[40,69],[78,69],[59,69]];const fruitImage=orbIcon(14).toDataURL('image/png');for(const [x,y]of positions.slice(0,Math.max(0,Math.min(10,amount))))svg.append(artNode('image',{x:x-7,y:y-7,width:14,height:14,href:fruitImage,class:'tree-orb-fruit'}));return svg;}
+function goldBurrArt(){
+ const canvas=el('canvas',{width:144,height:144,'aria-hidden':'true'}),ctx=canvas.getContext('2d');ctx.scale(4,4);ctx.translate(18,18);
+ const gold=ctx.createRadialGradient(-4,-5,1,0,0,12);gold.addColorStop(0,'#fff4b0');gold.addColorStop(.38,'#edc44e');gold.addColorStop(.78,'#c08b24');gold.addColorStop(1,'#916018');
+ drawBurr(ctx,0,0,0,{spikes:'#bd8b25',body:gold});return canvas;
+}
+
+function renderShopColors(box){const name=sheet.id==='ring'?'輪っか':'文字ブロック';box.append(el('h2',{text:name+'の色を選ぶ',style:'padding-right:70px'}));for(const [title,colors]of [['体の色',HamuShop.bodyColors],['衣装の色',HamuShop.outfitColors]]){const group=el('div',{class:'shop-swatches',role:'group','aria-label':title});for(const [value,label]of colors)group.append(el('button',{class:'shop-swatch',type:'button',style:'background:'+value,'aria-label':name+'の色：'+label,'aria-pressed':String(sheet.selectedColor===value),title:label,text:sheet.selectedColor===value?'✓':'',onclick:()=>sheet.onSelect(value)}));box.append(el('b',{text:title}),group);}}
+
+function editorPartInfo(kind,mode='course',item={}){if(!kind)return {title:'パーツの説明',text:'パーツを選ぶと、そのパーツの説明が表示されます。'};if(mode==='house'){const title=kind==='ham'?'ハム':FURNITURE[kind]?.[1]||'家具';return {title,text:kind==='ham'?'ドラッグで配置を変えられます。サイズ・角度のボタンで調整して保存してください。':title+(item?.text?'「'+item.text+'」':'')+'を飾れます。ドラッグで移動、サイズ・角度のボタンで調整します。「しまう」で倉庫へ戻します。後から置いた家具が手前に重なります。'};}if(mode==='decor'&&kind!=='.'){const d=DECOR.find(d=>d.key===kind);return {title:d?.name||'飾り',text:'コースの見た目を飾るパーツです。ハムが触れてもぶつかりません。装飾サイズを選んで配置できます。'};}const entries={'#':['地面','ハムが乗れる足場です。穴を空けると落下するので、ジャンプで渡れる間隔にしましょう。'],'*':['イガグリ','触れるとミスになる障害物です。ジャンプで避ける配置にしましょう。'],'A':['どんぐり','ハムが拾うとライフを回復します。ジャンプで減ったライフを補えます。'],'O':['バウンドボール','触れるとハムが弾かれます。高い足場へ飛ばす仕掛けに使えます。'],'C':['大砲','ハムが触れると、中に入ってから発射されます。'],'S':['スタート','ハムが走り始める位置です。コースに1つだけ配置できます。'],'G':['ゴールライン','ハムがラインを越えるとコースクリアです。コースに1つだけ配置できます。'],'M':['金属ブロック','ハムが乗れる、ぶつかることのできる足場です。'],'L':['ランチャー','拾うとランチャーを発射できるようになります。'],'W':['進化どんぐり','ボス戦用の進化アイテムです。ハムが強くなり、攻撃できるようになります。'],'.':['消しゴム','選択中の編集モードのパーツを消します。'],'warp-in':['ワープ入口','ハムが触れると、同じ番号のワープ出口へ移動します。番号は1〜5から選べます。'],'warp-out':['ワープ出口','同じ番号の入口からハムが出てくる位置です。番号ごとに1つだけ配置できます。'],'soccer':['サッカーボール','ハムが触れると転がり、ジャンプでヘディングできます。スイッチに乗ると電球も切り替えられます。'],'switch':['スイッチ','ハムやサッカーボールが乗るたびに、同じ番号の電球をON／OFFにします。乗ったままでは連続して切り替わりません。'],'bulb':['電球','同じ番号のスイッチでON／OFFが切り替わります。点灯中は周囲3マスを照らし、暗闇の中も見えるようになります。'],'darkness':['暗闇','置いた場所を中心に、半径2〜5マスを黒くします。半径は設定で変更できます。電球を点灯すると、その光が届く場所が見えるようになります。']};const e=entries[kind];if(e)return {title:e[0],text:e[1]};return {title:itemByCh[kind]?.name||'パーツ',text:'コースに配置できるアイテムです。ハムが触れると獲得できます。'};}
+function showEditorPartHelp(kind,mode,item){const info=editorPartInfo(kind,mode,item);let dialog=$('part-help-dialog');if(!dialog){dialog=el('dialog',{id:'part-help-dialog',class:'part-help-dialog'});dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});dialog.addEventListener('keydown',e=>e.stopPropagation());document.body.append(dialog);}dialog.replaceChildren(el('h2',{text:info.title}),el('p',{text:info.text}),el('button',{class:'btn primary',text:'とじる',onclick:()=>dialog.close()}));if(!dialog.open)dialog.showModal();}
+
+function wireShopLetterInput(input,item,onUpdate){
+ let composing=false;
+ function refresh(){const text=HamuShop.normalizeLetter(input.value),valid=!composing&&HamuShop.validLetter(text);item.text=valid?text:'';input.setAttribute('aria-invalid',String(!valid&&!composing));onUpdate({valid,text,composing});return valid;}
+ input.oncompositionstart=()=>{composing=true;refresh();};input.oninput=e=>{if(e?.isComposing)composing=true;refresh();};input.oncompositionend=()=>{composing=false;refresh();};input.onchange=input.onblur=()=>{composing=false;if(refresh())input.value=item.text;};
+ return {validate(){if(!refresh())return false;input.value=item.text;return true;}};
+}
+
+function renderShop(){
+ const box=$('view-shop');box.replaceChildren(el('div',{class:'row',style:'justify-content:space-between;flex-wrap:wrap;gap:12px'},el('h2',{text:'ハム商店',style:'margin:0'}),el('button',{class:'btn row',id:'shop-house-btn',style:'gap:8px;background:#fff3d9;border-color:#a77a4b',onclick:()=>openHouse(social.uid)},el('img',{src:'ham-house.svg',width:36,height:36,alt:'','aria-hidden':'true'}),el('span',{text:'ハムハウスへ'}))),el('p',{class:'muted',text:'家具と広場のパーツを選ぼう。'}));
+ const furnitureGrid=el('div',{class:'shop-grid'});box.append(el('h3',{text:'ハウス家具'}),furnitureGrid);
+ for(const [kind,name,cost]of [['seed','ひまわりの種',3],['ring','輪っか',5],['letter','文字ブロック',7],['goldBurr','金のイガグリ',100]]){
+  let validateLetter=()=>true;const card=el('div',{class:'card shop-product'}),preview=el('div',{class:'shop-preview'}),item={kind,color:HamuShop.bodyColors[0][0],text:'あ'},visual=furnitureNode(item);preview.append(visual);card.append(el('h3',{text:name}),preview,el('b',{class:'row'},orbIcon(23),cost+' オーブ'));
+  if(['ring','letter'].includes(kind)){
+   const swatch=el('span',{class:'shop-current-color',style:'background:'+item.color,'aria-hidden':'true'}),label=el('span',{text:'色を選ぶ'});
+   card.append(el('button',{class:'btn row','aria-label':name+'の色を選ぶ',onclick:()=>openSheet('shop-colors',kind,{selectedColor:item.color,onSelect:value=>{item.color=value;swatch.style.backgroundColor=value;label.textContent='色を選ぶ';preview.replaceChildren(furnitureNode(item));closeSheet();}})},swatch,label));
+  }
+  if(kind==='letter'){
+   const letterNote=el('span',{class:'muted',role:'status',text:''});
+   const input=el('input',{type:'text',value:'あ',maxlength:8,lang:'ja',autocomplete:'off',autocapitalize:'off',spellcheck:'false','aria-label':'ブロックの文字'});
+   const controller=wireShopLetterInput(input,item,({valid,composing})=>{letterNote.textContent=valid||composing?'':'ひらがな・カタカナ1文字だけ入力できます。';if(!composing)preview.replaceChildren(furnitureNode(item));buy.disabled=!valid;});validateLetter=()=>controller.validate();
+   card.append(el('label',{class:'col'},'かな1文字',input),letterNote);
+  }
+  const state=el('span',{class:'muted',role:'status'}),buy=el('button',{class:'btn primary',text:cost+'オーブで買う',onclick:async()=>{if(!validateLetter()){state.textContent='ひらがな・カタカナを1文字選んでください';return;}buy.disabled=true;try{const result=await economy.buyFurniture(social.uid,kind,item);state.textContent=result.ok?'購入しました。ハウスの倉庫に入りました。':result.message;if(result.ok)toast(name+'を購入しました！');renderOrbBalance();}finally{buy.disabled=kind==='letter'&&!HamuShop.validLetter(item.text);}}});card.append(buy,state);furnitureGrid.append(card);
+ }
+ const partGrid=el('div',{class:'shop-grid shop-parts'}),partCard=el('div',{class:'card shop-product'},el('h3',{text:'電球セット'})),partArt=el('canvas',{width:144,height:80,'aria-label':'スイッチと電球'}),partContext=partArt.getContext('2d');partContext.scale(2,2);HamuPlaza.drawCircuit(partContext,HamuPlaza.createCircuit([{kind:'switch',x:0,y:0,number:1},{kind:'bulb',x:1,y:0,number:1}]),0);partCard.append(partArt,el('b',{class:'row'},orbIcon(18),'15 オーブ'),el('p',{class:'muted',text:'同じ番号のスイッチで電球をON／OFF'}));const partState=el('span',{role:'status',class:'muted'}),partBuy=el('button',{class:'btn primary',text:me()?.plazaParts?.lightSet?'購入済み':'15オーブで買う',disabled:!!me()?.plazaParts?.lightSet,onclick:async()=>{partBuy.disabled=true;const result=await economy.buyFurniture(social.uid,'lightSet',{});partState.textContent=result.ok?'広場のパーツに追加しました':result.message;if(result.ok)partBuy.textContent='購入済み';else partBuy.disabled=false;renderOrbBalance();}});partCard.append(partBuy,partState);partGrid.append(partCard);box.append(el('h3',{text:'広場のパーツ'}),partGrid);const darkCard=el('div',{class:'card shop-product'},el('h3',{text:'暗闇'}),el('div',{class:'shop-preview',text:'🌑',style:'font-size:42px'}),el('b',{class:'row'},orbIcon(18),'50 オーブ'),el('p',{class:'muted',text:'半径2〜5マスを暗くします。電球の光で見えるようになります。'})),darkState=el('span',{role:'status',class:'muted'}),darkBuy=el('button',{class:'btn primary',text:me()?.plazaParts?.darkness?'購入済み':'50オーブで買う',disabled:!!me()?.plazaParts?.darkness,onclick:async()=>{darkBuy.disabled=true;const result=await economy.buyFurniture(social.uid,'darkness',{});darkState.textContent=result.ok?'広場のパーツに追加しました':result.message;if(result.ok)darkBuy.textContent='購入済み';else darkBuy.disabled=false;renderOrbBalance();}});darkCard.append(darkBuy,darkState);partGrid.append(darkCard);
+
+}
+function furnitureNode(item,button=false){const node=el(button?'button':'div',{class:'house-item furniture-'+item.kind,'aria-label':item.kind==='letter'?'文字ブロック '+(item.text||''):FURNITURE[item.kind]?.[1]||item.kind,text:item.kind==='letter'?item.text:item.kind==='ring'?'':FURNITURE[item.kind]?.[0]||'📦'});if(item.kind==='goldBurr')node.replaceChildren(goldBurrArt());node.style.transform=HamuShop.furnitureTransform(item,button);if(item.kind==='ring')node.style.borderColor=item.color||'#e9944a';if(item.kind==='letter')node.style.backgroundColor=item.color||'#e9944a';return node;}
+
+function orbGain(amount){
+ if(!amount)return;const effect=el('div',{class:'orb-gain',role:'status'});effect.append(orbIcon(32),el('span',{text:'＋'+amount+' どんぐりオーブ'}));document.body.append(effect);for(let i=0;i<12;i++){const bit=el('span',{class:'orb-spark',text:i%2?'✦':'',style:`--dx:${Math.cos(i*Math.PI/6)*110}px;--dy:${Math.sin(i*Math.PI/6)*85}px`});if(i%2===0)bit.append(orbIcon(18));effect.append(bit);}setTimeout(()=>effect.remove(),1800);renderOrbBalance();
+}
+function renderOrbBalance(){let badge=$('orb-balance');if(!badge){badge=el('button',{id:'orb-balance',class:'orb-balance',onclick:()=>{setTab('play');setSort('orbs');}});$('me-btn').before(badge);}const n=HamuOrbs.summary(me()?.orbs).balance;badge.replaceChildren(orbIcon(24),el('span',{text:String(n)}));badge.setAttribute('aria-label','所持どんぐりオーブ '+n+'個');}
+function openVisitors(uid){if(uid!==social.uid)return toast('オーブの樹は家主が収穫できます');openSheet('visitors',uid);}
+function renderVisitors(box,uid){const orb=HamuOrbs.summary(personOf(uid)?.orbs);box.append(el('h2',{text:'🌳 訪問・広場プレイの収穫'}));const count=kind=>orb.pending.filter(v=>v.kind===kind&&v.reward===1).length;box.append(el('p',{text:'内訳：ハウス訪問 '+count('house-visit')+'個 ／ 広場プレイ '+count('plaza-play')+'個'}),el('p',{class:'muted',text:'本日 '+orb.today+' / 10個（訪問とプレイの合計）'}));if(!orb.pending.length)box.append(el('p',{text:'未確認の報酬はありません。また遊びに来てもらおう！'}));for(const v of orb.pending)box.append(el('div',{class:'row'},avatar(lookOf(v.uid),36),el('b',{text:nameOf(v.uid)}),el('span',{class:'muted',text:v.date+'　'+(v.kind==='house-visit'?'ハウス訪問　':'広場プレイ　')+(v.reward?'どんぐりオーブ 1個':'本日の報酬上限到達')})));const amount=orb.pending.reduce((n,v)=>n+(v.reward===1?1:0),0);if(orb.pending.length)box.append(el('button',{class:'btn primary',text:amount+'個のオーブを受け取る',onclick:async()=>{const result=await economy.collectVisits(uid);openHouse(uid);orbGain(result.amount);}}));box.append(el('button',{class:'btn',text:'ハウスにもどる',onclick:()=>openHouse(uid)}));}
+function updateHouseDepth(room){for(const node of room.querySelectorAll('.house-item,.house-ham'))node.style.zIndex=String(100+Number(node.dataset.houseOrder||0));}
+
+function renderHouse(box,uid){
+ const p=personOf(uid);if(!p)return;const own=uid===social.uid,editing=own&&ownHouseEditing,orb=HamuOrbs.summary(p.orbs);let placed=houseState(uid,false),hamPos=structuredClone(p.house?.ham||{x:52,y:65}),selected=null,pendingItem=null,history=[],wh;placed.forEach((item,index)=>{item.order=Number.isFinite(item.order)?item.order:index+1;});hamPos.order=Number.isFinite(hamPos.order)?hamPos.order:placed.length+1;const nextOrder=()=>Math.max(hamPos.order,...placed.map(i=>i.order),0)+1;
+ box.append(el('h2',{text:nameOf(uid)+'のハムハウス'}));
+ const status=el('p',{class:'house-status',role:'status',text:editing?'パーツを選んでタップで配置。選択中の家具は「しまう」で収納。':'ハムをタッチで着せ替え・樹をタッチで収穫'}),room=el('div',{class:'ham-room'+(editing?' editing':''),'aria-label':'ハムハウス'}),layout=el('div',{class:editing?'house-workspace':'house-view'});
+ const board=el('div',{class:'house-sign profile-board'},profileHeader(uid,true));if(!own&&social.uid)board.append(el('button',{class:'btn sm'+(following(social.uid).includes(uid)?' on':' primary'),text:following(social.uid).includes(uid)?'フォロー中':'フォローする',onclick:async()=>{await toggleFollow(uid);renderSheet();}}),isFriend(social.uid,uid)?el('span',{class:'muted',text:'おたがいにフォローしています'}):'');room.append(board);
+ const treeStage=orb.pendingAmount>=10?4:orb.pendingAmount>=3?3:orb.pendingAmount>=1?2:1;const tree=el('button',{class:'orb-tree stage-'+treeStage,'aria-label':'どんぐりの樹 未回収'+orb.pendingAmount+'個',onclick:()=>editing?toast('保存してから収穫できます'):openVisitors(uid)},orbTreeArt(orb.pendingAmount));if(own&&orb.pendingAmount)tree.append(el('b',{class:'tree-pending',text:String(orb.pendingAmount)}));room.append(tree);
+ const ham=el('button',{class:'house-ham','aria-label':editing?'ハムの配置':own?'自分のハムを着せ替え':nameOf(uid),onclick:()=>{if(!editing&&own)enterDressing();}},avatar(lookOf(uid),76));
+ const layer=el('div',{class:'furniture-layer'});room.append(layer,ham,el('button',{class:'house-door',text:'🚪 広場へ',onclick:()=>editing?toast('先に配置を保存してください'):openCourse('plaza-'+uid)}));
+ const pos=(node,obj)=>{node.style.left=obj.x+'%';node.style.top=obj.y+'%';node.dataset.houseOrder=String(obj.order||0);node.style.transform=node===ham?'translate(-50%,-50%) rotate('+HamuShop.rotation(obj.rotation)+'deg) scale('+HamuShop.furnitureScale(obj.scale)+')':HamuShop.furnitureTransform(obj,true);};pos(ham,hamPos);
+ function remember(){history.push({placed:structuredClone(placed),ham:structuredClone(hamPos)});if(history.length>30)history.shift();}
+ function point(e){const r=room.getBoundingClientRect();return {x:Math.max(8,Math.min(90,(e.clientX-r.left)/r.width*100)),y:Math.max((board.getBoundingClientRect().top-r.top+board.getBoundingClientRect().height*2/3)/r.height*100,Math.min(90,(e.clientY-r.top)/r.height*100))};}
+ function paint(){layer.replaceChildren();for(const item of placed){const node=furnitureNode(item,true);node.dataset.furnitureId=item.id;node.classList.toggle('selected',selected===item.id);pos(node,item);drag(node,item,item.id);layer.append(node);}ham.classList.toggle('selected',selected==='ham');pos(ham,hamPos);updateHouseDepth(room);if(editing)paintInventory();}
+ function drag(node,obj,id){if(!editing)return;node.dataset.houseId=id;node.onclick=e=>{e.stopPropagation();if(suppressRoomClick){suppressRoomClick=false;return;}selected=id;pendingItem=null;paint();status.textContent=id==='ham'?'ハム':FURNITURE[obj.kind]?.[1]||'家具';};}
+ let gesture=null,suppressRoomClick=false;
+ room.addEventListener('pointerdown',e=>{if(!editing||gesture)return;const target=e.target.closest('[data-house-id]');if(!target)return;const id=target.dataset.houseId,obj=id==='ham'?hamPos:placed.find(i=>i.id===id);if(!obj)return;e.preventDefault();remember();selected=id;pendingItem=null;suppressRoomClick=false;gesture={id,obj,pointer:e.pointerId,moved:false};room.setPointerCapture(e.pointerId);status.textContent=id==='ham'?'ハム':FURNITURE[obj.kind]?.[1]||'家具';paintInventory();});
+ room.addEventListener('pointermove',e=>{if(!gesture||gesture.pointer!==e.pointerId)return;e.preventDefault();gesture.moved=true;Object.assign(gesture.obj,point(e));const node=gesture.id==='ham'?ham:[...layer.children].find(n=>n.dataset.furnitureId===gesture.id);if(node)pos(node,gesture.obj);});
+ const finishGesture=e=>{if(!gesture||gesture.pointer!==e.pointerId)return;if(room.hasPointerCapture(e.pointerId))room.releasePointerCapture(e.pointerId);suppressRoomClick=true;gesture=null;paint();};room.addEventListener('pointerup',finishGesture);room.addEventListener('pointercancel',finishGesture);
+ room.addEventListener('wheel',e=>{if(gesture)e.preventDefault();},{passive:false});
+
+ room.onclick=e=>{if(suppressRoomClick){suppressRoomClick=false;return;}if(!editing||e.target.closest('button'))return;if(!pendingItem&&selected){const item=selected==='ham'?hamPos:placed.find(i=>i.id===selected);if(item){remember();Object.assign(item,point(e));paint();status.textContent='配置を変更しました';}return;}if(!pendingItem)return;remember();const item={...structuredClone(pendingItem),...point(e),order:nextOrder()};placed.push(item);selected=item.id;pendingItem=null;paint();status.textContent='家具を配置しました';};
+ drag(ham,hamPos,'ham');
+ if(editing){
+ const toolbar=el('div',{class:'house-edit-toolbar'},el('b',{text:'ハウスを編集'}),el('button',{class:'btn sm',text:'1つ戻す',onclick:()=>{const h=history.pop();if(!h)return;placed=h.placed;hamPos=h.ham;selected=null;pendingItem=null;paint();status.textContent='1つ戻しました';}}),el('button',{class:'btn sm',text:'キャンセル',onclick:()=>openHouse(uid)}),el('button',{class:'btn primary',text:'保存して終了',onclick:async()=>{if(await patchMe({house:{furniture:placed,ham:hamPos}}))openHouse(uid);}}));
+ wh=el('div',{class:'house-inventory','aria-label':'家具の収納エリア'});layout.append(toolbar,room,wh,status);
+ }else{layout.append(room,status);if(own)layout.append(el('button',{class:'btn primary',text:'ハウスを編集',onclick:()=>{ownHouseEditing=true;closeSheet();setTab('house');requestAnimationFrame(()=>$('view-house').querySelector('.house-workspace')?.scrollIntoView({block:'start'}));}}));}
+ function paintInventory(){if(!wh)return;const current=selected==='ham'?hamPos:placed.find(i=>i.id===selected)||pendingItem;function adjust(key,delta){if(!current)return;remember();const pending=current===pendingItem;if(pending)pendingItem={...pendingItem};const item=pending?pendingItem:current;item[key]=key==='scale'?HamuShop.furnitureScale(HamuShop.furnitureScale(item.scale)+delta):HamuShop.rotation((item.rotation||0)+delta);paint();status.textContent=(selected==='ham'?'ハム':FURNITURE[item.kind]?.[1]||'家具')+' '+Math.round(HamuShop.furnitureScale(item.scale)*100)+'% ／ '+HamuShop.rotation(item.rotation)+'°';}const controls=el('div',{class:'row house-transform-controls'});for(const [label,text,key,delta]of [['サイズを小さく','－','scale',-.1],['サイズを大きく','＋','scale',.1],['左に30°回転','↶','rotation',-30],['右に30°回転','↷','rotation',30]])controls.append(el('button',{class:'btn sm',text,'aria-label':label,disabled:!current,onclick:()=>adjust(key,delta)}));controls.append(el('span',{class:'house-transform-value',text:current?Math.round(HamuShop.furnitureScale(current.scale)*100)+'% / '+HamuShop.rotation(current.rotation)+'°':'パーツを選択'}),el('button',{class:'btn sm',text:'？','aria-label':'選択中のパーツの説明',onclick:()=>showEditorPartHelp(selected==='ham'?'ham':current?.kind,'house',current)}),el('button',{class:'btn sm',disabled:!selected||selected==='ham',text:'しまう',onclick:()=>{if(!selected||selected==='ham')return;remember();placed=placed.filter(i=>i.id!==selected);selected=null;paint();status.textContent='家具を収納しました';}}));wh.replaceChildren(controls);const slider=el('div',{class:'tools editor-palette house-palette','aria-label':'家具を選ぶ'});const items=[...ownedFurniture(uid,false).map(kind=>({id:kind,kind})),...(p.furnitureInventory||[])];for(const group of HamuShop.groupFurniture(items,placed)){const item=group.available[0]||group.items[0],on=!group.available.length,button=el('button',{class:'tool house-part','aria-label':(item.text?'「'+item.text+'」':FURNITURE[item.kind]?.[1]||'家具')+' ×'+group.items.length+'（収納'+group.available.length+'）','aria-pressed':String(group.items.some(i=>pendingItem?.id===i.id)),disabled:on,onclick:()=>{pendingItem=group.available[0];selected=null;suppressRoomClick=false;paint();status.textContent=(FURNITURE[item.kind]?.[1]||'家具')+'を選択中 — 置きたい場所をタップ';}});const art=furnitureNode({...item,x:0,y:0},false);art.style.transform='none';art.classList.remove('house-item');art.classList.add('house-part-art');art.setAttribute('aria-hidden','true');button.append(art,el('span',{class:'house-part-count',text:'×'+group.items.length}));slider.append(button);}wh.append(slider);}
+ box.append(layout);paint();requestAnimationFrame(()=>updateHouseDepth(room));
+ if(!editing){const courses=social.courses.filter(c=>c.author===uid);box.append(el('h3',{text:'投稿コース '+courses.length}),...courses.map(courseCard));}
+}
+
+function plazaCourse(uid){const p=personOf(uid)||{},saved=p.plaza?.course;if(saved?.rows?.length===16)return {id:'plaza-'+uid,title:nameOf(uid)+'の広場',author:uid,plaza:true,rows:saved.rows.slice(),plazaItems:structuredClone(saved.items||[]),decorations:structuredClone(saved.decorations||[])};const rows=Array.from({length:16},(_,y)=>y===15?'#'.repeat(40):'.'.repeat(40));rows[14]='.S'+'.'.repeat(35)+'G..';return {id:'plaza-'+uid,title:nameOf(uid)+'の広場',author:uid,plaza:true,rows,plazaItems:[{id:'soccer-1',kind:'soccer',x:7,y:14}],decorations:[]};}
+function savePlazaEditor(){if(!plazaEdit)return;plazaEdit.items=plazaEdit.items.filter(i=>i.x<editor.rows[0].length);const course={rows:editor.rows.slice(),decorations:structuredClone(editor.decorations),items:structuredClone(plazaEdit.items)};patchMe({plaza:{course}});}
+function finishPlazaEditor(){if(!plazaEdit)return;savePlazaEditor();const session=plazaEdit;plazaEdit=null;session.parent.insertBefore(session.node,session.next);Object.assign(editor,session.editor);$('ed-title').value=session.title;for(const [node,hidden]of session.hidden)node.hidden=hidden;session.node.hidden=session.wasHidden;$('ed-test').onclick=session.test;$('course-file-back').onclick=session.back;$('course-file-back').textContent=session.backText;for(const node of session.extra)node.remove();loadBossEditor();syncWidth();syncEditorTools();updateUndoBtn();updatePubBtn();}
+function renderPlaza(box,uid){
+ if(uid!==social.uid){sheet={kind:'course',id:'plaza-'+uid};renderSheet();return;}
+ saveDraft();const c=plazaCourse(uid),node=$('course-editor'),hidden=[...node.querySelectorAll('#ed-pub,#ed-op,#ed-boss-admin,#ed-test-options')].map(n=>[n,n.hidden]);
+ plazaEdit={uid,node,parent:node.parentNode,next:node.nextSibling,wasHidden:node.hidden,editor:structuredClone(editor),title:$('ed-title').value,hidden,test:$('ed-test').onclick,back:$('course-file-back').onclick,backText:$('course-file-back').textContent,items:structuredClone(c.plazaItems)};
+ Object.assign(editor,{rows:c.rows.slice(),decorations:structuredClone(c.decorations),boss:null,mode:'course',tool:'#',courseTool:'#',cam:0,cols:10,undo:[],cleared:false,clearProof:null});$('ed-title').value=c.title;
+ box.append(el('h2',{text:c.title+' エディタ',style:'padding-right:70px'}),node);node.hidden=false;for(const [n]of hidden)n.hidden=true;
+ plazaEdit.extra=[];for(const [kind,label]of [['soccer','サッカーボール（広場専用）'],...(me()?.plazaParts?.lightSet?[['switch','スイッチ（広場専用）'],['bulb','電球（広場専用）']]:[]),...(me()?.plazaParts?.darkness?[['darkness','暗闇（広場専用）']]:[])]){const extra=el('button',{class:'tool','data-t':kind,'aria-label':label,onclick:()=>{editor.tool=editor.courseTool=kind;syncEditorTools();}});plazaEdit.extra.push(extra);$('ed-course-palette').append(extra);}
+
+ $('course-file-back').textContent='← ハウスへ';$('course-file-back').onclick=()=>openHouse(uid);$('ed-test').onclick=()=>{const err=validate();if(err)return toast(err);savePlazaEditor();openPlayer({...plazaCourse(uid),rows:editor.rows.slice(),decorations:structuredClone(editor.decorations),plazaItems:structuredClone(plazaEdit.items)},'plaza');};
+ box.append(el('button',{class:'btn primary',text:'広場を保存してハウスへ',onclick:()=>openHouse(uid)}));loadBossEditor();syncWidth();setEditorMode('course');updateUndoBtn();updatePubBtn();
+}
+
+let plazaStop=null;
+function mentionUser(uid,target){const ta=[...$('sheet').querySelectorAll('textarea')].find(t=>t.dataset.target===target)||[...document.querySelectorAll('textarea')].find(t=>t.dataset.target===target);if(!ta)return;const token='@'+nameOf(uid)+' ';ta.value+=token;ta.dispatchEvent(new Event('input'));ta.focus();}
+
 /* ---------- boot ---------- */
 loadDraft(); renderCourseFiles(); renderHeader(); renderAll(); updatePubBtn();
 $('db-state').textContent = '公式コースを表示中';
@@ -3979,13 +4191,14 @@ $('db-state').textContent = '公式コースを表示中';
   if (be.account && be.account.signInProblem) $('db-state').textContent = 'ゲスト参加がオフのため、見るだけになっています';
   db.collection('courses').orderBy('createdAt', 'desc').limit(500).onSnapshot(snap => {
     social.coursesLoaded = true;
-    const all = snap.docs.map(d => { const v = d.data(); const rows=Array.isArray(v.rows) && v.rows.length===ROWS?v.rows.map(String):null; return {id:d.id,title:String(v.title || ''),rows,decorations:rows?HamuDecorations.normalize(rows,v.decorations):[],boss:HamuBoss.normalize(v.boss),author:v.author || null,createdAt:+v.createdAt || 0,wantOfficial:!!v.official,kind:v.kind==='piece'?'piece':''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
+    const all = snap.docs.map(d => { const v = d.data(); const rows=Array.isArray(v.rows) && v.rows.length===ROWS?v.rows.map(String):null; return {id:d.id,title:String(v.title || ''),rows,decorations:rows?HamuDecorations.normalize(rows,v.decorations):[],boss:HamuBoss.normalize(v.boss),author:v.author || null,createdAt:+v.createdAt || 0,wantOfficial:!!v.official,orbReward:Number.isSafeInteger(v.orbReward)&&v.orbReward>0?v.orbReward:0,kind:v.kind==='piece'?'piece':''}; }).filter(c => c.rows && c.rows.every(r => r.length === c.rows[0].length));
     social.allCourses = all; markOfficial(); updatePubBtn();
     $('db-state').textContent = `みんなのコース ${social.courses.length}件`;
     renderAll();
   }, fail);
   db.collection('people').onSnapshot(snap => {
     social.people = new Map(snap.docs.map(d => [d.id, d.data()])); social.peopleLoaded = true;
+    if(social.uid&&!social.activityRecorded){social.activityRecorded=true;patchMe({lastActiveAt:Date.now()});}
     hydrateBamboo();syncCourseRuns();
     renderAll();
   }, fail);
@@ -4011,4 +4224,3 @@ $('db-state').textContent = '公式コースを表示中';
 
 </body>
 </html>
-
