@@ -387,10 +387,10 @@ input[type=range]{width:100%}
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
-<script src="orbs.js?v=20261114-official24"></script>
+<script src="orbs.js?v=20261114-plaza-reward"></script>
 <script src="plaza.js?v=20261114-dark24"></script>
 <script src="shop.js?v=20261114-dark24"></script>
-<script src="economy.js?v=20261114-live"></script>
+<script src="economy.js?v=20261114-plaza-reward"></script>
 <script src="bamboo.js?v=20261111-green"></script>
 <script src="bamboo-courses.js?v=20261111-green"></script>
 <script src="boss.js?v=20261111-breakable-attacks"></script>
@@ -499,7 +499,7 @@ input[type=range]{width:100%}
     </div>
     <div class="editor-mode-switch" role="group" aria-label="編集モードの切り替え">
       <button class="btn sm" id="ed-mode-course" aria-pressed="true">コース作り</button>
-      <button class="btn sm" id="ed-mode-decor" aria-pressed="false">🎨 装飾</button><button class="btn sm" id="ed-part-help" aria-label="選択中のパーツの説明">？</button>
+      <button class="btn sm" id="ed-mode-decor" aria-pressed="false">🎨 装飾</button>
     </div>
     <div class="row" style="justify-content:space-between;gap:6px">
       <span class="muted">1本指で置く・2本指で動かす・ピンチで拡大縮小</span>
@@ -550,6 +550,7 @@ input[type=range]{width:100%}
       <div class="row" style="gap:6px">
         <button class="btn sm" id="ed-undo" disabled aria-label="直前の編集を1つ戻す">↶ 1つ戻る</button>
         <button class="btn sm" id="ed-new">まっさらにする</button>
+        <button class="btn sm" style="padding:4px 8px;min-width:30px;flex:none" id="ed-part-help" aria-label="選択中のパーツの説明">？</button>
       </div>
     </div>
     <p class="muted" id="ed-hint"></p>
@@ -2267,7 +2268,7 @@ function onState(s, info){
   if (s === 'clear'){
     lastClear = info;
     const c = current.course;
-    if(c.plaza){showMsg('広場クリア！',`${info.sec.toFixed(1)}秒`,[['もう一回',()=>game.reset(),true],['広場にもどる',closePlayer]]);return;}
+    if(c.plaza){if(social.uid&&!plazaEdit&&current.mode!=='test'){todaysRewards();economy.rewardClear(social.uid,c.id).then(r=>{if(r.awarded)orbGain(r.amount);});}showMsg('広場クリア！',`${info.sec.toFixed(1)}秒`,[['もう一回',()=>game.reset(),true],['広場にもどる',closePlayer]]);return;}
     const btns = [['もう一回', () => game.reset()]];
     if (current.mode === 'test'){
       if (game && game.rewindInfo.enabled){ finishRewindTest(game, current, info); return; }
@@ -3115,7 +3116,7 @@ function thumb(rows,decorations=[],plaza=null){
   return c;
 }
 function courseOrbReward(c,context={}){
- if(c.plaza)return null;const claims=me()?.orbs||{};
+ const claims=me()?.orbs||{};if(c.plaza){const draw=todaysRewards();if(!draw?.plazaOwner||c.id!=='plaza-'+draw.plazaOwner)return null;const claimed=!!claims.plazaClaims?.[HamuOrbs.day(Date.now())];return {claimed,text:claimed?'本日の広場オーブ3個・受取済み':'今日の広場クリアでどんぐりオーブ3個'};}
  if(Number.isInteger(context.bambooFloor)&&['challenge','marathon'].includes(context.bambooMode)){const claimed=!!claims.eventClaims?.['bamboo-green-family-v1:'+context.bambooMode+':'+context.bambooFloor];return {claimed,text:claimed?'どんぐりオーブ 3個・受取済み':'初回クリアでどんぐりオーブ3個'};}
  const rewards=[];if(c.official&&Number.isSafeInteger(c.orbReward)&&c.orbReward>0){const claimed=!!claims.officialClaims?.[c.id];rewards.push({claimed,text:claimed?'初回オーブ'+c.orbReward+'個・受取済み':'初回クリアでどんぐりオーブ'+c.orbReward+'個'});}const draw=todaysRewards();if(draw?.ids?.includes(c.id)){const claimed=!!claims.claims?.[HamuOrbs.day(Date.now())]?.includes(c.id);rewards.push({claimed,text:claimed?'本日のオーブ3個・受取済み':'今日のクリアでどんぐりオーブ3個'});}return rewards.length?{claimed:rewards.every(r=>r.claimed),text:rewards.map(r=>r.text).join(' ／ ')}:null;
 }
@@ -3151,8 +3152,8 @@ function renderList(){
     list.append(el('div', {class: 'empty', text: social.sort === 'follow' ? 'フォロー中の人のコースはまだありません。「みんな」から気になるハムをフォローしよう。' : 'まだ公開したコースがありません。「つくる」で最初のコースを作ってみよう。'}));
     return;
   }
-  for(const c of items){const card=courseCard(c);if(social.sort==='orbs'&&c.plaza)card.append(el('span',{class:'badge',text:'今日の広場（クリア報酬なし）'}));list.append(card);}
-  if(social.sort==='orbs')list.append(el('p',{class:'muted',style:'grid-column:1 / -1;margin:8px 0;font-size:13px'},'友達の広場で遊ぶと、家主の樹にどんぐりオーブが1個たまります（訪問と合わせて1日10個まで）。広場クリアの報酬はお休み中です。 ',el('button',{class:'linkbtn',text:'友達の広場を探す',onclick:()=>{setTab('people');peopleFilter='friend';for(const k of ['all','friend','following','follower'])$('pf-'+k).setAttribute('aria-pressed',String(k==='friend'));renderPeople();}})));
+  for(const c of items){const card=courseCard(c);if(social.sort==='orbs'&&c.plaza)card.append(el('span',{class:'badge',text:'今日の広場'}));list.append(card);}
+  if(social.sort==='orbs')list.append(el('p',{class:'muted',style:'grid-column:1 / -1;margin:8px 0;font-size:13px'},'友達の広場で遊ぶと、家主の樹にどんぐりオーブが1個たまります（訪問と合わせて1日10個まで）。今日の広場をクリアすると、1日1回どんぐりオーブが3個もらえます。 ',el('button',{class:'linkbtn',text:'友達の広場を探す',onclick:()=>{setTab('people');peopleFilter='friend';for(const k of ['all','friend','following','follower'])$('pf-'+k).setAttribute('aria-pressed',String(k==='friend'));renderPeople();}})));
 
 }
 function setSort(s){ social.sort = s; ['new','pop','follow','mine','orbs'].forEach(k => $('sort-' + k).setAttribute('aria-pressed', k === s)); renderList(); }
@@ -4037,7 +4038,7 @@ $ ('back-house').onclick=()=>openHouse(social.uid);
 function enterDressing(){closeSheet();setTab('me',true);}
 const FURNITURE={seed:['◒','ひまわりの種'],flower:['🌼','お花'],chair:['🪑','いす'],crown:['👑','イベントの冠'],soccer:['⚽','サッカーボール'],ring:['◯','輪っか'],letter:['あ','文字ブロック'],goldBurr:['✦','金のイガグリ']};
 for(const d of DECOR)FURNITURE['decor-'+d.key]=[d.emoji,d.name];
-function ownedFurniture(uid,plaza){const p=personOf(uid)||{};if(plaza)return ['soccer',...(p.items?.bambooCrown?['crown']:[])];return [...DECOR.filter(d=>likesReceived(uid)>=d.n).map(d=>'decor-'+d.key),'seed',...(likesReceived(uid)>=1?['flower']:[]),...(clearCount(p.clears)>=5?['chair']:[]),...(p.items?.bambooCrown?['crown']:[])];}
+function ownedFurniture(uid,plaza){return plaza?['soccer']:['seed'];}
 function houseState(uid,plaza){const p=personOf(uid)||{};return structuredClone(plaza?(p.plaza?.items||[{id:'soccer',kind:'soccer',x:65,y:78}]):(p.house?.furniture||[{id:'seed',kind:'seed',x:25,y:72}]));}
 let orbArtSeq=0;
 function artNode(tag,attrs={},...children){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [key,value]of Object.entries(attrs))n.setAttribute(key,String(value));n.append(...children);return n;}
