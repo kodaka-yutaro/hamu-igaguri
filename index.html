@@ -387,7 +387,7 @@ input[type=range]{width:100%}
 <script src="config.js"></script>
 <script src="decorations.js"></script>
 <script src="backend.js"></script>
-<script src="orbs.js?v=20261114-plaza-reward"></script>
+<script src="orbs.js?v=20261114-bamboo-five"></script>
 <script src="plaza.js?v=20261114-dark24"></script>
 <script src="shop.js?v=20261114-dark24"></script>
 <script src="economy.js?v=20261114-plaza-reward"></script>
@@ -3117,7 +3117,7 @@ function thumb(rows,decorations=[],plaza=null){
 }
 function courseOrbReward(c,context={}){
  const claims=me()?.orbs||{};if(c.plaza){const draw=todaysRewards();if(!draw?.plazaOwner||c.id!=='plaza-'+draw.plazaOwner)return null;const claimed=!!claims.plazaClaims?.[HamuOrbs.day(Date.now())];return {claimed,text:claimed?'本日の広場オーブ3個・受取済み':'今日の広場クリアでどんぐりオーブ3個'};}
- if(Number.isInteger(context.bambooFloor)&&['challenge','marathon'].includes(context.bambooMode)){const claimed=!!claims.eventClaims?.['bamboo-green-family-v1:'+context.bambooMode+':'+context.bambooFloor];return {claimed,text:claimed?'どんぐりオーブ 3個・受取済み':'初回クリアでどんぐりオーブ3個'};}
+ if(Number.isInteger(context.bambooFloor)&&['challenge','marathon'].includes(context.bambooMode)){const claimed=!!claims.eventClaims?.['bamboo-green-family-v1:'+context.bambooMode+':'+context.bambooFloor];const amount=HamuOrbs.bambooReward(context.bambooMode);return {claimed,text:claimed?`どんぐりオーブ ${amount}個・受取済み`:`初回クリアでどんぐりオーブ${amount}個`};}
  const rewards=[];if(c.official&&Number.isSafeInteger(c.orbReward)&&c.orbReward>0){const claimed=!!claims.officialClaims?.[c.id];rewards.push({claimed,text:claimed?'初回オーブ'+c.orbReward+'個・受取済み':'初回クリアでどんぐりオーブ'+c.orbReward+'個'});}const draw=todaysRewards();if(draw?.ids?.includes(c.id)){const claimed=!!claims.claims?.[HamuOrbs.day(Date.now())]?.includes(c.id);rewards.push({claimed,text:claimed?'本日のオーブ3個・受取済み':'今日のクリアでどんぐりオーブ3個'});}return rewards.length?{claimed:rewards.every(r=>r.claimed),text:rewards.map(r=>r.text).join(' ／ ')}:null;
 }
 function courseOrbBadge(c,context={}){const reward=courseOrbReward(c,context);return reward?el('span',{class:'badge orb-reward'+(reward.claimed?' claimed':''),'aria-label':reward.text},orbIcon(18),reward.text):null;}
@@ -3792,7 +3792,7 @@ function bambooPlayerState(s,info={}){
   if(s!=='dead'&&s!=='clear')return false;
   const result=bamboo.finish(current.bambooAttempt,s==='clear'?'clear':'miss',info.sec||0);
   if(!result)return true;
-  current.bambooAttempt=null;saveBamboo();if(s==='clear'&&social.uid){economy.rewardBamboo(social.uid,mode,floor).then(reward=>{if(reward.awarded)orbGain(3);});}notifyBambooReward();renderBamboo();paintBambooLives($('pl-bamboo-lives'),mode==='marathon');
+  current.bambooAttempt=null;saveBamboo();if(s==='clear'&&social.uid){economy.rewardBamboo(social.uid,mode,floor).then(reward=>{if(reward.awarded)orbGain(reward.amount);});}notifyBambooReward();renderBamboo();paintBambooLives($('pl-bamboo-lives'),mode==='marathon');
   if(sheet&&Number.isInteger(sheet.bambooFloor))renderSheet();
   if(s==='dead'){
     const over=result.gameOver;
